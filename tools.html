@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Database | Restaurant GroundWorks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .table-cell {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .editable-cell:hover {
+            background-color: #f1f5f9; /* slate-100 */
+            cursor: pointer;
+        }
+        .table-cell[contenteditable="true"] {
+            background-color: #fef9c3; /* yellow-100 */
+            outline: 2px solid #f59e0b; /* amber-500 */
+        }
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sortable-header:hover {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Header -->
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="font-extrabold text-2xl text-slate-900">
+                    Restaurant GroundWorks
+                </div>
+                <a href="index.html" class="bg-amber-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-amber-600 transition-colors">
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Property Database</h1>
+            <p class="text-lg text-slate-600 mt-4 max-w-3xl mx-auto">A shared database of properties for sale, updated live from our central spreadsheet.</p>
+        </div>
+
+        <!-- Add Property Form -->
+        <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Add a New Property</h2>
+            <form id="add-property-form" class="grid md:grid-cols-4 gap-6">
+                <div class="md:col-span-2">
+                    <label for="address" class="block text-slate-700 font-medium mb-2">Address</label>
+                    <input type="text" id="address" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 123 Main St" required>
+                </div>
+                <div>
+                    <label for="city" class="block text-slate-700 font-medium mb-2">City</label>
+                    <input type="text" id="city" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., Indianapolis" required>
+                </div>
+                 <div>
+                    <label for="dom" class="block text-slate-700 font-medium mb-2">Initial Days on Market</label>
+                    <input type="number" id="dom" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 30">
+                </div>
+                <div>
+                    <label for="price" class="block text-slate-700 font-medium mb-2">Asking Price ($)</label>
+                    <input type="number" id="price" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 750000" required>
+                </div>
+                <div>
+                    <label for="sqft" class="block text-slate-700 font-medium mb-2">Square Footage</label>
+                    <input type="number" id="sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 2500">
+                </div>
+                <div>
+                    <label for="intendedRoi" class="block text-slate-700 font-medium mb-2">Intended ROI (%)</label>
+                    <input type="number" step="0.01" id="intendedRoi" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 15.00">
+                </div>
+                <div>
+                    <label for="capRate" class="block text-slate-700 font-medium mb-2">Capitalization Rate (%)</label>
+                    <input type="number" step="0.01" id="capRate" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 5.20">
+                </div>
+                <div class="md:col-span-4">
+                    <label for="fileLink" class="block text-slate-700 font-medium mb-2">File Link (e.g., Google Drive)</label>
+                    <input type="url" id="fileLink" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="https://...">
+                </div>
+                <div class="md:col-span-4">
+                    <label for="notes" class="block text-slate-700 font-medium mb-2">Notes</label>
+                    <textarea id="notes" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., High traffic corner, zoned for commercial use..."></textarea>
+                </div>
+                <div class="md:col-span-4 text-right">
+                    <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors">
+                        Add Property to Sheet
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Map Error Message -->
+        <div id="map-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong class="font-bold">Map Error:</strong>
+            <span class="block sm:inline">Could not place pins on the map. Please ensure your Google Maps API key is correct, has billing enabled, and that both the "Maps JavaScript API" and "Geocoding API" are enabled in your Google Cloud project.</span>
+        </div>
+
+        <!-- Google Map -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 mb-12">
+            <div id="map" class="rounded-xl"></div>
+        </div>
+
+        <!-- Property Database Table -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="table-cell font-semibold sortable-header" data-key="Address">Address</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="City">City</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Asking Price">Asking Price</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Sq. Footage">Sq. Footage</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Price per SF">Price per SF</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Current DOM">Current DOM</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Intended ROI">Intended ROI</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Capitalization Rate">Cap Rate</th>
+                        <th class="table-cell font-semibold sortable-header" data-key="Min. Rental Rate">Min. Rental Rate</th>
+                        <th class="table-cell font-semibold">Notes</th>
+                        <th class="table-cell font-semibold">Map Link</th>
+                        <th class="table-cell font-semibold">Attachment</th>
+                    </tr>
+                </thead>
+                <tbody id="property-table-body">
+                    <!-- Property rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 mt-16">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <p class="font-bold text-white text-lg mb-2">Restaurant GroundWorks</p>
+            <p>&copy; 2025 Restaurant GroundWorks. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const propertyForm = document.getElementById('add-property-form');
+            const tableBody = document.getElementById('property-table-body');
+            const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/24015491/u43c0yh/';
+            const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUf0-KW2j2UdggEVTmVQmvxBQdm1oU9Stg8g-NiMmxjewmHXl9kaZZq8R4Zf_9Zr1K/exec';
+
+            let properties = [];
+            let sortState = { key: 'Address', direction: 'asc' };
+            let map;
+            let geocoder;
+            let markers = [];
+
+            // --- DATA MANAGEMENT ---
+            
+            async function loadProperties() {
+                try {
+                    const response = await fetch(GOOGLE_SCRIPT_URL);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    properties = await response.json();
+                    sortProperties();
+                    renderTable();
+                    updateAllMarkers();
+                } catch (error) {
+                    console.error("Failed to fetch properties:", error);
+                    tableBody.innerHTML = `<tr><td colspan="12" class="text-center p-8 text-red-500">Failed to load property data. Please check the Google Sheet and Apps Script configuration.</td></tr>`;
+                }
+            }
+
+            // --- FORMATTING HELPERS ---
+            const formatCurrency = (value) => !value || isNaN(value) ? '' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+            const formatCurrencyWithDecimals = (value) => !value || isNaN(value) ? '' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+            const formatNumber = (value) => value ? new Intl.NumberFormat('en-US').format(value) : '';
+            const formatPercent = (value) => value ? `${(value * 100).toFixed(2)}%` : '0.00%';
+
+            // --- SORTING ---
+            function sortProperties() {
+                properties.sort((a, b) => {
+                    let valA = getPropertyValue(a, sortState.key);
+                    let valB = getPropertyValue(b, sortState.key);
+
+                    const numericKeys = ['Asking Price', 'Sq. Footage', 'Price per SF', 'Current DOM', 'Intended ROI', 'Capitalization Rate', 'Min. Rental Rate'];
+                    if (numericKeys.includes(sortState.key)) {
+                        valA = parseFloat(valA) || 0;
+                        valB = parseFloat(valB) || 0;
+                    }
+
+                    if (typeof valA === 'string') {
+                        return sortState.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else {
+                        return sortState.direction === 'asc' ? valA - valB : valB - valA;
+                    }
+                });
+            }
+
+            // --- TABLE RENDERING ---
+
+            function renderTable() {
+                tableBody.innerHTML = '';
+                if (properties.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="12" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                } else {
+                    properties.forEach(prop => {
+                        const row = createTableRow(prop);
+                        tableBody.appendChild(row);
+                    });
+                }
+                updateSortIndicators();
+            }
+
+            function getPropertyValue(property, keyName) {
+                const normalizedKey = keyName.replace(/\s+/g, '').toLowerCase();
+                for (const key in property) {
+                    if (key.replace(/\s+/g, '').toLowerCase() === normalizedKey) {
+                        return property[key];
+                    }
+                }
+                return undefined;
+            }
+
+            function createTableRow(property) {
+                const row = document.createElement('tr');
+                row.dataset.rowIndex = property.rowIndex;
+                
+                const address = getPropertyValue(property, 'Address') || '';
+                const city = getPropertyValue(property, 'City') || '';
+                const askingPrice = parseFloat(getPropertyValue(property, 'Asking Price')) || 0;
+                const sqft = parseInt(getPropertyValue(property, 'Sq. Footage')) || 0;
+                const intendedRoi = parseFloat(getPropertyValue(property, 'Intended ROI')) || 0;
+                const capRate = parseFloat(getPropertyValue(property, 'Capitalization Rate')) || 0;
+                const initialDom = parseInt(getPropertyValue(property, 'Initial DOM')) || 0;
+                const dateAddedStr = getPropertyValue(property, 'Date Added');
+                const notes = getPropertyValue(property, 'Notes') || '';
+                const attachment = getPropertyValue(property, 'Attachment') || '';
+
+                const mapQuery = encodeURIComponent(`${address}, ${city}, IN`);
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+                const pricePerSqFt = (askingPrice && sqft) ? askingPrice / sqft : 0;
+                
+                let currentDom = initialDom;
+                if (dateAddedStr) {
+                    const dateAdded = new Date(dateAddedStr);
+                    if (!isNaN(dateAdded.getTime())) {
+                        const today = new Date();
+                        dateAdded.setHours(0,0,0,0);
+                        today.setHours(0,0,0,0);
+                        const differenceInTime = today.getTime() - dateAdded.getTime();
+                        const daysPassed = Math.floor(differenceInTime / (1000 * 3600 * 24));
+                        currentDom += daysPassed;
+                    }
+                }
+
+                const targetValue = askingPrice * (1 + intendedRoi);
+                const minRent = targetValue * capRate;
+
+                row.innerHTML = `
+                    <td class="table-cell editable-cell" data-key="Address">${address}</td>
+                    <td class="table-cell editable-cell" data-key="City">${city}</td>
+                    <td class="table-cell editable-cell" data-key="Asking Price">${formatCurrency(askingPrice)}</td>
+                    <td class="table-cell editable-cell" data-key="Sq. Footage">${formatNumber(sqft)}</td>
+                    <td class="table-cell">${formatCurrencyWithDecimals(pricePerSqFt)}</td>
+                    <td class="table-cell">${currentDom || ''}</td>
+                    <td class="table-cell editable-cell" data-key="Intended ROI">${formatPercent(intendedRoi)}</td>
+                    <td class="table-cell editable-cell" data-key="Capitalization Rate">${formatPercent(capRate)}</td>
+                    <td class="table-cell">${formatCurrency(minRent)}</td>
+                    <td class="table-cell editable-cell" data-key="Notes">${notes}</td>
+                    <td class="table-cell"><a href="${mapUrl}" target="_blank" class="text-indigo-600 hover:underline">View Map</a></td>
+                    <td class="table-cell editable-cell" data-key="Attachment">${attachment}</td>
+                `;
+                return row;
+            }
+
+            function updateSortIndicators() {
+                document.querySelectorAll('.sortable-header').forEach(header => {
+                    const key = header.dataset.key;
+                    header.innerHTML = header.innerHTML.replace(/ [▲▼]/, '');
+                    if (key === sortState.key) {
+                        header.innerHTML += sortState.direction === 'asc' ? ' ▲' : ' ▼';
+                    }
+                });
+            }
+
+            // --- EVENT LISTENERS ---
+
+            propertyForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const submitButton = propertyForm.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = 'Adding...';
+
+                const newProperty = {
+                    'Address': document.getElementById('address').value.trim(),
+                    'City': document.getElementById('city').value.trim(),
+                    'Asking Price': parseFloat(document.getElementById('price').value),
+                    'Sq. Footage': parseInt(document.getElementById('sqft').value) || null,
+                    'Initial DOM': parseInt(document.getElementById('dom').value) || 0,
+                    'Date Added': new Date().toISOString(),
+                    'Notes': document.getElementById('notes').value.trim(),
+                    'Attachment': document.getElementById('fileLink').value.trim(),
+                    'Intended ROI': parseFloat(document.getElementById('intendedRoi').value) / 100 || 0,
+                    'Capitalization Rate': parseFloat(document.getElementById('capRate').value) / 100 || 0
+                };
+                
+                fetch(ZAPIER_WEBHOOK_URL, {
+                    method: 'POST',
+                    body: new URLSearchParams(newProperty)
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Property added to Google Sheet! The table will refresh shortly.');
+                        propertyForm.reset();
+                        setTimeout(() => {
+                            loadProperties();
+                        }, 3000); 
+                    } else {
+                        alert('Failed to add property to Google Sheet.');
+                    }
+                }).catch(error => {
+                    console.error('Error sending data to Zapier:', error);
+                    alert('An error occurred. Please try again.');
+                }).finally(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                });
+            });
+            
+            tableBody.addEventListener('click', (e) => {
+                const cell = e.target.closest('.editable-cell');
+                if (!cell) return;
+
+                if (cell.isContentEditable) return;
+
+                cell.setAttribute('contenteditable', 'true');
+                cell.focus();
+                
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(cell);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            });
+
+            tableBody.addEventListener('focusout', async (e) => {
+                const cell = e.target.closest('.editable-cell');
+                if (!cell || !cell.isContentEditable) return;
+
+                cell.setAttribute('contenteditable', 'false');
+                
+                const row = cell.closest('tr');
+                const rowIndex = parseInt(row.dataset.rowIndex);
+                const key = cell.dataset.key;
+                let value = cell.textContent;
+                
+                const propertyIndex = properties.findIndex(p => p.rowIndex === rowIndex);
+                const originalValue = getPropertyValue(properties[propertyIndex], key);
+
+                const numericKeys = ['Asking Price', 'Sq. Footage', 'Initial DOM'];
+                const percentKeys = ['Intended ROI', 'Capitalization Rate'];
+
+                if (numericKeys.includes(key)) {
+                    value = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+                } else if (percentKeys.includes(key)) {
+                    value = (parseFloat(value.replace(/[^0-9.%]/g, '')) || 0) / 100;
+                }
+                
+                // If value hasn't changed, do nothing
+                if (value === originalValue) {
+                    renderTable(); // Re-render to restore formatting
+                    return;
+                }
+                
+                const payload = { rowIndex, key, value };
+                
+                cell.innerHTML = '<i>Saving...</i>';
+
+                try {
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        body: new URLSearchParams(payload) // Send as URL-encoded form data
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        setTimeout(() => {
+                            loadProperties(); 
+                        }, 500);
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    console.error('Failed to update sheet:', error);
+                    alert('Failed to save the change to the Google Sheet. Reverting.');
+                    loadProperties(); // Revert by reloading from the source
+                }
+            });
+            
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const key = header.dataset.key;
+                    if (sortState.key === key) {
+                        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortState.key = key;
+                        sortState.direction = 'asc';
+                    }
+                    sortProperties();
+                    renderTable();
+                });
+            });
+
+            // --- GOOGLE MAPS INTEGRATION ---
+            function initMap() {
+                geocoder = new google.maps.Geocoder();
+                const indiana = { lat: 39.8647, lng: -86.2604 };
+                map = new google.maps.Map(document.getElementById("map"), {
+                    zoom: 7,
+                    center: indiana,
+                });
+                loadProperties(); 
+            }
+            
+            function addMarkerToMap(property) {
+                const address = getPropertyValue(property, 'Address');
+                const city = getPropertyValue(property, 'City');
+                const price = getPropertyValue(property, 'Asking Price');
+                const fullAddress = `${address}, ${city}, IN`;
+
+                geocoder.geocode({ 'address': fullAddress }, (results, status) => {
+                    if (status === 'OK') {
+                        document.getElementById('map-error').classList.add('hidden');
+                        const marker = new google.maps.Marker({
+                            map: map,
+                            position: results[0].geometry.location,
+                            title: address,
+                        });
+
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: `<div><strong>${address}</strong><br>${formatCurrency(price)}</div>`
+                        });
+
+                        marker.addListener('click', () => {
+                            infoWindow.open(map, marker);
+                        });
+                        
+                        markers.push({ id: property.rowIndex, marker: marker });
+                    } else {
+                        console.error('Geocode was not successful for the following reason: ' + status);
+                        document.getElementById('map-error').classList.remove('hidden');
+                    }
+                });
+            }
+
+            function updateAllMarkers() {
+                markers.forEach(({ marker }) => marker.setMap(null));
+                markers = [];
+                properties.forEach(addMarkerToMap);
+            }
+
+            window.initMap = initMap;
+        });
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&callback=initMap"></script>
+</body>
+</html>
