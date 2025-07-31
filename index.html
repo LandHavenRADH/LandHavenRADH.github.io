@@ -160,6 +160,7 @@
                             <th class="table-cell font-semibold">Notes</th>
                             <th class="table-cell font-semibold">Map Link</th>
                             <th class="table-cell font-semibold">Attachment</th>
+                            <th class="table-cell font-semibold text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="property-table-body">
@@ -184,14 +185,14 @@
 
     <script>
         // --- FIREBASE CONFIGURATION ---
-        // IMPORTANT: Replace with your actual Firebase config
         const firebaseConfig = {
-          apiKey: "AIza...",
-          authDomain: "your-project-id.firebaseapp.com",
-          projectId: "your-project-id",
-          storageBucket: "your-project-id.appspot.com",
-          messagingSenderId: "...",
-          appId: "..."
+          apiKey: "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U",
+          authDomain: "restaurant-groundworks-db.firebaseapp.com",
+          projectId: "restaurant-groundworks-db",
+          storageBucket: "restaurant-groundworks-db.appspot.com",
+          messagingSenderId: "391704584139",
+          appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
+          measurementId: "G-8LWLPVD3W1"
         };
 
         // Initialize Firebase
@@ -247,9 +248,8 @@
 
             // --- DATA MANAGEMENT ---
             async function loadProperties() {
-                const snapshot = await propertiesCollection.get();
+                const snapshot = await propertiesCollection.orderBy(sortState.key, sortState.direction).get();
                 properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                sortProperties();
                 renderTable();
                 updateAllMarkers();
             }
@@ -262,19 +262,15 @@
 
             // --- SORTING ---
             function sortProperties() {
-                properties.sort((a, b) => {
-                    let valA = a[sortState.key];
-                    let valB = b[sortState.key];
-                    // ... (sorting logic remains the same)
-                    return sortState.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                });
+                // Sorting is now handled by Firestore queries in loadProperties()
+                loadProperties();
             }
 
             // --- TABLE RENDERING ---
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="12" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="13" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -287,7 +283,7 @@
             function createTableRow(property) {
                 const row = document.createElement('tr');
                 row.dataset.id = property.id;
-                // ... (calculation logic remains the same)
+                
                 const pricePerSqFt = (property.price && property.sqft) ? property.price / property.sqft : 0;
                 const targetValue = property.price * (1 + (property.intendedRoi || 0));
                 const minRent = targetValue * (property.capRate || 0);
@@ -318,6 +314,9 @@
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
                     <td class="table-cell"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address + ', ' + property.city)}" target="_blank" class="text-indigo-600 hover:underline">View Map</a></td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
+                    <td class="table-cell text-center">
+                        <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
+                    </td>
                 `;
                 return row;
             }
@@ -365,7 +364,20 @@
                 }
             });
 
-            tableBody.addEventListener('click', (e) => {
+            tableBody.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const row = e.target.closest('tr');
+                    const id = row.dataset.id;
+                    // No confirm dialog for better user experience in this environment
+                    try {
+                        await propertiesCollection.doc(id).delete();
+                        loadProperties();
+                    } catch (error) {
+                        console.error("Error removing document: ", error);
+                        alert("Failed to delete property.");
+                    }
+                }
+
                 const cell = e.target.closest('.editable-cell');
                 if (!cell || cell.isContentEditable) return;
                 cell.setAttribute('contenteditable', 'true');
@@ -382,6 +394,9 @@
                 const key = cell.dataset.key;
                 let value = cell.textContent;
 
+                const propertyIndex = properties.findIndex(p => p.id === id);
+                const originalValue = properties[propertyIndex][key];
+
                 const numericKeys = ['price', 'sqft', 'initialDom'];
                 const percentKeys = ['intendedRoi', 'capRate'];
 
@@ -391,17 +406,38 @@
                     value = (parseFloat(value.replace(/[^0-9.%]/g, '')) || 0) / 100;
                 }
                 
+                if (value === originalValue) {
+                    renderTable();
+                    return;
+                }
+                
+                cell.innerHTML = '<i>Saving...</i>';
+
                 try {
                     await propertiesCollection.doc(id).update({ [key]: value });
-                    loadProperties();
+                    setTimeout(() => {
+                        loadProperties(); 
+                    }, 500);
                 } catch (error) {
                     console.error("Error updating document: ", error);
-                    alert("Failed to update property. Data will be refreshed.");
+                    alert("Failed to update property. Reverting change.");
                     loadProperties();
                 }
             });
             
-            // ... (Sort listeners remain the same)
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const key = header.dataset.key;
+                    if (sortState.key === key) {
+                        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortState.key = key;
+                        sortState.direction = 'asc';
+                    }
+                    sortProperties();
+                    renderTable();
+                });
+            });
 
             // --- GOOGLE MAPS INTEGRATION ---
             function initMap() {
