@@ -103,17 +103,16 @@
                 </form>
             </div>
 
-            <!-- AI Ground Lease Analyzer -->
+            <!-- AI Lease Uploader & Analyzer -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Ground Lease Analyzer</h2>
-                <p class="text-slate-600 mb-4">Paste a clause from a ground lease agreement below to get an AI-powered analysis of key terms, potential risks, and negotiation points for a franchisee.</p>
-                <form id="lease-analyzer-form">
-                    <div class="mb-4">
-                        <label for="lease-clause" class="block text-slate-700 font-medium mb-2">Lease Agreement Text</label>
-                        <textarea id="lease-clause" rows="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="Paste the full text of the lease clause here..." required></textarea>
-                    </div>
-                    <button type="submit" id="analyze-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Lease Clause</button>
-                </form>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Uploader & Analyzer</h2>
+                <p class="text-slate-600 mb-4">Upload a PDF of a ground lease agreement to get an AI-powered analysis of key terms, potential risks, and negotiation points.</p>
+                <div class="mb-4">
+                    <label for="lease-pdf-upload" class="block text-slate-700 font-medium mb-2">Upload Lease PDF</label>
+                    <input type="file" id="lease-pdf-upload" accept="application/pdf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                </div>
+                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Upload and Analyze</button>
+                <div id="upload-status" class="mt-4 text-center"></div>
                 <div id="lease-analyzer-result-container" class="mt-6 hidden">
                     <div id="loader-lease-analyzer" class="mx-auto loader"></div>
                     <div id="lease-analyzer-result" class="text-slate-700 prose max-w-none mt-4"></div>
@@ -155,6 +154,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
@@ -173,7 +173,9 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage();
         const contactsCollection = db.collection("contacts");
+        const leaseAnalysesCollection = db.collection("leaseAnalyses");
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
@@ -333,61 +335,75 @@
                 });
             });
 
-            // --- AI LEASE ANALYZER ---
-            const leaseForm = document.getElementById('lease-analyzer-form');
+            // --- AI LEASE UPLOADER & ANALYZER ---
+            const uploadButton = document.getElementById('upload-lease-button');
+            const fileInput = document.getElementById('lease-pdf-upload');
+            const uploadStatus = document.getElementById('upload-status');
+            const resultContainer = document.getElementById('lease-analyzer-result-container');
+            const loader = document.getElementById('loader-lease-analyzer');
+            const resultEl = document.getElementById('lease-analyzer-result');
             const exportPdfButton = document.getElementById('export-pdf-button');
             let analysisTextForPdf = '';
 
-            leaseForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const button = document.getElementById('analyze-lease-button');
-                const resultContainer = document.getElementById('lease-analyzer-result-container');
-                const loader = document.getElementById('loader-lease-analyzer');
-                const resultEl = document.getElementById('lease-analyzer-result');
-                const leaseText = document.getElementById('lease-clause').value;
-
-                const prompt = `Act as a commercial real estate attorney specializing in franchisee representation. Analyze the following ground lease clause, focusing on a franchisee's perspective. Provide a summary that includes: 1. **Key Terms:** A simple explanation of what the clause means. 2. **Potential Risks:** Identify any language that could be unfavorable to the franchisee. 3. **Negotiation Points:** Suggest specific questions to ask or changes to propose to protect the franchisee's interests. Format the response with clear headings and bullet points.\n\nLease Clause: "${leaseText}"`;
-
-                resultContainer.classList.remove('hidden');
-                loader.classList.remove('hidden');
-                resultEl.innerHTML = '';
-                exportPdfButton.classList.add('hidden');
-                button.disabled = true;
-                button.textContent = 'Analyzing...';
-
-                try {
-                    const rawText = await callGemini(prompt);
-                    analysisTextForPdf = rawText; // Save text for PDF
-                    resultEl.innerHTML = formatResponseForHTML(rawText);
-                    exportPdfButton.classList.remove('hidden');
-                } catch (error) {
-                    console.error("Error with Lease Analyzer:", error);
-                    resultEl.innerHTML = `<p class="text-red-500">An error occurred. Please try again.</p>`;
-                } finally {
-                    loader.classList.add('hidden');
-                    button.disabled = false;
-                    button.textContent = 'Analyze Lease Clause';
+            uploadButton.addEventListener('click', () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert("Please select a PDF file to upload.");
+                    return;
                 }
+
+                const user = auth.currentUser;
+                if (!user) {
+                    alert("You must be logged in to upload a file.");
+                    return;
+                }
+
+                const storageRef = storage.ref(`leases/${user.uid}/${Date.now()}_${file.name}`);
+                const task = storageRef.put(file);
+
+                uploadStatus.textContent = 'Uploading...';
+                
+                task.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        uploadStatus.textContent = `Uploading: ${Math.round(progress)}%`;
+                    },
+                    (error) => {
+                        console.error("Upload failed:", error);
+                        uploadStatus.textContent = "Upload failed. Please try again.";
+                    },
+                    () => {
+                        uploadStatus.textContent = "Upload complete! Analyzing document...";
+                        resultContainer.classList.remove('hidden');
+                        loader.classList.remove('hidden');
+                        exportPdfButton.classList.add('hidden');
+                        
+                        // Listen for the analysis result from the Cloud Function
+                        const unsubscribe = leaseAnalysesCollection.doc(storageRef.name).onSnapshot(doc => {
+                            if (doc.exists) {
+                                const data = doc.data();
+                                if (data.summary) {
+                                    analysisTextForPdf = data.summary;
+                                    resultEl.innerHTML = formatResponseForHTML(data.summary);
+                                    loader.classList.add('hidden');
+                                    exportPdfButton.classList.remove('hidden');
+                                    uploadStatus.textContent = 'Analysis complete.';
+                                    unsubscribe(); // Stop listening once we have the result
+                                } else if (data.error) {
+                                    resultEl.innerHTML = `<p class="text-red-500">Error during analysis: ${data.error}</p>`;
+                                    loader.classList.add('hidden');
+                                    uploadStatus.textContent = 'Analysis failed.';
+                                    unsubscribe();
+                                }
+                            }
+                        });
+                    }
+                );
             });
 
             exportPdfButton.addEventListener('click', () => {
                 generateLeaseAnalysisPDF(analysisTextForPdf);
             });
-
-            async function callGemini(prompt) {
-                // This is a placeholder. Replace with your actual Gemini API call.
-                await new Promise(resolve => setTimeout(resolve, 1500)); 
-                return `**Key Terms:**
-- This is a sample analysis. The clause appears to define the maintenance responsibilities for the property.
-
-**Potential Risks:**
-- The language is vague regarding "reasonable wear and tear," which could lead to disputes.
-- There is no cap on the franchisee's contribution to capital expenditures.
-
-**Negotiation Points:**
-- Propose a more specific definition of "reasonable wear and tear."
-- Request an annual cap on the franchisee's financial responsibility for capital repairs.`;
-            }
 
             function formatResponseForHTML(text) {
                 let html = text
