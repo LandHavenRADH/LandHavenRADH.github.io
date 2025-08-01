@@ -370,7 +370,11 @@
                     },
                     (error) => {
                         console.error("Upload failed:", error);
-                        uploadStatus.textContent = "Upload failed. Please try again.";
+                        let errorMessage = "Upload failed. Please try again.";
+                        if (error.code === 'storage/unauthorized') {
+                            errorMessage = "Upload failed: Permission error. Please check your Firebase Storage CORS and Rules settings.";
+                        }
+                        uploadStatus.textContent = errorMessage;
                     },
                     () => {
                         uploadStatus.textContent = "Upload complete! Analyzing document...";
@@ -378,7 +382,6 @@
                         loader.classList.remove('hidden');
                         exportPdfButton.classList.add('hidden');
                         
-                        // Listen for the analysis result from the Cloud Function
                         const unsubscribe = leaseAnalysesCollection.doc(storageRef.name).onSnapshot(doc => {
                             if (doc.exists) {
                                 const data = doc.data();
@@ -388,7 +391,7 @@
                                     loader.classList.add('hidden');
                                     exportPdfButton.classList.remove('hidden');
                                     uploadStatus.textContent = 'Analysis complete.';
-                                    unsubscribe(); // Stop listening once we have the result
+                                    unsubscribe();
                                 } else if (data.error) {
                                     resultEl.innerHTML = `<p class="text-red-500">Error during analysis: ${data.error}</p>`;
                                     loader.classList.add('hidden');
