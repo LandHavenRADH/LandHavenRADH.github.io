@@ -31,6 +31,18 @@
         .sortable-header:hover {
             background-color: #f1f5f9;
         }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #F59E0B;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -89,6 +101,23 @@
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- AI Ground Lease Analyzer -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Ground Lease Analyzer</h2>
+                <p class="text-slate-600 mb-4">Paste a clause from a ground lease agreement below to get an AI-powered analysis of key terms, potential risks, and negotiation points for a franchisee.</p>
+                <form id="lease-analyzer-form">
+                    <div class="mb-4">
+                        <label for="lease-clause" class="block text-slate-700 font-medium mb-2">Lease Agreement Text</label>
+                        <textarea id="lease-clause" rows="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="Paste the full text of the lease clause here..." required></textarea>
+                    </div>
+                    <button type="submit" id="analyze-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Lease Clause</button>
+                </form>
+                <div id="lease-analyzer-result-container" class="mt-6 hidden">
+                    <div id="loader-lease-analyzer" class="mx-auto loader"></div>
+                    <div id="lease-analyzer-result" class="text-slate-700 prose max-w-none mt-4"></div>
+                </div>
             </div>
 
             <!-- Contact Database Table -->
@@ -298,6 +327,67 @@
                     loadContacts();
                 });
             });
+
+            // --- AI LEASE ANALYZER ---
+            const leaseForm = document.getElementById('lease-analyzer-form');
+            leaseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('analyze-lease-button');
+                const resultContainer = document.getElementById('lease-analyzer-result-container');
+                const loader = document.getElementById('loader-lease-analyzer');
+                const resultEl = document.getElementById('lease-analyzer-result');
+                const leaseText = document.getElementById('lease-clause').value;
+
+                const prompt = `Act as a commercial real estate attorney specializing in franchisee representation. Analyze the following ground lease clause, focusing on a franchisee's perspective. Provide a summary that includes: 1. **Key Terms:** A simple explanation of what the clause means. 2. **Potential Risks:** Identify any language that could be unfavorable to the franchisee. 3. **Negotiation Points:** Suggest specific questions to ask or changes to propose to protect the franchisee's interests. Format the response with clear headings and bullet points.\n\nLease Clause: "${leaseText}"`;
+
+                resultContainer.classList.remove('hidden');
+                loader.classList.remove('hidden');
+                resultEl.innerHTML = '';
+                button.disabled = true;
+                button.textContent = 'Analyzing...';
+
+                try {
+                    const rawText = await callGemini(prompt);
+                    resultEl.innerHTML = formatResponseForHTML(rawText);
+                } catch (error) {
+                    console.error("Error with Lease Analyzer:", error);
+                    resultEl.innerHTML = `<p class="text-red-500">An error occurred. Please try again.</p>`;
+                } finally {
+                    loader.classList.add('hidden');
+                    button.disabled = false;
+                    button.textContent = 'Analyze Lease Clause';
+                }
+            });
+
+            async function callGemini(prompt) {
+                // This function needs to be implemented to call the Gemini API
+                // For now, it will return a placeholder response.
+                // Replace this with your actual Gemini API call
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+                return `**Key Terms:**
+- This is a sample analysis. The clause appears to define the maintenance responsibilities for the property.
+
+**Potential Risks:**
+- The language is vague regarding "reasonable wear and tear," which could lead to disputes.
+- There is no cap on the franchisee's contribution to capital expenditures.
+
+**Negotiation Points:**
+- Propose a more specific definition of "reasonable wear and tear."
+- Request an annual cap on the franchisee's financial responsibility for capital repairs.`;
+            }
+
+            function formatResponseForHTML(text) {
+                let html = text
+                    .replace(/\*\*(.*?)\*\*/g, '<h3>$1</h3>') // Bold to h3
+                    .replace(/-\s(.*?)(?:\n|$)/g, '<li>$1</li>'); // Dashes to list items
+                
+                // Wrap lists in <ul> tags
+                if (html.includes('<li>')) {
+                    html = `<ul>${html}</ul>`.replace(/<\/h3>\n<ul>/g, '</h3><ul>');
+                }
+                return html;
+            }
+
         });
     </script>
 </body>
