@@ -97,6 +97,61 @@
                         <input type="text" id="city" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., Indianapolis" required>
                     </div>
                      <div>
+                        <label for="state" class="block text-slate-700 font-medium mb-2">State</label>
+                        <select id="state" class="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white">
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="AR">Arkansas</option>
+                            <option value="CA">California</option>
+                            <option value="CO">Colorado</option>
+                            <option value="CT">Connecticut</option>
+                            <option value="DE">Delaware</option>
+                            <option value="FL">Florida</option>
+                            <option value="GA">Georgia</option>
+                            <option value="HI">Hawaii</option>
+                            <option value="ID">Idaho</option>
+                            <option value="IL">Illinois</option>
+                            <option value="IN" selected>Indiana</option>
+                            <option value="IA">Iowa</option>
+                            <option value="KS">Kansas</option>
+                            <option value="KY">Kentucky</option>
+                            <option value="LA">Louisiana</option>
+                            <option value="ME">Maine</option>
+                            <option value="MD">Maryland</option>
+                            <option value="MA">Massachusetts</option>
+                            <option value="MI">Michigan</option>
+                            <option value="MN">Minnesota</option>
+                            <option value="MS">Mississippi</option>
+                            <option value="MO">Missouri</option>
+                            <option value="MT">Montana</option>
+                            <option value="NE">Nebraska</option>
+                            <option value="NV">Nevada</option>
+                            <option value="NH">New Hampshire</option>
+                            <option value="NJ">New Jersey</option>
+                            <option value="NM">New Mexico</option>
+                            <option value="NY">New York</option>
+                            <option value="NC">North Carolina</option>
+                            <option value="ND">North Dakota</option>
+                            <option value="OH">Ohio</option>
+                            <option value="OK">Oklahoma</option>
+                            <option value="OR">Oregon</option>
+                            <option value="PA">Pennsylvania</option>
+                            <option value="RI">Rhode Island</option>
+                            <option value="SC">South Carolina</option>
+                            <option value="SD">South Dakota</option>
+                            <option value="TN">Tennessee</option>
+                            <option value="TX">Texas</option>
+                            <option value="UT">Utah</option>
+                            <option value="VT">Vermont</option>
+                            <option value="VA">Virginia</option>
+                            <option value="WA">Washington</option>
+                            <option value="WV">West Virginia</option>
+                            <option value="WI">Wisconsin</option>
+                            <option value="WY">Wyoming</option>
+                        </select>
+                    </div>
+                     <div>
                         <label for="dom" class="block text-slate-700 font-medium mb-2">Initial Days on Market</label>
                         <input type="number" id="dom" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 30">
                     </div>
@@ -107,6 +162,10 @@
                     <div>
                         <label for="sqft" class="block text-slate-700 font-medium mb-2">Square Footage</label>
                         <input type="number" id="sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 2500">
+                    </div>
+                    <div>
+                        <label for="aadt" class="block text-slate-700 font-medium mb-2">Traffic Count (AADT)</label>
+                        <input type="number" id="aadt" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 15000">
                     </div>
                     <div>
                         <label for="intendedRoi" class="block text-slate-700 font-medium mb-2">Intended ROI (%)</label>
@@ -150,10 +209,12 @@
                         <tr>
                             <th class="table-cell font-semibold sortable-header" data-key="address">Address</th>
                             <th class="table-cell font-semibold sortable-header" data-key="city">City</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="state">State</th>
                             <th class="table-cell font-semibold sortable-header" data-key="price">Asking Price</th>
                             <th class="table-cell font-semibold sortable-header" data-key="sqft">Sq. Footage</th>
                             <th class="table-cell font-semibold sortable-header" data-key="pricePerSqFt">Price per SF</th>
                             <th class="table-cell font-semibold sortable-header" data-key="dom">Current DOM</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="aadt">Traffic Count</th>
                             <th class="table-cell font-semibold sortable-header" data-key="intendedRoi">Intended ROI</th>
                             <th class="table-cell font-semibold sortable-header" data-key="capRate">Cap Rate</th>
                             <th class="table-cell font-semibold sortable-header" data-key="minRent">Min. Rental Rate</th>
@@ -262,7 +323,6 @@
 
             // --- SORTING ---
             function sortProperties() {
-                // Sorting is now handled by Firestore queries in loadProperties()
                 loadProperties();
             }
 
@@ -270,7 +330,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="13" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="14" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -304,17 +364,20 @@
                 row.innerHTML = `
                     <td class="table-cell editable-cell" data-key="address">${property.address || ''}</td>
                     <td class="table-cell editable-cell" data-key="city">${property.city || ''}</td>
+                    <td class="table-cell editable-cell" data-key="state">${property.state || ''}</td>
                     <td class="table-cell editable-cell" data-key="price">${formatCurrency(property.price)}</td>
                     <td class="table-cell editable-cell" data-key="sqft">${formatNumber(property.sqft)}</td>
                     <td class="table-cell">${formatCurrencyWithDecimals(pricePerSqFt)}</td>
                     <td class="table-cell">${currentDom}</td>
+                    <td class="table-cell editable-cell" data-key="aadt">${formatNumber(property.aadt)}</td>
                     <td class="table-cell editable-cell" data-key="intendedRoi">${formatPercent(property.intendedRoi)}</td>
                     <td class="table-cell editable-cell" data-key="capRate">${formatPercent(property.capRate)}</td>
                     <td class="table-cell">${formatCurrency(minRent)}</td>
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
-                    <td class="table-cell"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address + ', ' + property.city)}" target="_blank" class="text-indigo-600 hover:underline">View Map</a></td>
+                    <td class="table-cell"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address + ', ' + property.city + ', ' + property.state)}" target="_blank" class="text-indigo-600 hover:underline">View Map</a></td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
                     <td class="table-cell text-center">
+                        <button class="pdf-btn bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 mr-2">PDF</button>
                         <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
                     </td>
                 `;
@@ -341,9 +404,11 @@
                 const newProperty = {
                     address: document.getElementById('address').value.trim(),
                     city: document.getElementById('city').value.trim(),
+                    state: document.getElementById('state').value,
                     price: parseFloat(document.getElementById('price').value),
                     sqft: parseInt(document.getElementById('sqft').value) || null,
                     initialDom: parseInt(document.getElementById('dom').value) || 0,
+                    aadt: parseInt(document.getElementById('aadt').value) || null,
                     dateAdded: new Date().toISOString(),
                     notes: document.getElementById('notes').value.trim(),
                     fileLink: document.getElementById('fileLink').value.trim(),
@@ -368,7 +433,6 @@
                 if (e.target.classList.contains('delete-btn')) {
                     const row = e.target.closest('tr');
                     const id = row.dataset.id;
-                    // No confirm dialog for better user experience in this environment
                     try {
                         await propertiesCollection.doc(id).delete();
                         loadProperties();
@@ -376,6 +440,11 @@
                         console.error("Error removing document: ", error);
                         alert("Failed to delete property.");
                     }
+                } else if (e.target.classList.contains('pdf-btn')) {
+                    const row = e.target.closest('tr');
+                    const id = row.dataset.id;
+                    const property = properties.find(p => p.id === id);
+                    generatePDF(property);
                 }
 
                 const cell = e.target.closest('.editable-cell');
@@ -397,7 +466,7 @@
                 const propertyIndex = properties.findIndex(p => p.id === id);
                 const originalValue = properties[propertyIndex][key];
 
-                const numericKeys = ['price', 'sqft', 'initialDom'];
+                const numericKeys = ['price', 'sqft', 'initialDom', 'aadt'];
                 const percentKeys = ['intendedRoi', 'capRate'];
 
                 if (numericKeys.includes(key)) {
@@ -435,22 +504,21 @@
                         sortState.direction = 'asc';
                     }
                     sortProperties();
-                    renderTable();
                 });
             });
 
             // --- GOOGLE MAPS INTEGRATION ---
             function initMap() {
                 geocoder = new google.maps.Geocoder();
-                const indiana = { lat: 39.8647, lng: -86.2604 };
+                const usa = { lat: 39.8283, lng: -98.5795 };
                 map = new google.maps.Map(document.getElementById("map"), {
-                    zoom: 7,
-                    center: indiana,
+                    zoom: 4,
+                    center: usa,
                 });
             }
             
             function addMarkerToMap(property) {
-                const fullAddress = `${property.address}, ${property.city}, IN`;
+                const fullAddress = `${property.address}, ${property.city}, ${property.state}`;
                 geocoder.geocode({ 'address': fullAddress }, (results, status) => {
                     if (status === 'OK') {
                         document.getElementById('map-error').classList.add('hidden');
@@ -466,6 +534,8 @@
                             infoWindow.open(map, marker);
                         });
                         markers.push({ id: property.id, marker: marker });
+                        map.setCenter(results[0].geometry.location);
+                        map.setZoom(12);
                     } else {
                         console.error('Geocode was not successful for the following reason: ' + status);
                         document.getElementById('map-error').classList.remove('hidden');
@@ -477,6 +547,58 @@
                 markers.forEach(({ marker }) => marker.setMap(null));
                 markers = [];
                 properties.forEach(addMarkerToMap);
+            }
+
+            // --- PDF GENERATION ---
+            function generatePDF(property) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text("Property Profile", 105, 20, { align: 'center' });
+
+                doc.setFontSize(16);
+                doc.setFont("helvetica", "normal");
+                doc.text(`${property.address}, ${property.city}, ${property.state}`, 105, 30, { align: 'center' });
+
+                doc.setFillColor(230, 230, 230);
+                doc.rect(15, 40, 180, 90, 'F');
+                doc.setTextColor(150, 150, 150);
+                doc.text("Map Image Placeholder", 105, 85, { align: 'center' });
+
+
+                doc.setTextColor(0, 0, 0);
+                let y = 150;
+                const addLine = (label, value) => {
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(label, 15, y);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(String(value), 80, y);
+                    y += 10;
+                };
+
+                addLine("Asking Price:", formatCurrency(property.price));
+                addLine("Square Footage:", formatNumber(property.sqft));
+                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
+                addLine("Traffic Count (AADT):", formatNumber(property.aadt));
+                addLine("Intended ROI:", formatPercent(property.intendedRoi));
+                addLine("Capitalization Rate:", formatPercent(property.capRate));
+                
+                const targetValue = property.price * (1 + (property.intendedRoi || 0));
+                const minRent = targetValue * (property.capRate || 0);
+                addLine("Minimum Rental Rate:", formatCurrency(minRent));
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("Notes:", 15, y);
+                y += 10;
+                doc.setFont("helvetica", "normal");
+                const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
+                doc.text(notes, 15, y);
+
+                const safeAddress = property.address.replace(/[^a-z0-9]/gi, '_');
+                doc.save(`${safeAddress}.pdf`);
             }
 
             window.initMap = initMap;
