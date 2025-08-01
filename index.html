@@ -444,7 +444,9 @@
                     const row = e.target.closest('tr');
                     const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
-                    generatePDF(property);
+                    if (property) {
+                        generatePDF(property);
+                    }
                 }
 
                 const cell = e.target.closest('.editable-cell');
@@ -597,7 +599,7 @@
                 const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
                 doc.text(notes, 15, y);
 
-                const safeAddress = property.address.replace(/[^a-z0-9]/gi, '_');
+                const safeAddress = (property.address || 'property').replace(/[^a-z0-9]/gi, '_');
                 doc.save(`${safeAddress}.pdf`);
             }
 
