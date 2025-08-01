@@ -117,6 +117,10 @@
                 <div id="lease-analyzer-result-container" class="mt-6 hidden">
                     <div id="loader-lease-analyzer" class="mx-auto loader"></div>
                     <div id="lease-analyzer-result" class="text-slate-700 prose max-w-none mt-4"></div>
+                    <button id="export-pdf-button" class="hidden mt-4 w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Export as PDF
+                    </button>
                 </div>
             </div>
 
@@ -151,6 +155,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         // --- FIREBASE CONFIGURATION ---
@@ -330,6 +335,9 @@
 
             // --- AI LEASE ANALYZER ---
             const leaseForm = document.getElementById('lease-analyzer-form');
+            const exportPdfButton = document.getElementById('export-pdf-button');
+            let analysisTextForPdf = '';
+
             leaseForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const button = document.getElementById('analyze-lease-button');
@@ -343,12 +351,15 @@
                 resultContainer.classList.remove('hidden');
                 loader.classList.remove('hidden');
                 resultEl.innerHTML = '';
+                exportPdfButton.classList.add('hidden');
                 button.disabled = true;
                 button.textContent = 'Analyzing...';
 
                 try {
                     const rawText = await callGemini(prompt);
+                    analysisTextForPdf = rawText; // Save text for PDF
                     resultEl.innerHTML = formatResponseForHTML(rawText);
+                    exportPdfButton.classList.remove('hidden');
                 } catch (error) {
                     console.error("Error with Lease Analyzer:", error);
                     resultEl.innerHTML = `<p class="text-red-500">An error occurred. Please try again.</p>`;
@@ -359,11 +370,13 @@
                 }
             });
 
+            exportPdfButton.addEventListener('click', () => {
+                generateLeaseAnalysisPDF(analysisTextForPdf);
+            });
+
             async function callGemini(prompt) {
-                // This function needs to be implemented to call the Gemini API
-                // For now, it will return a placeholder response.
-                // Replace this with your actual Gemini API call
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+                // This is a placeholder. Replace with your actual Gemini API call.
+                await new Promise(resolve => setTimeout(resolve, 1500)); 
                 return `**Key Terms:**
 - This is a sample analysis. The clause appears to define the maintenance responsibilities for the property.
 
@@ -378,14 +391,60 @@
 
             function formatResponseForHTML(text) {
                 let html = text
-                    .replace(/\*\*(.*?)\*\*/g, '<h3>$1</h3>') // Bold to h3
-                    .replace(/-\s(.*?)(?:\n|$)/g, '<li>$1</li>'); // Dashes to list items
+                    .replace(/\*\*(.*?)\*\*/g, '<h3>$1</h3>') 
+                    .replace(/-\s(.*?)(?:\n|$)/g, '<li>$1</li>'); 
                 
-                // Wrap lists in <ul> tags
                 if (html.includes('<li>')) {
                     html = `<ul>${html}</ul>`.replace(/<\/h3>\n<ul>/g, '</h3><ul>');
                 }
                 return html;
+            }
+
+            function generateLeaseAnalysisPDF(text) {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    doc.setFontSize(18);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Ground Lease Analysis Report", 105, 20, { align: 'center' });
+
+                    let y = 40;
+                    const lines = text.split('\n');
+
+                    lines.forEach(line => {
+                        if (y > 280) {
+                            doc.addPage();
+                            y = 20;
+                        }
+                        
+                        let textToPrint = line.trim();
+                        if (textToPrint.startsWith('**') && textToPrint.endsWith('**')) {
+                            doc.setFont("helvetica", "bold");
+                            textToPrint = textToPrint.slice(2, -2);
+                            y += 5;
+                            doc.text(textToPrint, 15, y);
+                            y += 8;
+                        } else if (textToPrint.startsWith('-')) {
+                            doc.setFont("helvetica", "normal");
+                            textToPrint = textToPrint.substring(1).trim();
+                            const splitText = doc.splitTextToSize(textToPrint, 175);
+                            doc.text(`• ${splitText[0]}`, 20, y);
+                            if (splitText.length > 1) {
+                                doc.text(splitText.slice(1), 25, y + 5);
+                                y += (splitText.length -1) * 5;
+                            }
+                            y += 7;
+                        } else {
+                             y += 5;
+                        }
+                    });
+
+                    doc.save('Lease_Analysis_Report.pdf');
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    alert("An error occurred while generating the PDF.");
+                }
             }
 
         });
