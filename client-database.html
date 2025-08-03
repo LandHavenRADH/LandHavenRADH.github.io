@@ -383,7 +383,7 @@
                         }
 
                         uploadStatus.textContent = 'Analyzing document...';
-                        const prompt = `Act as a commercial real estate attorney specializing in franchisee representation. Analyze the following ground lease agreement text, focusing on a franchisee's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses. 2. **Potential Risks:** Identify any language that could be unfavorable to the franchisee. 3. **Negotiation Points:** Suggest specific questions to ask or changes to propose to protect the franchisee's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
+                        const prompt = `Act as a commercial real estate attorney specializing in franchisee representation. Analyze the following ground lease agreement text, focusing on a franchisee's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses. 2. **Annual Rental Payments:** Detail the base rent, any percentage rent, and the schedule of rent escalations. 3. **Potential Risks:** Identify any language that could be unfavorable to the franchisee. 4. **Negotiation Points:** Suggest specific questions to ask or changes to propose to protect the franchisee's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
                         
                         const rawText = await callGemini(prompt);
                         analysisTextForPdf = rawText;
@@ -432,15 +432,22 @@
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
                     
+                    // Header
                     doc.setFontSize(18);
                     doc.setFont("helvetica", "bold");
-                    doc.text("Ground Lease Analysis Report", 105, 20, { align: 'center' });
+                    doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Ground Lease Analysis Report", 105, 28, { align: 'center' });
+                    doc.setLineWidth(0.5);
+                    doc.line(15, 35, 195, 35);
 
-                    let y = 40;
+
+                    let y = 50;
                     const lines = text.split('\n');
 
                     lines.forEach(line => {
-                        if (y > 280) {
+                        if (y > 270) {
                             doc.addPage();
                             y = 20;
                         }
@@ -449,13 +456,13 @@
                         if (textToPrint.startsWith('**') && textToPrint.endsWith('**')) {
                             doc.setFont("helvetica", "bold");
                             textToPrint = textToPrint.slice(2, -2);
-                            y += 5;
+                            y += 7;
                             doc.text(textToPrint, 15, y);
-                            y += 8;
+                            y += 7;
                         } else if (textToPrint.startsWith('-')) {
                             doc.setFont("helvetica", "normal");
                             textToPrint = textToPrint.substring(1).trim();
-                            const splitText = doc.splitTextToSize(textToPrint, 175);
+                            const splitText = doc.splitTextToSize(textToPrint, 170);
                             doc.text(`• ${splitText[0]}`, 20, y);
                             if (splitText.length > 1) {
                                 doc.text(splitText.slice(1), 25, y + 5);
