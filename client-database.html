@@ -106,12 +106,12 @@
             <!-- AI Lease Uploader & Analyzer -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
                 <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Uploader & Analyzer</h2>
-                <p class="text-slate-600 mb-4">Upload a PDF of a ground lease agreement to get an AI-powered analysis of key terms, potential risks, and negotiation points.</p>
+                <p class="text-slate-600 mb-4">Upload a PDF or Word document of a ground lease agreement to get an AI-powered analysis.</p>
                 <div class="mb-4">
-                    <label for="lease-pdf-upload" class="block text-slate-700 font-medium mb-2">Upload Lease PDF</label>
-                    <input type="file" id="lease-pdf-upload" accept="application/pdf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                    <label for="lease-upload" class="block text-slate-700 font-medium mb-2">Upload Lease Document</label>
+                    <input type="file" id="lease-upload" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
                 </div>
-                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Upload and Analyze</button>
+                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
                 <div id="upload-status" class="mt-4 text-center"></div>
                 <div id="lease-analyzer-result-container" class="mt-6 hidden">
                     <div id="loader-lease-analyzer" class="mx-auto loader"></div>
@@ -154,8 +154,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
 
     <script>
         // --- FIREBASE CONFIGURATION ---
@@ -173,9 +175,10 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const storage = firebase.storage();
         const contactsCollection = db.collection("contacts");
-        const leaseAnalysesCollection = db.collection("leaseAnalyses");
+        
+        // IMPORTANT: Add your Gemini API key here
+        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
@@ -337,7 +340,7 @@
 
             // --- AI LEASE UPLOADER & ANALYZER ---
             const uploadButton = document.getElementById('upload-lease-button');
-            const fileInput = document.getElementById('lease-pdf-upload');
+            const fileInput = document.getElementById('lease-upload');
             const uploadStatus = document.getElementById('upload-status');
             const resultContainer = document.getElementById('lease-analyzer-result-container');
             const loader = document.getElementById('loader-lease-analyzer');
@@ -345,68 +348,73 @@
             const exportPdfButton = document.getElementById('export-pdf-button');
             let analysisTextForPdf = '';
 
-            uploadButton.addEventListener('click', () => {
+            uploadButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
                 if (!file) {
-                    alert("Please select a PDF file to upload.");
+                    alert("Please select a file to upload.");
                     return;
                 }
 
-                const user = auth.currentUser;
-                if (!user) {
-                    alert("You must be logged in to upload a file.");
-                    return;
-                }
+                uploadStatus.textContent = 'Reading document...';
+                resultContainer.classList.remove('hidden');
+                loader.classList.remove('hidden');
+                resultEl.innerHTML = '';
+                exportPdfButton.classList.add('hidden');
+                uploadButton.disabled = true;
 
-                const storageRef = storage.ref(`leases/${user.uid}/${Date.now()}_${file.name}`);
-                const task = storageRef.put(file);
+                try {
+                    const reader = new FileReader();
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (event) => {
+                        const arrayBuffer = event.target.result;
+                        let textContent = '';
 
-                uploadStatus.textContent = 'Uploading...';
-                
-                task.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        uploadStatus.textContent = `Uploading: ${Math.round(progress)}%`;
-                    },
-                    (error) => {
-                        console.error("Upload failed:", error);
-                        let errorMessage = "Upload failed. Please try again.";
-                        if (error.code === 'storage/unauthorized') {
-                            errorMessage = "Upload failed: Permission error. Please check your Firebase Storage CORS and Rules settings.";
-                        }
-                        uploadStatus.textContent = errorMessage;
-                    },
-                    () => {
-                        uploadStatus.textContent = "Upload complete! Analyzing document...";
-                        resultContainer.classList.remove('hidden');
-                        loader.classList.remove('hidden');
-                        exportPdfButton.classList.add('hidden');
-                        
-                        const unsubscribe = leaseAnalysesCollection.doc(storageRef.name).onSnapshot(doc => {
-                            if (doc.exists) {
-                                const data = doc.data();
-                                if (data.summary) {
-                                    analysisTextForPdf = data.summary;
-                                    resultEl.innerHTML = formatResponseForHTML(data.summary);
-                                    loader.classList.add('hidden');
-                                    exportPdfButton.classList.remove('hidden');
-                                    uploadStatus.textContent = 'Analysis complete.';
-                                    unsubscribe();
-                                } else if (data.error) {
-                                    resultEl.innerHTML = `<p class="text-red-500">Error during analysis: ${data.error}</p>`;
-                                    loader.classList.add('hidden');
-                                    uploadStatus.textContent = 'Analysis failed.';
-                                    unsubscribe();
-                                }
+                        if (file.type === "application/pdf") {
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+                            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const text = await page.getTextContent();
+                                textContent += text.items.map(item => item.str).join(' ');
                             }
-                        });
-                    }
-                );
+                        } else {
+                            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                            textContent = result.value;
+                        }
+
+                        uploadStatus.textContent = 'Analyzing document...';
+                        const prompt = `Act as a commercial real estate attorney specializing in franchisee representation. Analyze the following ground lease agreement text, focusing on a franchisee's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses. 2. **Potential Risks:** Identify any language that could be unfavorable to the franchisee. 3. **Negotiation Points:** Suggest specific questions to ask or changes to propose to protect the franchisee's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
+                        
+                        const rawText = await callGemini(prompt);
+                        analysisTextForPdf = rawText;
+                        resultEl.innerHTML = formatResponseForHTML(rawText);
+                        exportPdfButton.classList.remove('hidden');
+                        uploadStatus.textContent = 'Analysis complete.';
+                    };
+                } catch (error) {
+                    console.error("Error processing document:", error);
+                    uploadStatus.textContent = "Failed to read or analyze document.";
+                } finally {
+                    loader.classList.add('hidden');
+                    uploadButton.disabled = false;
+                }
             });
 
             exportPdfButton.addEventListener('click', () => {
                 generateLeaseAnalysisPDF(analysisTextForPdf);
             });
+
+            async function callGemini(prompt) {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text;
+            }
 
             function formatResponseForHTML(text) {
                 let html = text
