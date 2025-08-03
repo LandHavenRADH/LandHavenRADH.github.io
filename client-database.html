@@ -405,7 +405,7 @@
             });
 
             async function callGemini(prompt) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -417,12 +417,34 @@
             }
 
             function formatResponseForHTML(text) {
-                let html = text
-                    .replace(/\*\*(.*?)\*\*/g, '<h3>$1</h3>') 
-                    .replace(/-\s(.*?)(?:\n|$)/g, '<li>$1</li>'); 
-                
-                if (html.includes('<li>')) {
-                    html = `<ul>${html}</ul>`.replace(/<\/h3>\n<ul>/g, '</h3><ul>');
+                let html = '';
+                const lines = text.split('\n');
+                let inList = false;
+                lines.forEach(line => {
+                    if (line.startsWith('**') && line.endsWith('**')) {
+                        if (inList) {
+                            html += '</ul>';
+                            inList = false;
+                        }
+                        html += `<h3>${line.substring(2, line.length - 2)}</h3>`;
+                    } else if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
+                        if (!inList) {
+                            html += '<ul>';
+                            inList = true;
+                        }
+                        html += `<li>${line.replace(/[-*]\s*/, '')}</li>`;
+                    } else {
+                        if (inList) {
+                            html += '</ul>';
+                            inList = false;
+                        }
+                        if(line.trim().length > 0) {
+                           html += `<p>${line}</p>`;
+                        }
+                    }
+                });
+                if (inList) {
+                    html += '</ul>';
                 }
                 return html;
             }
@@ -459,7 +481,7 @@
                             y += 7;
                             doc.text(textToPrint, 15, y);
                             y += 7;
-                        } else if (textToPrint.startsWith('-')) {
+                        } else if (textToPrint.startsWith('-') || textToPrint.startsWith('*')) {
                             doc.setFont("helvetica", "normal");
                             textToPrint = textToPrint.substring(1).trim();
                             const splitText = doc.splitTextToSize(textToPrint, 170);
@@ -469,8 +491,10 @@
                                 y += (splitText.length -1) * 5;
                             }
                             y += 7;
-                        } else {
-                             y += 5;
+                        } else if (textToPrint.length > 0) {
+                           const splitText = doc.splitTextToSize(textToPrint, 180);
+                           doc.text(splitText, 15, y);
+                           y += (splitText.length * 5) + 2;
                         }
                     });
 
