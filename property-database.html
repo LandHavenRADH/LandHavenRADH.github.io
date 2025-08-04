@@ -52,6 +52,9 @@
                         <a href="client-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
                             Client Database
                         </a>
+                        <a href="broker-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
+                            Broker Database
+                        </a>
                         <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-amber-600 transition-colors">
                             Logout
                         </button>
@@ -226,6 +229,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
 
     <script>
         // --- FIREBASE CONFIGURATION ---
@@ -233,7 +240,7 @@
           apiKey: "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U",
           authDomain: "restaurant-groundworks-db.firebaseapp.com",
           projectId: "restaurant-groundworks-db",
-          storageBucket: "restaurant-groundworks-db.appspot.com",
+          storageBucket: "restaurant-groundworks-db.firebasestorage.app",
           messagingSenderId: "391704584139",
           appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
           measurementId: "G-8LWLPVD3W1"
@@ -244,6 +251,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
         const propertiesCollection = db.collection("properties");
+        
+        // IMPORTANT: Add your Gemini API key here
+        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
