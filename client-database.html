@@ -105,11 +105,11 @@
 
             <!-- AI Lease Uploader & Analyzer -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Uploader & Analyzer</h2>
-                <p class="text-slate-600 mb-4">Upload a PDF or Word document of a ground lease agreement to get an AI-powered analysis.</p>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Analyzer</h2>
+                <p class="text-slate-600 mb-4">Upload a Word document of a ground lease agreement to get an AI-powered analysis.</p>
                 <div class="mb-4">
                     <label for="lease-upload" class="block text-slate-700 font-medium mb-2">Upload Lease Document</label>
-                    <input type="file" id="lease-upload" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                    <input type="file" id="lease-upload" accept="application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
                 </div>
                 <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
                 <div id="upload-status" class="mt-4 text-center"></div>
@@ -155,7 +155,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
 
 
@@ -367,28 +366,8 @@
                     reader.readAsArrayBuffer(file);
                     reader.onload = async (event) => {
                         const arrayBuffer = event.target.result;
-                        let textContent = '';
-
-                        if (file.type === "application/pdf") {
-                            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
-                            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                            for (let i = 1; i <= pdf.numPages; i++) {
-                                const page = await pdf.getPage(i);
-                                const text = await page.getTextContent();
-                                let lastY = -1;
-                                text.items.forEach(item => {
-                                    if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
-                                        textContent += "\n";
-                                    }
-                                    textContent += item.str + " ";
-                                    lastY = item.transform[5];
-                                });
-                                textContent += "\n\n";
-                            }
-                        } else {
-                            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                            textContent = result.value;
-                        }
+                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        const textContent = result.value;
 
                         uploadStatus.textContent = 'Analyzing document...';
                         const prompt = `Act as a commercial real estate attorney. Analyze the following ground lease agreement text. For the "Key Terms" and "Annual Rental Payments" sections, analyze from a landlord's perspective. For the "Potential Risks" and "Negotiation Points" sections, also analyze from a landlord's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses for a landlord. 2. **Annual Rental Payments:** Detail the base rent, any percentage rent, and the schedule of rent escalations. This section is critical and should be extracted verbatim if possible. If no rent is mentioned, state that. 3. **Potential Risks for the Landlord:** Identify any language that could be unfavorable to the landlord. 4. **Negotiation Points for the Landlord:** Suggest specific questions to ask or changes to propose to protect the landlord's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
@@ -512,59 +491,6 @@
                     alert("An error occurred while generating the PDF.");
                 }
             }
-            
-            // --- PDF TO TEXT CONVERTER ---
-            const convertPdfButton = document.getElementById('convert-pdf-button');
-            const pdfConverterInput = document.getElementById('pdf-converter-upload');
-            const converterStatus = document.getElementById('converter-status');
-
-            convertPdfButton.addEventListener('click', async () => {
-                const file = pdfConverterInput.files[0];
-                if (!file) {
-                    alert("Please select a PDF file to convert.");
-                    return;
-                }
-
-                converterStatus.textContent = 'Converting...';
-                try {
-                    const reader = new FileReader();
-                    reader.readAsArrayBuffer(file);
-                    reader.onload = async (event) => {
-                        const arrayBuffer = event.target.result;
-                        let textContent = '';
-
-                        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
-                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const text = await page.getTextContent();
-                            let lastY = -1;
-                            text.items.forEach(item => {
-                                if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
-                                    textContent += "\n";
-                                }
-                                textContent += item.str + " ";
-                                lastY = item.transform[5];
-                            });
-                            textContent += "\n\n";
-                        }
-                        
-                        const blob = new Blob([textContent], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${file.name.replace('.pdf', '')}.txt`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                        converterStatus.textContent = 'Conversion complete!';
-                    };
-                } catch (error) {
-                    console.error("Error converting PDF:", error);
-                    converterStatus.textContent = "Failed to convert PDF.";
-                }
-            });
 
         });
     </script>
