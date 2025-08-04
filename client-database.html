@@ -102,6 +102,18 @@
                     </div>
                 </form>
             </div>
+            
+            <!-- PDF to Text Converter -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">PDF to Text Converter</h2>
+                <p class="text-slate-600 mb-4">Upload a PDF to extract its text content into a downloadable .txt file.</p>
+                <div class="mb-4">
+                    <label for="pdf-converter-upload" class="block text-slate-700 font-medium mb-2">Upload PDF</label>
+                    <input type="file" id="pdf-converter-upload" accept="application/pdf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                </div>
+                <button id="convert-pdf-button" class="w-full bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600">Convert and Download</button>
+                <div id="converter-status" class="mt-4 text-center"></div>
+            </div>
 
             <!-- AI Lease Uploader & Analyzer -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
