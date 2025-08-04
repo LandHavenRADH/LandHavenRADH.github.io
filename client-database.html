@@ -113,14 +113,6 @@
                 </div>
                 <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
                 <div id="upload-status" class="mt-4 text-center"></div>
-                <div id="lease-analyzer-result-container" class="mt-6 hidden">
-                    <div id="loader-lease-analyzer" class="mx-auto loader"></div>
-                    <div id="lease-analyzer-result" class="text-slate-700 prose max-w-none mt-4"></div>
-                    <button id="export-pdf-button" class="hidden mt-4 w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        Export as PDF
-                    </button>
-                </div>
             </div>
 
             <!-- Contact Database Table -->
@@ -341,11 +333,6 @@
             const uploadButton = document.getElementById('upload-lease-button');
             const fileInput = document.getElementById('lease-upload');
             const uploadStatus = document.getElementById('upload-status');
-            const resultContainer = document.getElementById('lease-analyzer-result-container');
-            const loader = document.getElementById('loader-lease-analyzer');
-            const resultEl = document.getElementById('lease-analyzer-result');
-            const exportPdfButton = document.getElementById('export-pdf-button');
-            let analysisTextForPdf = '';
 
             uploadButton.addEventListener('click', async () => {
                 const file = fileInput.files[0];
@@ -355,10 +342,6 @@
                 }
 
                 uploadStatus.textContent = 'Reading document...';
-                resultContainer.classList.remove('hidden');
-                loader.classList.remove('hidden');
-                resultEl.innerHTML = '';
-                exportPdfButton.classList.add('hidden');
                 uploadButton.disabled = true;
 
                 try {
@@ -373,22 +356,15 @@
                         const prompt = `Act as a commercial real estate attorney. Analyze the following ground lease agreement text. For the "Key Terms" and "Annual Rental Payments" sections, analyze from a landlord's perspective. For the "Potential Risks" and "Negotiation Points" sections, also analyze from a landlord's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses for a landlord. 2. **Annual Rental Payments:** Detail the base rent, any percentage rent, and the schedule of rent escalations. This section is critical and should be extracted verbatim if possible. If no rent is mentioned, state that. 3. **Potential Risks for the Landlord:** Identify any language that could be unfavorable to the landlord. 4. **Negotiation Points for the Landlord:** Suggest specific questions to ask or changes to propose to protect the landlord's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
                         
                         const rawText = await callGemini(prompt);
-                        analysisTextForPdf = rawText;
-                        resultEl.innerHTML = formatResponseForHTML(rawText);
-                        exportPdfButton.classList.remove('hidden');
-                        uploadStatus.textContent = 'Analysis complete.';
+                        generateLeaseAnalysisPDF(rawText);
+                        uploadStatus.textContent = 'Analysis complete. Your PDF is downloading.';
                     };
                 } catch (error) {
                     console.error("Error processing document:", error);
                     uploadStatus.textContent = "Failed to read or analyze document.";
                 } finally {
-                    loader.classList.add('hidden');
                     uploadButton.disabled = false;
                 }
-            });
-
-            exportPdfButton.addEventListener('click', () => {
-                generateLeaseAnalysisPDF(analysisTextForPdf);
             });
 
             async function callGemini(prompt) {
@@ -401,39 +377,6 @@
                 if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                 const result = await response.json();
                 return result.candidates[0].content.parts[0].text;
-            }
-
-            function formatResponseForHTML(text) {
-                let html = '';
-                const lines = text.split('\n');
-                let inList = false;
-                lines.forEach(line => {
-                    if (line.startsWith('**') && line.endsWith('**')) {
-                        if (inList) {
-                            html += '</ul>';
-                            inList = false;
-                        }
-                        html += `<h3>${line.substring(2, line.length - 2)}</h3>`;
-                    } else if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
-                        if (!inList) {
-                            html += '<ul>';
-                            inList = true;
-                        }
-                        html += `<li>${line.replace(/[-*]\s*/, '')}</li>`;
-                    } else {
-                        if (inList) {
-                            html += '</ul>';
-                            inList = false;
-                        }
-                        if(line.trim().length > 0) {
-                           html += `<p>${line}</p>`;
-                        }
-                    }
-                });
-                if (inList) {
-                    html += '</ul>';
-                }
-                return html;
             }
 
             function generateLeaseAnalysisPDF(text) {
