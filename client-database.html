@@ -524,6 +524,59 @@
                     alert("An error occurred while generating the PDF.");
                 }
             }
+            
+            // --- PDF TO TEXT CONVERTER ---
+            const convertPdfButton = document.getElementById('convert-pdf-button');
+            const pdfConverterInput = document.getElementById('pdf-converter-upload');
+            const converterStatus = document.getElementById('converter-status');
+
+            convertPdfButton.addEventListener('click', async () => {
+                const file = pdfConverterInput.files[0];
+                if (!file) {
+                    alert("Please select a PDF file to convert.");
+                    return;
+                }
+
+                converterStatus.textContent = 'Converting...';
+                try {
+                    const reader = new FileReader();
+                    reader.readAsArrayBuffer(file);
+                    reader.onload = async (event) => {
+                        const arrayBuffer = event.target.result;
+                        let textContent = '';
+
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+                        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const text = await page.getTextContent();
+                            let lastY = -1;
+                            text.items.forEach(item => {
+                                if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
+                                    textContent += "\n";
+                                }
+                                textContent += item.str + " ";
+                                lastY = item.transform[5];
+                            });
+                            textContent += "\n\n";
+                        }
+                        
+                        const blob = new Blob([textContent], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${file.name.replace('.pdf', '')}.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        converterStatus.textContent = 'Conversion complete!';
+                    };
+                } catch (error) {
+                    console.error("Error converting PDF:", error);
+                    converterStatus.textContent = "Failed to convert PDF.";
+                }
+            });
 
         });
     </script>
