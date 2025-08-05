@@ -161,9 +161,13 @@
                         <label for="capRate" class="block text-slate-700 font-medium mb-2">Capitalization Rate (%)</label>
                         <input type="number" step="0.01" id="capRate" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 5.20">
                     </div>
-                    <div class="md:col-span-4">
+                    <div class="md:col-span-2">
                         <label for="fileLink" class="block text-slate-700 font-medium mb-2">File Link (e.g., Google Drive)</label>
                         <input type="url" id="fileLink" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="https://...">
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="photo-upload" class="block text-slate-700 font-medium mb-2">Upload Photo</label>
+                        <input type="file" id="photo-upload" accept="image/*" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
                     </div>
                     <div class="md:col-span-4">
                         <label for="notes" class="block text-slate-700 font-medium mb-2">Notes</label>
@@ -193,6 +197,7 @@
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
+                            <th class="table-cell font-semibold">Photo</th>
                             <th class="table-cell font-semibold sortable-header" data-key="address">Address</th>
                             <th class="table-cell font-semibold sortable-header" data-key="city">City</th>
                             <th class="table-cell font-semibold sortable-header" data-key="state">State</th>
@@ -229,6 +234,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
@@ -250,6 +256,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage();
         const propertiesCollection = db.collection("properties");
         
         // IMPORTANT: Add your Gemini API key here
@@ -306,7 +313,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="14" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="15" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -338,6 +345,7 @@
                 }
 
                 row.innerHTML = `
+                    <td class="table-cell"><img src="${property.photoUrl || 'https://placehold.co/100x100/e2e8f0/0f172a?text=No+Image'}" class="w-16 h-16 object-cover rounded-md"></td>
                     <td class="table-cell editable-cell" data-key="address">${property.address || ''}</td>
                     <td class="table-cell editable-cell" data-key="city">${property.city || ''}</td>
                     <td class="table-cell editable-cell" data-key="state">${property.state || ''}</td>
@@ -377,6 +385,15 @@
                 submitButton.disabled = true;
                 submitButton.innerHTML = 'Adding...';
 
+                const photoFile = document.getElementById('photo-upload').files[0];
+                let photoUrl = '';
+
+                if (photoFile) {
+                    const storageRef = storage.ref(`property_images/${Date.now()}_${photoFile.name}`);
+                    await storageRef.put(photoFile);
+                    photoUrl = await storageRef.getDownloadURL();
+                }
+
                 const newProperty = {
                     address: document.getElementById('address').value.trim(),
                     city: document.getElementById('city').value.trim(),
@@ -389,7 +406,8 @@
                     notes: document.getElementById('notes').value.trim(),
                     fileLink: document.getElementById('fileLink').value.trim(),
                     intendedRoi: parseFloat(document.getElementById('intendedRoi').value) / 100 || 0,
-                    capRate: parseFloat(document.getElementById('capRate').value) / 100 || 0
+                    capRate: parseFloat(document.getElementById('capRate').value) / 100 || 0,
+                    photoUrl: photoUrl
                 };
 
                 try {
@@ -528,7 +546,7 @@
             }
 
             // --- PDF GENERATION ---
-            function generatePDF(property) {
+            async function generatePDF(property) {
                 try {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
@@ -541,43 +559,57 @@
                     doc.setFont("helvetica", "normal");
                     doc.text(`${property.address || ''}, ${property.city || ''}, ${property.state || ''}`, 105, 30, { align: 'center' });
 
-                    doc.setFillColor(230, 230, 230);
-                    doc.rect(15, 40, 180, 90, 'F');
-                    doc.setTextColor(150, 150, 150);
-                    doc.text("Map Image Placeholder", 105, 85, { align: 'center' });
+                    if (property.photoUrl) {
+                        const response = await fetch(property.photoUrl);
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => {
+                            const base64data = reader.result;
+                            doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
+                            addPdfContent();
+                        };
+                    } else {
+                        doc.setFillColor(230, 230, 230);
+                        doc.rect(15, 40, 180, 90, 'F');
+                        doc.setTextColor(150, 150, 150);
+                        doc.text("No Image Available", 105, 85, { align: 'center' });
+                        addPdfContent();
+                    }
 
+                    function addPdfContent() {
+                        doc.setTextColor(0, 0, 0);
+                        let y = 150;
+                        const addLine = (label, value) => {
+                            doc.setFontSize(12);
+                            doc.setFont("helvetica", "bold");
+                            doc.text(label, 15, y);
+                            doc.setFont("helvetica", "normal");
+                            doc.text(String(value || ''), 80, y);
+                            y += 10;
+                        };
 
-                    doc.setTextColor(0, 0, 0);
-                    let y = 150;
-                    const addLine = (label, value) => {
-                        doc.setFontSize(12);
+                        addLine("Asking Price:", formatCurrency(property.price));
+                        addLine("Square Footage:", formatNumber(property.sqft));
+                        addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
+                        addLine("Traffic Count (AADT):", formatNumber(property.aadt));
+                        addLine("Intended ROI:", formatPercent(property.intendedRoi));
+                        addLine("Capitalization Rate:", formatPercent(property.capRate));
+                        
+                        const targetValue = property.price * (1 + (property.intendedRoi || 0));
+                        const minRent = targetValue * (property.capRate || 0);
+                        addLine("Minimum Rental Rate:", formatCurrency(minRent));
+                        
                         doc.setFont("helvetica", "bold");
-                        doc.text(label, 15, y);
-                        doc.setFont("helvetica", "normal");
-                        doc.text(String(value || ''), 80, y);
+                        doc.text("Notes:", 15, y);
                         y += 10;
-                    };
+                        doc.setFont("helvetica", "normal");
+                        const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
+                        doc.text(notes, 15, y);
 
-                    addLine("Asking Price:", formatCurrency(property.price));
-                    addLine("Square Footage:", formatNumber(property.sqft));
-                    addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
-                    addLine("Traffic Count (AADT):", formatNumber(property.aadt));
-                    addLine("Intended ROI:", formatPercent(property.intendedRoi));
-                    addLine("Capitalization Rate:", formatPercent(property.capRate));
-                    
-                    const targetValue = property.price * (1 + (property.intendedRoi || 0));
-                    const minRent = targetValue * (property.capRate || 0);
-                    addLine("Minimum Rental Rate:", formatCurrency(minRent));
-                    
-                    doc.setFont("helvetica", "bold");
-                    doc.text("Notes:", 15, y);
-                    y += 10;
-                    doc.setFont("helvetica", "normal");
-                    const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
-                    doc.text(notes, 15, y);
-
-                    const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                    doc.save(`${safeAddress}.pdf`);
+                        const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                        doc.save(`${safeAddress}.pdf`);
+                    }
                 } catch (error) {
                     console.error("PDF Generation Error:", error);
                     alert("An error occurred while generating the PDF. Check the console for details.");
