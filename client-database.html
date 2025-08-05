@@ -358,7 +358,7 @@
                         uploadStatus.textContent = 'Analyzing document...';
                         const prompt = `Act as a commercial real estate attorney. Analyze the following ground lease agreement text. For the "Key Terms" and "Annual Rental Payments" sections, analyze from a landlord's perspective. For the "Potential Risks" and "Negotiation Points" sections, also analyze from a landlord's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses for a landlord. 2. **Annual Rental Payments:** Detail the base rent, any percentage rent, and the schedule of rent escalations. This section is critical and should be extracted verbatim if possible. If no rent is mentioned, state that. 3. **Potential Risks for the Landlord:** Identify any language that could be unfavorable to the landlord. 4. **Negotiation Points for the Landlord:** Suggest specific questions to ask or changes to propose to protect the landlord's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
                         
-                        const rawText = await callGemini(prompt);
+                        const rawText = await callGeminiWithExponentialBackoff(prompt);
                         generateLeaseAnalysisPDF(rawText);
                         uploadStatus.textContent = 'Analysis complete. Your PDF is downloading.';
                     };
@@ -370,16 +370,28 @@
                 }
             });
 
-            async function callGemini(prompt) {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                const result = await response.json();
-                return result.candidates[0].content.parts[0].text;
+            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 5) {
+                let delay = 1000; // Start with a 1-second delay
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        if (response.status === 429) {
+                            throw new Error('Rate limited');
+                        }
+                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                        const result = await response.json();
+                        return result.candidates[0].content.parts[0].text;
+                    } catch (error) {
+                        if (i === maxRetries - 1) throw error;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Double the delay for the next retry
+                    }
+                }
             }
 
             function generateLeaseAnalysisPDF(text) {
