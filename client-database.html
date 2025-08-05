@@ -99,8 +99,8 @@
                         <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label for="officePhone" class="block text-slate-700 font-medium mb-2">Office Phone</label>
-                        <input type="tel" id="officePhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        <label for="businessPhone" class="block text-slate-700 font-medium mb-2">Business Phone</label>
+                        <input type="tel" id="businessPhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                      <div>
                         <label for="mobilePhone" class="block text-slate-700 font-medium mb-2">Mobile Phone</label>
@@ -134,7 +134,7 @@
                             <th class="table-cell font-semibold sortable-header" data-key="name">Name</th>
                             <th class="table-cell font-semibold sortable-header" data-key="company">Company</th>
                             <th class="table-cell font-semibold sortable-header" data-key="email">Email</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="officePhone">Office Phone</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="businessPhone">Business Phone</th>
                             <th class="table-cell font-semibold sortable-header" data-key="mobilePhone">Mobile Phone</th>
                             <th class="table-cell font-semibold text-center">Actions</th>
                         </tr>
@@ -236,7 +236,7 @@
                     <td class="table-cell editable-cell" data-key="name">${contact.name || ''}</td>
                     <td class="table-cell editable-cell" data-key="company">${contact.company || ''}</td>
                     <td class="table-cell editable-cell" data-key="email">${contact.email || ''}</td>
-                    <td class="table-cell editable-cell" data-key="officePhone">${contact.officePhone || ''}</td>
+                    <td class="table-cell editable-cell" data-key="businessPhone">${contact.businessPhone || ''}</td>
                     <td class="table-cell editable-cell" data-key="mobilePhone">${contact.mobilePhone || ''}</td>
                     <td class="table-cell text-center">
                         <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
@@ -266,7 +266,7 @@
                     name: document.getElementById('name').value.trim(),
                     company: document.getElementById('company').value.trim(),
                     email: document.getElementById('email').value.trim(),
-                    officePhone: document.getElementById('officePhone').value.trim(),
+                    businessPhone: document.getElementById('businessPhone').value.trim(),
                     mobilePhone: document.getElementById('mobilePhone').value.trim(),
                 };
 
@@ -355,7 +355,7 @@
                     let name = '';
                     let company = '';
                     let email = '';
-                    let officePhone = '';
+                    let businessPhone = '';
                     let mobilePhone = '';
                     let genericPhone = '';
 
@@ -369,7 +369,7 @@
                         } else if (line.startsWith('TEL;')) {
                             const phoneValue = line.split(':').pop().trim();
                             if (line.includes('TYPE=WORK')) {
-                                officePhone = phoneValue;
+                                businessPhone = phoneValue;
                             } else if (line.includes('TYPE=CELL')) {
                                 mobilePhone = phoneValue;
                             } else {
@@ -381,7 +381,7 @@
                     document.getElementById('name').value = name;
                     document.getElementById('company').value = company;
                     document.getElementById('email').value = email;
-                    document.getElementById('officePhone').value = officePhone;
+                    document.getElementById('businessPhone').value = businessPhone;
                     document.getElementById('mobilePhone').value = mobilePhone || genericPhone;
                 };
                 reader.readAsText(file);
