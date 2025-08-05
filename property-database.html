@@ -241,7 +241,7 @@
     <!-- Details Modal -->
     <div id="details-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg relative">
-             <button id="close-details-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">&times;</button>
+             <button id="close-details-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
             <h2 id="modal-address" class="text-2xl font-bold text-slate-800 mb-4"></h2>
             <img id="modal-details-image" src="" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
             <div class="grid grid-cols-2 gap-4 text-slate-700">
@@ -562,8 +562,8 @@
                     center: usa,
                 });
                 
-                map.addListener('click', (e) => {
-                    if (e.target?.classList.contains('details-btn')) {
+                google.maps.event.addListener(map, 'click', (e) => {
+                    if(e.target?.classList.contains('details-btn')) {
                         const id = e.target.dataset.propertyId;
                         const property = properties.find(p => p.id === id);
                         if(property) {
@@ -597,6 +597,16 @@
                         marker.addListener('click', () => {
                             infoWindow.open(map, marker);
                         });
+                        
+                        google.maps.event.addListener(infoWindow, 'domready', () => {
+                            const detailsBtn = document.querySelector(`.details-btn[data-property-id="${property.id}"]`);
+                            if (detailsBtn) {
+                                detailsBtn.addEventListener('click', () => {
+                                    showPropertyDetailsModal(property);
+                                });
+                            }
+                        });
+
                         markers.push({ id: property.id, marker: marker });
                         map.setCenter(results[0].geometry.location);
                         map.setZoom(12);
