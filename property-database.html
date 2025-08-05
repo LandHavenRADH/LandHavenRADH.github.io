@@ -561,6 +561,37 @@
                 });
             });
 
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checkboxes = document.querySelectorAll('.row-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+
+            exportButton.addEventListener('click', () => {
+                const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.dataset.id);
+                if (selectedIds.length === 0) {
+                    alert("Please select at least one property to export.");
+                    return;
+                }
+                const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
+                
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Address,City,State,Asking Price,Sq. Footage,Traffic Count,Notes\n";
+                selectedProperties.forEach(prop => {
+                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.aadt, `"${prop.notes}"`].join(",");
+                    csvContent += row + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "properties.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
             // --- GOOGLE MAPS INTEGRATION ---
             function initMap() {
                 geocoder = new google.maps.Geocoder();
