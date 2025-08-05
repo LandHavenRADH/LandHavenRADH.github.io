@@ -238,6 +238,22 @@
         </div>
     </div>
 
+    <!-- Details Modal -->
+    <div id="details-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-lg relative">
+             <button id="close-details-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">&times;</button>
+            <h2 id="modal-address" class="text-2xl font-bold text-slate-800 mb-4"></h2>
+            <img id="modal-details-image" src="" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
+            <div class="grid grid-cols-2 gap-4 text-slate-700">
+                <p><strong>Asking Price:</strong> <span id="modal-price"></span></p>
+                <p><strong>Square Footage:</strong> <span id="modal-sqft"></span></p>
+                <p><strong>Traffic Count (AADT):</strong> <span id="modal-aadt"></span></p>
+                <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -279,6 +295,8 @@
             const imageModal = document.getElementById('image-modal');
             const modalImage = document.getElementById('modal-image');
             const closeModal = document.getElementById('close-modal');
+            const detailsModal = document.getElementById('details-modal');
+            const closeDetailsModal = document.getElementById('close-details-modal');
 
             let properties = [];
             let sortState = { key: 'address', direction: 'asc' };
@@ -477,6 +495,10 @@
             closeModal.addEventListener('click', () => {
                 imageModal.classList.add('hidden');
             });
+            
+            closeDetailsModal.addEventListener('click', () => {
+                detailsModal.classList.add('hidden');
+            });
 
             tableBody.addEventListener('focusout', async (e) => {
                 const cell = e.target.closest('.editable-cell');
@@ -539,6 +561,16 @@
                     zoom: 4,
                     center: usa,
                 });
+                
+                map.addListener('click', (e) => {
+                    if (e.target?.classList.contains('details-btn')) {
+                        const id = e.target.dataset.propertyId;
+                        const property = properties.find(p => p.id === id);
+                        if(property) {
+                            showPropertyDetailsModal(property);
+                        }
+                    }
+                });
             }
             
             function addMarkerToMap(property) {
@@ -556,7 +588,7 @@
                         if (property.photoUrl) {
                             infoWindowContent += `<img src="${property.photoUrl}" alt="Property photo" class="w-32 h-24 object-cover rounded-md mb-2">`;
                         }
-                        infoWindowContent += `<strong>${property.address}</strong><br>${formatCurrency(property.price)}</div>`;
+                        infoWindowContent += `<strong>${property.address}</strong><br>${formatCurrency(property.price)}<br><button class="details-btn bg-indigo-500 text-white px-2 py-1 mt-2 rounded-md text-xs" data-property-id="${property.id}">Details</button></div>`;
 
                         const infoWindow = new google.maps.InfoWindow({
                             content: infoWindowContent
@@ -579,6 +611,16 @@
                 markers.forEach(({ marker }) => marker.setMap(null));
                 markers = [];
                 properties.forEach(addMarkerToMap);
+            }
+            
+            function showPropertyDetailsModal(property) {
+                document.getElementById('modal-address').textContent = `${property.address}, ${property.city}, ${property.state}`;
+                document.getElementById('modal-details-image').src = property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image';
+                document.getElementById('modal-price').textContent = formatCurrency(property.price);
+                document.getElementById('modal-sqft').textContent = formatNumber(property.sqft);
+                document.getElementById('modal-aadt').textContent = formatNumber(property.aadt);
+                document.getElementById('modal-notes').textContent = property.notes || 'N/A';
+                detailsModal.classList.remove('hidden');
             }
 
             // --- PDF GENERATION ---
