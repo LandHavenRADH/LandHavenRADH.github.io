@@ -588,53 +588,53 @@
                         reader.onloadend = () => {
                             const base64data = reader.result;
                             doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
-                            addPdfContent();
+                            addPdfContent(doc, property);
                         };
                     } else {
                         doc.setFillColor(230, 230, 230);
                         doc.rect(15, 40, 180, 90, 'F');
                         doc.setTextColor(150, 150, 150);
                         doc.text("No Image Available", 105, 85, { align: 'center' });
-                        addPdfContent();
-                    }
-
-                    function addPdfContent() {
-                        doc.setTextColor(0, 0, 0);
-                        let y = 150;
-                        const addLine = (label, value) => {
-                            doc.setFontSize(12);
-                            doc.setFont("helvetica", "bold");
-                            doc.text(label, 15, y);
-                            doc.setFont("helvetica", "normal");
-                            doc.text(String(value || ''), 80, y);
-                            y += 10;
-                        };
-
-                        addLine("Asking Price:", formatCurrency(property.price));
-                        addLine("Square Footage:", formatNumber(property.sqft));
-                        addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
-                        addLine("Traffic Count (AADT):", formatNumber(property.aadt));
-                        addLine("Intended ROI:", formatPercent(property.intendedRoi));
-                        addLine("Capitalization Rate:", formatPercent(property.capRate));
-                        
-                        const targetValue = property.price * (1 + (property.intendedRoi || 0));
-                        const minRent = targetValue * (property.capRate || 0);
-                        addLine("Minimum Rental Rate:", formatCurrency(minRent));
-                        
-                        doc.setFont("helvetica", "bold");
-                        doc.text("Notes:", 15, y);
-                        y += 10;
-                        doc.setFont("helvetica", "normal");
-                        const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
-                        doc.text(notes, 15, y);
-
-                        const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                        doc.save(`${safeAddress}.pdf`);
+                        addPdfContent(doc, property);
                     }
                 } catch (error) {
                     console.error("PDF Generation Error:", error);
                     alert("An error occurred while generating the PDF. Check the console for details.");
                 }
+            }
+            
+            function addPdfContent(doc, property) {
+                doc.setTextColor(0, 0, 0);
+                let y = 150;
+                const addLine = (label, value) => {
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(label, 15, y);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(String(value || ''), 80, y);
+                    y += 10;
+                };
+
+                addLine("Asking Price:", formatCurrency(property.price));
+                addLine("Square Footage:", formatNumber(property.sqft));
+                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
+                addLine("Traffic Count (AADT):", formatNumber(property.aadt));
+                addLine("Intended ROI:", formatPercent(property.intendedRoi));
+                addLine("Capitalization Rate:", formatPercent(property.capRate));
+                
+                const targetValue = property.price * (1 + (property.intendedRoi || 0));
+                const minRent = targetValue * (property.capRate || 0);
+                addLine("Minimum Rental Rate:", formatCurrency(minRent));
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("Notes:", 15, y);
+                y += 10;
+                doc.setFont("helvetica", "normal");
+                const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
+                doc.text(notes, 15, y);
+
+                const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                doc.save(`${safeAddress}.pdf`);
             }
 
             window.initMap = initMap;
