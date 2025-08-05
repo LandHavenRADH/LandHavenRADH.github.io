@@ -81,6 +81,10 @@
             <!-- Add Contact Form -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
                 <h2 class="text-2xl font-bold text-slate-800 mb-4">Add a New Contact</h2>
+                <div class="mb-4">
+                    <label for="vcard-upload" class="block text-slate-700 font-medium mb-2">Upload vCard</label>
+                    <input type="file" id="vcard-upload" accept=".vcf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                </div>
                 <form id="add-contact-form" class="grid md:grid-cols-4 gap-6">
                     <div>
                         <label for="name" class="block text-slate-700 font-medium mb-2">Name</label>
@@ -180,6 +184,7 @@
             const logoutButton = document.getElementById('logout-button');
             const contactForm = document.getElementById('add-contact-form');
             const tableBody = document.getElementById('contact-table-body');
+            const vcardUpload = document.getElementById('vcard-upload');
 
             let contacts = [];
             let sortState = { key: 'name', direction: 'asc' };
@@ -330,6 +335,39 @@
                     }
                     loadContacts();
                 });
+            });
+
+            vcardUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const vcardText = event.target.result;
+                    const lines = vcardText.split('\n');
+                    let name = '';
+                    let company = '';
+                    let email = '';
+                    let phone = '';
+
+                    lines.forEach(line => {
+                        if (line.startsWith('FN:')) {
+                            name = line.substring(3).trim();
+                        } else if (line.startsWith('ORG:')) {
+                            company = line.substring(4).trim();
+                        } else if (line.startsWith('EMAIL;')) {
+                            email = line.split(':').pop().trim();
+                        } else if (line.startsWith('TEL;')) {
+                            phone = line.split(':').pop().trim();
+                        }
+                    });
+                    
+                    document.getElementById('name').value = name;
+                    document.getElementById('company').value = company;
+                    document.getElementById('email').value = email;
+                    document.getElementById('phone').value = phone;
+                };
+                reader.readAsText(file);
             });
 
             // --- AI LEASE UPLOADER & ANALYZER ---
