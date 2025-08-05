@@ -162,8 +162,8 @@
                         <input type="number" step="0.01" id="capRate" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 5.20">
                     </div>
                     <div class="md:col-span-2">
-                        <label for="fileLink" class="block text-slate-700 font-medium mb-2">File Link (e.g., Google Drive)</label>
-                        <input type="url" id="fileLink" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="https://...">
+                        <label for="file-upload" class="block text-slate-700 font-medium mb-2">Upload File</label>
+                        <input type="file" id="file-upload" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
                     </div>
                      <div class="md:col-span-2">
                         <label for="photo-upload" class="block text-slate-700 font-medium mb-2">Upload Photo</label>
@@ -398,11 +398,18 @@
 
                 const photoFile = document.getElementById('photo-upload').files[0];
                 let photoUrl = '';
-
                 if (photoFile) {
                     const storageRef = storage.ref(`property_images/${Date.now()}_${photoFile.name}`);
                     await storageRef.put(photoFile);
                     photoUrl = await storageRef.getDownloadURL();
+                }
+                
+                const file = document.getElementById('file-upload').files[0];
+                let fileUrl = '';
+                if (file) {
+                    const storageRef = storage.ref(`property_files/${Date.now()}_${file.name}`);
+                    await storageRef.put(file);
+                    fileUrl = await storageRef.getDownloadURL();
                 }
 
                 const newProperty = {
@@ -415,7 +422,7 @@
                     aadt: parseInt(document.getElementById('aadt').value) || null,
                     dateAdded: new Date().toISOString(),
                     notes: document.getElementById('notes').value.trim(),
-                    fileLink: document.getElementById('fileLink').value.trim(),
+                    fileLink: fileUrl,
                     intendedRoi: parseFloat(document.getElementById('intendedRoi').value) / 100 || 0,
                     capRate: parseFloat(document.getElementById('capRate').value) / 100 || 0,
                     photoUrl: photoUrl
