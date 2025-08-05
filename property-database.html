@@ -544,9 +544,17 @@
                             position: results[0].geometry.location,
                             title: property.address,
                         });
+                        
+                        let infoWindowContent = `<div class="p-1">`;
+                        if (property.photoUrl) {
+                            infoWindowContent += `<img src="${property.photoUrl}" alt="Property photo" class="w-32 h-24 object-cover rounded-md mb-2">`;
+                        }
+                        infoWindowContent += `<strong>${property.address}</strong><br>${formatCurrency(property.price)}</div>`;
+
                         const infoWindow = new google.maps.InfoWindow({
-                            content: `<div><strong>${property.address}</strong><br>${formatCurrency(property.price)}</div>`
+                            content: infoWindowContent
                         });
+
                         marker.addListener('click', () => {
                             infoWindow.open(map, marker);
                         });
