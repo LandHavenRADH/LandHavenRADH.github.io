@@ -191,12 +191,17 @@
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 mb-12">
                 <div id="map" class="rounded-xl"></div>
             </div>
+            
+            <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
+                Export Selected to Excel
+            </button>
 
             <!-- Property Database Table -->
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
+                            <th class="table-cell"><input type="checkbox" id="select-all"></th>
                             <th class="table-cell font-semibold">Photo</th>
                             <th class="table-cell font-semibold sortable-header" data-key="address">Address</th>
                             <th class="table-cell font-semibold sortable-header" data-key="city">City</th>
@@ -297,6 +302,8 @@
             const closeModal = document.getElementById('close-modal');
             const detailsModal = document.getElementById('details-modal');
             const closeDetailsModal = document.getElementById('close-details-modal');
+            const selectAllCheckbox = document.getElementById('select-all');
+            const exportButton = document.getElementById('export-button');
 
             let properties = [];
             let sortState = { key: 'address', direction: 'asc' };
@@ -342,7 +349,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="15" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -374,6 +381,7 @@
                 }
 
                 row.innerHTML = `
+                    <td class="table-cell"><input type="checkbox" class="row-checkbox" data-id="${property.id}"></td>
                     <td class="table-cell"><img src="${property.photoUrl || 'https://placehold.co/100x100/e2e8f0/0f172a?text=No+Image'}" class="w-16 h-16 object-cover rounded-md cursor-pointer thumbnail-img" data-full-src="${property.photoUrl}"></td>
                     <td class="table-cell editable-cell" data-key="address">${property.address || ''}</td>
                     <td class="table-cell editable-cell" data-key="city">${property.city || ''}</td>
