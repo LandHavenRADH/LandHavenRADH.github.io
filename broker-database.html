@@ -101,12 +101,17 @@
                     </div>
                 </form>
             </div>
+            
+            <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
+                Export Selected to Excel
+            </button>
 
             <!-- Contact Database Table -->
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
+                            <th class="table-cell"><input type="checkbox" id="select-all"></th>
                             <th class="table-cell font-semibold sortable-header" data-key="name">Name</th>
                             <th class="table-cell font-semibold sortable-header" data-key="company">Company</th>
                             <th class="table-cell font-semibold sortable-header" data-key="email">Email</th>
@@ -160,6 +165,8 @@
             const contactForm = document.getElementById('add-contact-form');
             const tableBody = document.getElementById('contact-table-body');
             const vcardUpload = document.getElementById('vcard-upload');
+            const selectAllCheckbox = document.getElementById('select-all');
+            const exportButton = document.getElementById('export-button');
 
             let contacts = [];
             let sortState = { key: 'name', direction: 'asc' };
@@ -189,7 +196,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (contacts.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-slate-500">No brokers in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-500">No brokers in the database. Add one using the form above.</td></tr>`;
                 } else {
                     contacts.forEach(contact => {
                         const row = createTableRow(contact);
@@ -203,6 +210,7 @@
                 const row = document.createElement('tr');
                 row.dataset.id = contact.id;
                 row.innerHTML = `
+                    <td class="table-cell"><input type="checkbox" class="row-checkbox" data-id="${contact.id}"></td>
                     <td class="table-cell editable-cell" data-key="name">${contact.name || ''}</td>
                     <td class="table-cell editable-cell" data-key="company">${contact.company || ''}</td>
                     <td class="table-cell editable-cell" data-key="email">${contact.email || ''}</td>
@@ -355,6 +363,37 @@
                     document.getElementById('mobilePhone').value = mobilePhone || genericPhone;
                 };
                 reader.readAsText(file);
+            });
+            
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checkboxes = document.querySelectorAll('.row-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+
+            exportButton.addEventListener('click', () => {
+                const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.dataset.id);
+                if (selectedIds.length === 0) {
+                    alert("Please select at least one contact to export.");
+                    return;
+                }
+                const selectedContacts = contacts.filter(c => selectedIds.includes(c.id));
+                
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Name,Company,Email,Business Phone,Mobile Phone\n";
+                selectedContacts.forEach(contact => {
+                    const row = [contact.name, contact.company, contact.email, contact.businessPhone, contact.mobilePhone].join(",");
+                    csvContent += row + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "brokers.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             });
         });
     </script>
