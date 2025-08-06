@@ -218,7 +218,6 @@
                             <th class="table-cell font-semibold sortable-header" data-key="capRate">Cap Rate</th>
                             <th class="table-cell font-semibold sortable-header" data-key="minRent">Min. Rental Rate</th>
                             <th class="table-cell font-semibold">Notes</th>
-                            <th class="table-cell font-semibold">Map Link</th>
                             <th class="table-cell font-semibold">Attachment</th>
                             <th class="table-cell font-semibold text-center">Actions</th>
                         </tr>
@@ -387,7 +386,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="15" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -433,7 +432,6 @@
                     <td class="table-cell editable-cell" data-key="capRate">${formatPercent(property.capRate)}</td>
                     <td class="table-cell">${formatCurrency(minRent)}</td>
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
-                    <td class="table-cell"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address + ', ' + property.city + ', ' + property.state)}" target="_blank" class="text-indigo-600 hover:underline">View Map</a></td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
                     <td class="table-cell text-center">
                         <button class="proposal-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 mr-2">Proposal</button>
