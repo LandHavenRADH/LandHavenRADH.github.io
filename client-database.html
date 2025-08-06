@@ -114,24 +114,12 @@
                 </form>
             </div>
 
-            <!-- AI Lease Uploader & Analyzer -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Analyzer</h2>
-                <p class="text-slate-600 mb-4">Upload a Word document of a ground lease agreement to get an AI-powered analysis.</p>
-                <div class="mb-4">
-                    <label for="lease-upload" class="block text-slate-700 font-medium mb-2">Upload Lease Document</label>
-                    <input type="file" id="lease-upload" accept="application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                </div>
-                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
-                <div id="upload-status" class="mt-4 text-center"></div>
-            </div>
-
             <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
                 Export Selected to Excel
             </button>
 
             <!-- Contact Database Table -->
-            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto mb-12">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
@@ -148,6 +136,18 @@
                         <!-- Contact rows will be inserted here by JavaScript -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- AI Lease Uploader & Analyzer -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Analyzer</h2>
+                <p class="text-slate-600 mb-4">Upload a Word document of a ground lease agreement to get an AI-powered analysis.</p>
+                <div class="mb-4">
+                    <label for="lease-upload" class="block text-slate-700 font-medium mb-2">Upload Lease Document</label>
+                    <input type="file" id="lease-upload" accept="application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                </div>
+                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
+                <div id="upload-status" class="mt-4 text-center"></div>
             </div>
         </main>
 
