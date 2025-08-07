@@ -31,7 +31,7 @@
         .sortable-header:hover {
             background-color: #f1f5f9; /* slate-100 */
         }
-        #map {
+        #map, #competitor-map {
             height: 500px;
             width: 100%;
         }
@@ -291,6 +291,29 @@
             </form>
         </div>
     </div>
+    
+    <!-- Competitor Modal -->
+    <div id="competitor-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-4xl relative">
+            <button id="close-competitor-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Competitor Analysis</h2>
+            <form id="competitor-form" class="flex items-end space-x-4 mb-4">
+                <div>
+                    <label for="competitor-query" class="block text-slate-700 font-medium mb-2">Restaurant Name</label>
+                    <input type="text" id="competitor-query" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., McDonald's" required>
+                </div>
+                <div>
+                    <label for="competitor-radius" class="block text-slate-700 font-medium mb-2">Radius (miles)</label>
+                    <input type="number" id="competitor-radius" value="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">Search</button>
+            </form>
+            <div class="grid grid-cols-2 gap-8">
+                <div id="competitor-map" class="rounded-lg"></div>
+                <div id="competitor-list" class="max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Firebase SDKs -->
@@ -341,6 +364,13 @@
             const proposalModal = document.getElementById('proposal-modal');
             const closeProposalModal = document.getElementById('close-proposal-modal');
             const proposalForm = document.getElementById('proposal-form');
+            const competitorModal = document.getElementById('competitor-modal');
+            const closeCompetitorModal = document.getElementById('close-competitor-modal');
+            const competitorForm = document.getElementById('competitor-form');
+            
+            let currentPropertyForAnalysis = null;
+            let competitorMap;
+            let competitorMarkers = [];
 
             let properties = [];
             let sortState = { key: 'address', direction: 'asc' };
@@ -386,7 +416,7 @@
             function renderTable() {
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="15" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
                 } else {
                     properties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -434,6 +464,7 @@
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
                     <td class="table-cell text-center">
+                        <button class="competitors-btn bg-yellow-500 text-white px-3 py-1 rounded-md text-sm hover:bg-yellow-600 mr-2">Competitors</button>
                         <button class="proposal-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 mr-2">Proposal</button>
                         <button class="pdf-btn bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 mr-2">PDF</button>
                         <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
@@ -529,6 +560,13 @@
                     if (property) {
                         openProposalModal(property);
                     }
+                } else if (e.target.classList.contains('competitors-btn')) {
+                    const row = e.target.closest('tr');
+                    const id = row.dataset.id;
+                    const property = properties.find(p => p.id === id);
+                    if (property) {
+                        openCompetitorModal(property);
+                    }
                 } else if (e.target.classList.contains('thumbnail-img')) {
                     const fullSrc = e.target.dataset.fullSrc;
                     if (fullSrc) {
@@ -554,6 +592,10 @@
             
             closeProposalModal.addEventListener('click', () => {
                 proposalModal.classList.add('hidden');
+            });
+            
+            closeCompetitorModal.addEventListener('click', () => {
+                competitorModal.classList.add('hidden');
             });
 
             tableBody.addEventListener('focusout', async (e) => {
@@ -665,9 +707,12 @@
                 geocoder.geocode({ 'address': fullAddress }, (results, status) => {
                     if (status === 'OK') {
                         document.getElementById('map-error').classList.add('hidden');
+                        const location = results[0].geometry.location;
+                        property.location = { lat: location.lat(), lng: location.lng() };
+                        
                         const marker = new google.maps.Marker({
                             map: map,
-                            position: results[0].geometry.location,
+                            position: location,
                             title: property.address,
                         });
                         
@@ -831,6 +876,83 @@
                 }
             });
             
+            // --- COMPETITOR ANALYSIS ---
+            function openCompetitorModal(property) {
+                currentPropertyForAnalysis = property;
+                competitorModal.classList.remove('hidden');
+                
+                if (!competitorMap) {
+                    competitorMap = new google.maps.Map(document.getElementById("competitor-map"), {
+                        zoom: 12,
+                        center: property.location,
+                    });
+                } else {
+                    competitorMap.setCenter(property.location);
+                }
+                
+                clearCompetitorMarkers();
+                new google.maps.Marker({
+                    map: competitorMap,
+                    position: property.location,
+                    title: "Subject Property",
+                    icon: {
+                        url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                    }
+                });
+            }
+
+            competitorForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const query = document.getElementById('competitor-query').value;
+                const radius = parseFloat(document.getElementById('competitor-radius').value) * 1609.34; // Convert miles to meters
+
+                const request = {
+                    location: currentPropertyForAnalysis.location,
+                    radius: radius,
+                    keyword: query
+                };
+
+                const service = new google.maps.places.PlacesService(competitorMap);
+                service.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        clearCompetitorMarkers();
+                        displayCompetitorList(results);
+                        results.forEach(place => createCompetitorMarker(place));
+                    }
+                });
+            });
+            
+            function clearCompetitorMarkers() {
+                competitorMarkers.forEach(marker => marker.setMap(null));
+                competitorMarkers = [];
+                document.getElementById('competitor-list').innerHTML = '';
+            }
+            
+            function createCompetitorMarker(place) {
+                const marker = new google.maps.Marker({
+                    map: competitorMap,
+                    position: place.geometry.location,
+                    title: place.name
+                });
+                competitorMarkers.push(marker);
+            }
+            
+            function displayCompetitorList(places) {
+                const list = document.getElementById('competitor-list');
+                places.forEach(place => {
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(currentPropertyForAnalysis.location),
+                        place.geometry.location
+                    );
+                    const distanceInMiles = (distance / 1609.34).toFixed(2);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'p-2 border-b';
+                    item.innerHTML = `<strong>${place.name}</strong><br>${place.vicinity}<br><em>${distanceInMiles} miles away</em>`;
+                    list.appendChild(item);
+                });
+            }
+            
             async function callGeminiWithExponentialBackoff(prompt, maxRetries = 5) {
                 let delay = 1000; // Start with a 1-second delay
                 for (let i = 0; i < maxRetries; i++) {
@@ -883,6 +1005,6 @@
             window.initMap = initMap;
         });
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
