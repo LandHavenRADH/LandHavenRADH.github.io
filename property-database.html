@@ -161,6 +161,13 @@
                         <input type="number" id="aadt" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 15000">
                     </div>
                     <div>
+                        <label for="signalized-intersection" class="block text-slate-700 font-medium mb-2">Signalized Intersection</label>
+                        <select id="signalized-intersection" class="w-full px-4 py-2 border border-slate-300 rounded-lg bg-white">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="intendedRoi" class="block text-slate-700 font-medium mb-2">Intended ROI (%)</label>
                         <input type="number" step="0.01" id="intendedRoi" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 15.00">
                     </div>
@@ -218,6 +225,7 @@
                             <th class="table-cell font-semibold sortable-header" data-key="pricePerSqFt">Price per SF</th>
                             <th class="table-cell font-semibold sortable-header" data-key="dom">Current DOM</th>
                             <th class="table-cell font-semibold sortable-header" data-key="aadt">Traffic Count</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="signalizedIntersection">Signalized Intersection</th>
                             <th class="table-cell font-semibold sortable-header" data-key="intendedRoi">Intended ROI</th>
                             <th class="table-cell font-semibold sortable-header" data-key="capRate">Cap Rate</th>
                             <th class="table-cell font-semibold sortable-header" data-key="minRent">Min. Rental Rate</th>
@@ -504,6 +512,7 @@
                     <td class="table-cell">${formatCurrencyWithDecimals(pricePerSqFt)}</td>
                     <td class="table-cell">${currentDom}</td>
                     <td class="table-cell editable-cell" data-key="aadt">${formatNumber(property.aadt)}</td>
+                    <td class="table-cell editable-cell" data-key="signalizedIntersection">${property.signalizedIntersection || 'No'}</td>
                     <td class="table-cell editable-cell" data-key="intendedRoi">${formatPercent(property.intendedRoi)}</td>
                     <td class="table-cell editable-cell" data-key="capRate">${formatPercent(property.capRate)}</td>
                     <td class="table-cell">${formatCurrency(minRent)}</td>
@@ -560,6 +569,7 @@
                     sqft: parseInt(document.getElementById('sqft').value) || null,
                     initialDom: parseInt(document.getElementById('dom').value) || 0,
                     aadt: parseInt(document.getElementById('aadt').value) || null,
+                    signalizedIntersection: document.getElementById('signalized-intersection').value,
                     dateAdded: new Date().toISOString(),
                     notes: document.getElementById('notes').value.trim(),
                     fileLink: fileUrl,
@@ -717,9 +727,9 @@
                 const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
                 
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Address,City,State,Asking Price,Sq. Footage,Traffic Count,Notes\n";
+                csvContent += "Address,City,State,Asking Price,Sq. Footage,Traffic Count,Signalized Intersection,Notes\n";
                 selectedProperties.forEach(prop => {
-                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.aadt, `"${prop.notes}"`].join(",");
+                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.aadt, prop.signalizedIntersection, `"${prop.notes}"`].join(",");
                     csvContent += row + "\n";
                 });
 
@@ -883,6 +893,7 @@
                 addLine("Square Footage:", formatNumber(property.sqft));
                 addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
                 addLine("Traffic Count (AADT):", formatNumber(property.aadt));
+                addLine("Signalized Intersection:", property.signalizedIntersection);
                 addLine("Intended ROI:", formatPercent(property.intendedRoi));
                 addLine("Capitalization Rate:", formatPercent(property.capRate));
                 
