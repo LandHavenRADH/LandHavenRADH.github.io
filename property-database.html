@@ -395,7 +395,7 @@
 
             // --- DATA MANAGEMENT ---
             async function loadProperties() {
-                const snapshot = await propertiesCollection.orderBy(sortState.key, sortState.direction).get();
+                const snapshot = await propertiesCollection.get();
                 properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTable();
                 updateAllMarkers();
@@ -409,11 +409,49 @@
 
             // --- SORTING ---
             function sortProperties() {
-                loadProperties();
+                properties.sort((a, b) => {
+                    const valA = getPropertyValue(a, sortState.key);
+                    const valB = getPropertyValue(b, sortState.key);
+
+                    if (valA < valB) {
+                        return sortState.direction === 'asc' ? -1 : 1;
+                    }
+                    if (valA > valB) {
+                        return sortState.direction === 'asc' ? 1 : -1;
+                    }
+                    return 0;
+                });
+            }
+            
+            function getPropertyValue(prop, key) {
+                if (key === 'pricePerSqFt') {
+                    return (prop.price && prop.sqft) ? prop.price / prop.sqft : 0;
+                }
+                if (key === 'minRent') {
+                    const targetValue = prop.price * (1 + (prop.intendedRoi || 0));
+                    return targetValue * (prop.capRate || 0);
+                }
+                if (key === 'dom') {
+                    let currentDom = prop.initialDom || 0;
+                    if (prop.dateAdded) {
+                        const dateAdded = new Date(prop.dateAdded);
+                        if (!isNaN(dateAdded.getTime())) {
+                            const today = new Date();
+                            dateAdded.setHours(0,0,0,0);
+                            today.setHours(0,0,0,0);
+                            const differenceInTime = today.getTime() - dateAdded.getTime();
+                            const daysPassed = Math.floor(differenceInTime / (1000 * 3600 * 24));
+                            currentDom += daysPassed;
+                        }
+                    }
+                    return currentDom;
+                }
+                return prop[key];
             }
 
             // --- TABLE RENDERING ---
             function renderTable() {
+                sortProperties();
                 tableBody.innerHTML = '';
                 if (properties.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
@@ -430,22 +468,9 @@
                 const row = document.createElement('tr');
                 row.dataset.id = property.id;
                 
-                const pricePerSqFt = (property.price && property.sqft) ? property.price / property.sqft : 0;
-                const targetValue = property.price * (1 + (property.intendedRoi || 0));
-                const minRent = targetValue * (property.capRate || 0);
-                
-                let currentDom = property.initialDom || 0;
-                if (property.dateAdded) {
-                    const dateAdded = new Date(property.dateAdded);
-                    if (!isNaN(dateAdded.getTime())) {
-                        const today = new Date();
-                        dateAdded.setHours(0,0,0,0);
-                        today.setHours(0,0,0,0);
-                        const differenceInTime = today.getTime() - dateAdded.getTime();
-                        const daysPassed = Math.floor(differenceInTime / (1000 * 3600 * 24));
-                        currentDom += daysPassed;
-                    }
-                }
+                const pricePerSqFt = getPropertyValue(property, 'pricePerSqFt');
+                const minRent = getPropertyValue(property, 'minRent');
+                const currentDom = getPropertyValue(property, 'dom');
 
                 row.innerHTML = `
                     <td class="table-cell"><input type="checkbox" class="row-checkbox" data-id="${property.id}"></td>
@@ -647,7 +672,7 @@
                         sortState.key = key;
                         sortState.direction = 'asc';
                     }
-                    sortProperties();
+                    renderTable();
                 });
             });
 
