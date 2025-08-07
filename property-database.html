@@ -954,7 +954,6 @@
                     date: document.getElementById('proposal-date').value,
                     tenant: document.getElementById('proposal-tenant').value,
                     tenantAddress: document.getElementById('proposal-tenant-address').value,
-                    landlord: document.getElementById('proposal-landlord').value,
                     leaseTerm: document.getElementById('proposal-lease-term').value,
                     annualRent: document.getElementById('proposal-annual-rent').value,
                     expenseStructure: document.getElementById('proposal-expense-structure').value,
@@ -969,7 +968,7 @@
 
                 const prompt = `Write a formal ground lease proposal letter.
                 Date: ${proposalData.date}
-                Landlord: ${proposalData.landlord}
+                Landlord: Restaurant GroundWorks
                 Tenant: ${proposalData.tenant}
                 Tenant Address: ${proposalData.tenantAddress}
                 Property: ${proposalData.address}
@@ -982,7 +981,7 @@
                 Tenant's Work: ${proposalData.tenantWork}
                 Property Square Footage: ${proposalData.sqft}
                 Property Traffic Count: ${proposalData.aadt} AADT
-                The letter should be from "Ryan Alexander, Principal" of ${proposalData.landlord}.
+                The letter should be from "Ryan Alexander, Principal" of Restaurant GroundWorks.
                 Format it as a professional business letter.`;
 
                 try {
