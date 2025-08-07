@@ -314,6 +314,19 @@
             </div>
         </div>
     </div>
+    
+    <!-- Report Modal -->
+    <div id="report-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-3xl relative">
+            <button id="close-report-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <div id="report-content" class="prose max-w-none">
+                <!-- Property details will be injected here -->
+            </div>
+            <div class="mt-6 text-right">
+                <button id="download-pdf-button" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600">Download PDF</button>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Firebase SDKs -->
@@ -367,6 +380,10 @@
             const competitorModal = document.getElementById('competitor-modal');
             const closeCompetitorModal = document.getElementById('close-competitor-modal');
             const competitorForm = document.getElementById('competitor-form');
+            const reportModal = document.getElementById('report-modal');
+            const closeReportModal = document.getElementById('close-report-modal');
+            const downloadPdfButton = document.getElementById('download-pdf-button');
+            const reportContent = document.getElementById('report-content');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -576,7 +593,7 @@
                     const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
                     if (property) {
-                        generatePDF(property);
+                        showReportModal(property);
                     }
                 } else if (e.target.classList.contains('proposal-btn')) {
                     const row = e.target.closest('tr');
@@ -621,6 +638,10 @@
             
             closeCompetitorModal.addEventListener('click', () => {
                 competitorModal.classList.add('hidden');
+            });
+            
+            closeReportModal.addEventListener('click', () => {
+                reportModal.classList.add('hidden');
             });
 
             tableBody.addEventListener('focusout', async (e) => {
@@ -788,6 +809,21 @@
                 document.getElementById('modal-aadt').textContent = formatNumber(property.aadt);
                 document.getElementById('modal-notes').textContent = property.notes || 'N/A';
                 detailsModal.classList.remove('hidden');
+            }
+            
+            function showReportModal(property) {
+                reportContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">${property.address}, ${property.city}, ${property.state}</h2>
+                    <img src="${property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image'}" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
+                    <div class="grid grid-cols-2 gap-4 text-slate-700">
+                        <p><strong>Asking Price:</strong> ${formatCurrency(property.price)}</p>
+                        <p><strong>Square Footage:</strong> ${formatNumber(property.sqft)}</p>
+                        <p><strong>Traffic Count (AADT):</strong> ${formatNumber(property.aadt)}</p>
+                        <p><strong>Notes:</strong> ${property.notes || 'N/A'}</p>
+                    </div>
+                `;
+                downloadPdfButton.onclick = () => generatePDF(property);
+                reportModal.classList.remove('hidden');
             }
 
             // --- PDF GENERATION ---
