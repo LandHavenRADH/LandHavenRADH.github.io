@@ -38,10 +38,6 @@
         .modal-backdrop {
             background-color: rgba(0, 0, 0, 0.75);
         }
-        #modal-image {
-            max-width: 90vw;
-            max-height: 90vh;
-        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -807,4 +803,269 @@
             
             function showPropertyDetailsModal(property) {
                 document.getElementById('modal-address').textContent = `${property.address}, ${property.city}, ${property.state}`;
-                document.getElementById('modal-details-image').src = property.photoUrl
+                document.getElementById('modal-details-image').src = property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image';
+                document.getElementById('modal-price').textContent = formatCurrency(property.price);
+                document.getElementById('modal-sqft').textContent = formatNumber(property.sqft);
+                document.getElementById('modal-aadt').textContent = formatNumber(property.aadt);
+                document.getElementById('modal-notes').textContent = property.notes || 'N/A';
+                detailsModal.classList.remove('hidden');
+            }
+            
+            function showReportModal(property) {
+                reportContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">${property.address}, ${property.city}, ${property.state}</h2>
+                    <img src="${property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image'}" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
+                    <div class="grid grid-cols-2 gap-4 text-slate-700">
+                        <p><strong>Asking Price:</strong> ${formatCurrency(property.price)}</p>
+                        <p><strong>Square Footage:</strong> ${formatNumber(property.sqft)}</p>
+                        <p><strong>Traffic Count (AADT):</strong> ${formatNumber(property.aadt)}</p>
+                        <p><strong>Notes:</strong> ${property.notes || 'N/A'}</p>
+                    </div>
+                `;
+                downloadPdfButton.onclick = () => generatePDF(property);
+                reportModal.classList.remove('hidden');
+            }
+
+            // --- PDF GENERATION ---
+            async function generatePDF(property) {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+
+                    doc.setFontSize(22);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Property Profile", 105, 20, { align: 'center' });
+
+                    doc.setFontSize(16);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`${property.address || ''}, ${property.city || ''}, ${property.state || ''}`, 105, 30, { align: 'center' });
+
+                    if (property.photoUrl) {
+                        const response = await fetch(property.photoUrl);
+                        const blob = await response.blob();
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => {
+                            const base64data = reader.result;
+                            doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
+                            addPdfContent(doc, property);
+                        };
+                    } else {
+                        doc.setFillColor(230, 230, 230);
+                        doc.rect(15, 40, 180, 90, 'F');
+                        doc.setTextColor(150, 150, 150);
+                        doc.text("No Image Available", 105, 85, { align: 'center' });
+                        addPdfContent(doc, property);
+                    }
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    alert("An error occurred while generating the PDF. Check the console for details.");
+                }
+            }
+            
+            function addPdfContent(doc, property) {
+                doc.setTextColor(0, 0, 0);
+                let y = 150;
+                const addLine = (label, value) => {
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(label, 15, y);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(String(value || ''), 80, y);
+                    y += 10;
+                };
+
+                addLine("Asking Price:", formatCurrency(property.price));
+                addLine("Square Footage:", formatNumber(property.sqft));
+                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
+                addLine("Traffic Count (AADT):", formatNumber(property.aadt));
+                addLine("Intended ROI:", formatPercent(property.intendedRoi));
+                addLine("Capitalization Rate:", formatPercent(property.capRate));
+                
+                const targetValue = property.price * (1 + (property.intendedRoi || 0));
+                const minRent = targetValue * (property.capRate || 0);
+                addLine("Minimum Rental Rate:", formatCurrency(minRent));
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("Notes:", 15, y);
+                y += 10;
+                doc.setFont("helvetica", "normal");
+                const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
+                doc.text(notes, 15, y);
+
+                const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                doc.save(`${safeAddress}.pdf`);
+            }
+            
+            // --- PROPOSAL GENERATOR ---
+            function openProposalModal(property) {
+                document.getElementById('proposal-property-id').value = property.id;
+                proposalModal.classList.remove('hidden');
+            }
+
+            proposalForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('generate-proposal-button');
+                button.disabled = true;
+                button.textContent = 'Generating...';
+
+                const propertyId = document.getElementById('proposal-property-id').value;
+                const property = properties.find(p => p.id === propertyId);
+                
+                const proposalData = {
+                    tenant: document.getElementById('proposal-tenant').value,
+                    landlord: document.getElementById('proposal-landlord').value,
+                    annualRent: document.getElementById('proposal-annual-rent').value,
+                    expenseStructure: document.getElementById('proposal-expense-structure').value,
+                    address: `${property.address}, ${property.city}, ${property.state}`,
+                    sqft: property.sqft,
+                    aadt: property.aadt,
+                };
+
+                const prompt = `Write a formal ground lease proposal letter from ${proposalData.landlord} to ${proposalData.tenant}. The property is located at ${proposalData.address}. Key terms to include are: Annual Rent of $${proposalData.annualRent}, an ${proposalData.expenseStructure} expense structure. Mention the property's square footage of ${proposalData.sqft} and the traffic count of ${proposalData.aadt} AADT. The letter should be professional, persuasive, and formatted as a standard business letter.`;
+
+                try {
+                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    generateProposalPDF(rawText);
+                } catch (error) {
+                    console.error("Error generating proposal:", error);
+                    alert("Failed to generate proposal.");
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Generate Proposal';
+                    proposalModal.classList.add('hidden');
+                }
+            });
+            
+            // --- COMPETITOR ANALYSIS ---
+            function openCompetitorModal(property) {
+                currentPropertyForAnalysis = property;
+                competitorModal.classList.remove('hidden');
+                
+                if (!competitorMap) {
+                    competitorMap = new google.maps.Map(document.getElementById("competitor-map"), {
+                        zoom: 12,
+                        center: property.location,
+                    });
+                } else {
+                    competitorMap.setCenter(property.location);
+                }
+                
+                clearCompetitorMarkers();
+                new google.maps.Marker({
+                    map: competitorMap,
+                    position: property.location,
+                    title: "Subject Property",
+                    icon: {
+                        url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                    }
+                });
+            }
+
+            competitorForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const query = document.getElementById('competitor-query').value;
+                const radius = parseFloat(document.getElementById('competitor-radius').value) * 1609.34; // Convert miles to meters
+
+                const request = {
+                    location: currentPropertyForAnalysis.location,
+                    radius: radius,
+                    keyword: query
+                };
+
+                const service = new google.maps.places.PlacesService(competitorMap);
+                service.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        clearCompetitorMarkers();
+                        displayCompetitorList(results);
+                        results.forEach(place => createCompetitorMarker(place));
+                    }
+                });
+            });
+            
+            function clearCompetitorMarkers() {
+                competitorMarkers.forEach(marker => marker.setMap(null));
+                competitorMarkers = [];
+                document.getElementById('competitor-list').innerHTML = '';
+            }
+            
+            function createCompetitorMarker(place) {
+                const marker = new google.maps.Marker({
+                    map: competitorMap,
+                    position: place.geometry.location,
+                    title: place.name
+                });
+                competitorMarkers.push(marker);
+            }
+            
+            function displayCompetitorList(places) {
+                const list = document.getElementById('competitor-list');
+                places.forEach(place => {
+                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(currentPropertyForAnalysis.location),
+                        place.geometry.location
+                    );
+                    const distanceInMiles = (distance / 1609.34).toFixed(2);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'p-2 border-b';
+                    item.innerHTML = `<strong>${place.name}</strong><br>${place.vicinity}<br><em>${distanceInMiles} miles away</em>`;
+                    list.appendChild(item);
+                });
+            }
+            
+            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 5) {
+                let delay = 1000; // Start with a 1-second delay
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        if (response.status === 429) {
+                            throw new Error('Rate limited');
+                        }
+                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                        const result = await response.json();
+                        return result.candidates[0].content.parts[0].text;
+                    } catch (error) {
+                        if (i === maxRetries - 1) throw error;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Double the delay for the next retry
+                    }
+                }
+            }
+
+            function generateProposalPDF(text) {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Header
+                    doc.setFontSize(18);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Lease Proposal", 105, 28, { align: 'center' });
+                    doc.setLineWidth(0.5);
+                    doc.line(15, 35, 195, 35);
+
+                    const lines = doc.splitTextToSize(text, 180);
+                    doc.text(lines, 15, 50);
+
+                    doc.save('Lease_Proposal.pdf');
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    alert("An error occurred while generating the PDF.");
+                }
+            }
+
+            window.initMap = initMap;
+        });
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&libraries=places,geometry&callback=initMap"></script>
+</body>
+</html>
