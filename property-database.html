@@ -331,6 +331,48 @@
         </div>
     </div>
     
+    <!-- LOI Modal -->
+    <div id="loi-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-2xl relative">
+            <button id="close-loi-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Generate Letter of Intent to Purchase</h2>
+            <form id="loi-form" class="grid grid-cols-2 gap-4">
+                <input type="hidden" id="loi-property-id">
+                <div>
+                    <label for="loi-date" class="block text-slate-700 font-medium mb-2">Date</label>
+                    <input type="date" id="loi-date" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="loi-seller" class="block text-slate-700 font-medium mb-2">Seller Name</label>
+                    <input type="text" id="loi-seller" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div class="col-span-2">
+                    <label for="loi-buyer" class="block text-slate-700 font-medium mb-2">Buyer Name</label>
+                    <input type="text" id="loi-buyer" value="Restaurant GroundWorks" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="loi-purchase-price" class="block text-slate-700 font-medium mb-2">Purchase Price ($)</label>
+                    <input type="number" id="loi-purchase-price" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="loi-deposit" class="block text-slate-700 font-medium mb-2">Earnest Money Deposit ($)</label>
+                    <input type="number" id="loi-deposit" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="loi-due-diligence" class="block text-slate-700 font-medium mb-2">Due Diligence Period (days)</label>
+                    <input type="number" id="loi-due-diligence" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div>
+                    <label for="loi-closing-date" class="block text-slate-700 font-medium mb-2">Closing Date</label>
+                    <input type="date" id="loi-closing-date" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                </div>
+                <div class="col-span-2 text-right">
+                    <button type="submit" id="generate-loi-button" class="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-amber-600">Generate LOI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <!-- Competitor Modal -->
     <div id="competitor-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-4xl relative">
@@ -430,6 +472,9 @@
             const proposalModal = document.getElementById('proposal-modal');
             const closeProposalModal = document.getElementById('close-proposal-modal');
             const proposalForm = document.getElementById('proposal-form');
+            const loiModal = document.getElementById('loi-modal');
+            const closeLoiModal = document.getElementById('close-loi-modal');
+            const loiForm = document.getElementById('loi-form');
             const competitorModal = document.getElementById('competitor-modal');
             const closeCompetitorModal = document.getElementById('close-competitor-modal');
             const competitorForm = document.getElementById('competitor-form');
@@ -564,6 +609,7 @@
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
                     <td class="table-cell text-center">
+                        <button class="loi-btn bg-purple-500 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-600 mr-2">LOI</button>
                         <button class="competitors-btn bg-yellow-500 text-white px-3 py-1 rounded-md text-sm hover:bg-yellow-600 mr-2">Competitors</button>
                         <button class="proposal-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 mr-2">Proposal</button>
                         <button class="pdf-btn bg-blue-500 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-600 mr-2">Profile</button>
@@ -661,6 +707,13 @@
                     if (property) {
                         openProposalModal(property);
                     }
+                } else if (e.target.classList.contains('loi-btn')) {
+                    const row = e.target.closest('tr');
+                    const id = row.dataset.id;
+                    const property = properties.find(p => p.id === id);
+                    if (property) {
+                        openLoiModal(property);
+                    }
                 } else if (e.target.classList.contains('competitors-btn')) {
                     const row = e.target.closest('tr');
                     const id = row.dataset.id;
@@ -693,6 +746,10 @@
             
             closeProposalModal.addEventListener('click', () => {
                 proposalModal.classList.add('hidden');
+            });
+            
+            closeLoiModal.addEventListener('click', () => {
+                loiModal.classList.add('hidden');
             });
             
             closeCompetitorModal.addEventListener('click', () => {
