@@ -697,6 +697,10 @@
             closeReportModal.addEventListener('click', () => {
                 reportModal.classList.add('hidden');
             });
+            
+            closeCompareModal.addEventListener('click', () => {
+                compareModal.classList.add('hidden');
+            });
 
             tableBody.addEventListener('focusout', async (e) => {
                 const cell = e.target.closest('.editable-cell');
