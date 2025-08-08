@@ -1091,6 +1091,83 @@
                 }
             });
             
+            // --- LOI GENERATOR ---
+            function openLoiModal(property) {
+                document.getElementById('loi-property-id').value = property.id;
+                document.getElementById('loi-date').valueAsDate = new Date();
+                loiModal.classList.remove('hidden');
+            }
+
+            loiForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('generate-loi-button');
+                button.disabled = true;
+                button.textContent = 'Generating...';
+
+                const propertyId = document.getElementById('loi-property-id').value;
+                const property = properties.find(p => p.id === propertyId);
+                
+                const loiData = {
+                    date: document.getElementById('loi-date').value,
+                    seller: document.getElementById('loi-seller').value,
+                    buyer: document.getElementById('loi-buyer').value,
+                    purchasePrice: document.getElementById('loi-purchase-price').value,
+                    deposit: document.getElementById('loi-deposit').value,
+                    dueDiligence: document.getElementById('loi-due-diligence').value,
+                    closingDate: document.getElementById('loi-closing-date').value,
+                    address: `${property.address}, ${property.city}, ${property.state}`,
+                };
+
+                const prompt = `Write a formal Letter of Intent to Purchase real estate.
+                Date: ${loiData.date}
+                Seller: ${loiData.seller}
+                Buyer: ${loiData.buyer}
+                Property: ${loiData.address}
+                Purchase Price: $${loiData.purchasePrice}
+                Earnest Money Deposit: $${loiData.deposit}
+                Due Diligence Period: ${loiData.dueDiligence} days
+                Closing Date: ${loiData.closingDate}
+                The letter should be from "Ryan Alexander, Principal" of ${loiData.buyer}.
+                Format it as a professional business letter.`;
+
+                try {
+                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    generateLoiPDF(rawText);
+                } catch (error) {
+                    console.error("Error generating LOI:", error);
+                    alert("Failed to generate LOI.");
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Generate LOI';
+                    loiModal.classList.add('hidden');
+                }
+            });
+
+            function generateLoiPDF(text) {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Header
+                    doc.setFontSize(18);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Letter of Intent to Purchase", 105, 28, { align: 'center' });
+                    doc.setLineWidth(0.5);
+                    doc.line(15, 35, 195, 35);
+
+                    const lines = doc.splitTextToSize(text, 180);
+                    doc.text(lines, 15, 50);
+
+                    doc.save('Letter_of_Intent.pdf');
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    alert("An error occurred while generating the PDF.");
+                }
+            }
+            
             // --- COMPETITOR ANALYSIS ---
             function openCompetitorModal(property) {
                 currentPropertyForAnalysis = property;
