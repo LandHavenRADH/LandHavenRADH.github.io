@@ -206,9 +206,14 @@
                 <div id="map" class="rounded-xl"></div>
             </div>
             
-            <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
-                Export Selected to Excel
-            </button>
+            <div class="flex space-x-4 mb-4">
+                <button id="export-button" class="bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
+                    Export Selected to Excel
+                </button>
+                <button id="compare-button" class="bg-blue-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-blue-600 transition-colors">
+                    Compare Selected
+                </button>
+            </div>
 
             <!-- Property Database Table -->
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
@@ -361,6 +366,15 @@
             </div>
         </div>
     </div>
+    
+    <!-- Compare Modal -->
+    <div id="compare-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-6xl relative">
+            <button id="close-compare-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Compare Properties</h2>
+            <div id="compare-table-container" class="overflow-x-auto"></div>
+        </div>
+    </div>
 
 
     <!-- Firebase SDKs -->
@@ -408,6 +422,7 @@
             const closeDetailsModal = document.getElementById('close-details-modal');
             const selectAllCheckbox = document.getElementById('select-all');
             const exportButton = document.getElementById('export-button');
+            const compareButton = document.getElementById('compare-button');
             const proposalModal = document.getElementById('proposal-modal');
             const closeProposalModal = document.getElementById('close-proposal-modal');
             const proposalForm = document.getElementById('proposal-form');
@@ -418,6 +433,9 @@
             const closeReportModal = document.getElementById('close-report-modal');
             const downloadPdfButton = document.getElementById('download-pdf-button');
             const reportContent = document.getElementById('report-content');
+            const compareModal = document.getElementById('compare-modal');
+            const closeCompareModal = document.getElementById('close-compare-modal');
+            const compareTableContainer = document.getElementById('compare-table-container');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -762,6 +780,16 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+            });
+            
+            compareButton.addEventListener('click', () => {
+                const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.dataset.id);
+                if (selectedIds.length < 2) {
+                    alert("Please select at least two properties to compare.");
+                    return;
+                }
+                const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
+                openCompareModal(selectedProperties);
             });
 
             // --- GOOGLE MAPS INTEGRATION ---
