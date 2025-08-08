@@ -1154,6 +1154,46 @@
                     alert("An error occurred while generating the PDF.");
                 }
             }
+            
+            function openCompareModal(selectedProperties) {
+                let tableHTML = '<table class="w-full text-left">';
+                
+                // Header Row
+                tableHTML += '<thead><tr class="bg-slate-100">';
+                tableHTML += '<th class="table-cell font-semibold">Feature</th>';
+                selectedProperties.forEach(p => {
+                    tableHTML += `<th class="table-cell font-semibold">${p.address}</th>`;
+                });
+                tableHTML += '</tr></thead>';
+
+                // Body Rows
+                tableHTML += '<tbody>';
+                const keysToCompare = [
+                    { key: 'price', label: 'Asking Price', format: formatCurrency },
+                    { key: 'sqft', label: 'Sq. Footage', format: formatNumber },
+                    { key: 'pricePerSqFt', label: 'Price per SF', format: formatCurrencyWithDecimals },
+                    { key: 'aadt', label: 'Traffic Count', format: formatNumber },
+                    { key: 'signalizedIntersection', label: 'Signalized Intersection' },
+                    { key: 'minRent', label: 'Min. Rental Rate', format: formatCurrency },
+                    { key: 'notes', label: 'Notes' }
+                ];
+
+                keysToCompare.forEach(item => {
+                    tableHTML += '<tr>';
+                    tableHTML += `<td class="table-cell font-semibold">${item.label}</td>`;
+                    selectedProperties.forEach(p => {
+                        const value = getPropertyValue(p, item.key);
+                        const formattedValue = item.format ? item.format(value) : (value || 'N/A');
+                        tableHTML += `<td class="table-cell">${formattedValue}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+
+                tableHTML += '</tbody></table>';
+                
+                compareTableContainer.innerHTML = tableHTML;
+                compareModal.classList.remove('hidden');
+            }
 
             window.initMap = initMap;
         });
