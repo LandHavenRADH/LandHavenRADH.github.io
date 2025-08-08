@@ -1198,6 +1198,14 @@
                 compareTableContainer.innerHTML = tableHTML;
                 compareModal.classList.remove('hidden');
             }
+            
+            printCompareButton.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.autoTable({ html: '#compare-table-container table' });
+                doc.save('property-comparison.pdf');
+            });
 
             window.initMap = initMap;
         });
