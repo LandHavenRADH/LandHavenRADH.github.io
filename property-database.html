@@ -525,12 +525,15 @@
             const closeCompareModal = document.getElementById('close-compare-modal');
             const compareTableContainer = document.getElementById('compare-table-container');
             const printCompareButton = document.getElementById('print-compare-button');
+            const searchForm = document.getElementById('search-form');
+            const clearSearchButton = document.getElementById('clear-search-button');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
             let competitorMarkers = [];
 
             let properties = [];
+            let filteredProperties = [];
             let sortState = { key: 'address', direction: 'asc' };
             let map;
             let geocoder;
@@ -555,6 +558,7 @@
             async function loadProperties() {
                 const snapshot = await propertiesCollection.get();
                 properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                filteredProperties = [...properties];
                 renderTable();
                 updateAllMarkers();
             }
@@ -567,7 +571,7 @@
 
             // --- SORTING ---
             function sortProperties() {
-                properties.sort((a, b) => {
+                filteredProperties.sort((a, b) => {
                     const valA = getPropertyValue(a, sortState.key);
                     const valB = getPropertyValue(b, sortState.key);
 
@@ -611,10 +615,10 @@
             function renderTable() {
                 sortProperties();
                 tableBody.innerHTML = '';
-                if (properties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties in the database. Add one using the form above.</td></tr>`;
+                if (filteredProperties.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties match your search criteria.</td></tr>`;
                 } else {
-                    properties.forEach(prop => {
+                    filteredProperties.forEach(prop => {
                         const row = createTableRow(prop);
                         tableBody.appendChild(row);
                     });
@@ -896,6 +900,39 @@
                 const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
                 openCompareModal(selectedProperties);
             });
+            
+            searchForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const searchAddress = document.getElementById('search-address').value.toLowerCase();
+                const searchCity = document.getElementById('search-city').value.toLowerCase();
+                const searchState = document.getElementById('search-state').value.toLowerCase();
+                const minPrice = parseFloat(document.getElementById('search-min-price').value);
+                const maxPrice = parseFloat(document.getElementById('search-max-price').value);
+                const minSqft = parseInt(document.getElementById('search-min-sqft').value);
+                const maxSqft = parseInt(document.getElementById('search-max-sqft').value);
+                
+                filteredProperties = properties.filter(p => {
+                    const addressMatch = !searchAddress || (p.address && p.address.toLowerCase().includes(searchAddress));
+                    const cityMatch = !searchCity || (p.city && p.city.toLowerCase().includes(searchCity));
+                    const stateMatch = !searchState || (p.state && p.state.toLowerCase().includes(searchState));
+                    const minPriceMatch = isNaN(minPrice) || p.price >= minPrice;
+                    const maxPriceMatch = isNaN(maxPrice) || p.price <= maxPrice;
+                    const minSqftMatch = isNaN(minSqft) || p.sqft >= minSqft;
+                    const maxSqftMatch = isNaN(maxSqft) || p.sqft <= maxSqft;
+                    
+                    return addressMatch && cityMatch && stateMatch && minPriceMatch && maxPriceMatch && minSqftMatch && maxSqftMatch;
+                });
+                
+                renderTable();
+                updateAllMarkers();
+            });
+
+            clearSearchButton.addEventListener('click', () => {
+                searchForm.reset();
+                filteredProperties = [...properties];
+                renderTable();
+                updateAllMarkers();
+            });
 
             // --- GOOGLE MAPS INTEGRATION ---
             function initMap() {
@@ -955,8 +992,6 @@
                         });
 
                         markers.push({ id: property.id, marker: marker });
-                        map.setCenter(results[0].geometry.location);
-                        map.setZoom(12);
                     } else {
                         console.error('Geocode was not successful for the following reason: ' + status);
                         document.getElementById('map-error').classList.remove('hidden');
@@ -967,7 +1002,7 @@
             function updateAllMarkers() {
                 markers.forEach(({ marker }) => marker.setMap(null));
                 markers = [];
-                properties.forEach(addMarkerToMap);
+                filteredProperties.forEach(addMarkerToMap);
             }
             
             function showPropertyDetailsModal(property) {
