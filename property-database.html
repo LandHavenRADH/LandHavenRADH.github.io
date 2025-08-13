@@ -1436,6 +1436,32 @@
                 doc.autoTable({ html: '#compare-table-container table' });
                 doc.save('property-comparison.pdf');
             });
+            
+            zoningForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('get-zoning-info-button');
+                button.disabled = true;
+                button.textContent = 'Analyzing...';
+                zoningResultsContainer.classList.add('hidden');
+
+                const municipality = document.getElementById('zoning-municipality').value;
+                const designation = document.getElementById('zoning-designation').value;
+                
+                const prompt = `Provide a summary of the zoning regulations for a property in ${municipality} with a zoning designation of ${designation}. The summary should include: 1. **Permitted Uses:** A list of the primary uses allowed. 2. **Development Requirements:** Key details like minimum lot size, setbacks, and maximum building height. 3. **Parking Requirements:** The required number of parking spaces. 4. **Signage:** Rules for on-premise signs. Format the response with clear headings and bullet points.`;
+
+                try {
+                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    zoningResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
+                    zoningResultsContainer.classList.remove('hidden');
+                } catch (error) {
+                    console.error("Error getting zoning info:", error);
+                    zoningResultsContainer.innerHTML = '<p class="text-red-500">Failed to retrieve zoning information.</p>';
+                    zoningResultsContainer.classList.remove('hidden');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Get Zoning Info';
+                }
+            });
 
             window.initMap = initMap;
         });
