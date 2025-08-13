@@ -255,7 +255,7 @@
             </div>
 
             <!-- Property Database Table -->
-            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto mb-12">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
@@ -282,6 +282,25 @@
                         <!-- Property rows will be inserted here by JavaScript -->
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- AI Zoning Analyzer -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Zoning Analyzer</h2>
+                <form id="zoning-form" class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="zoning-municipality" class="block text-slate-700 font-medium mb-2">County/Municipality</label>
+                        <input type="text" id="zoning-municipality" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="zoning-designation" class="block text-slate-700 font-medium mb-2">Zoning Designation</label>
+                        <input type="text" id="zoning-designation" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" id="get-zoning-info-button" class="w-full bg-amber-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-amber-600">Get Zoning Info</button>
+                    </div>
+                </form>
+                <div id="zoning-results-container" class="hidden mt-6 prose max-w-none"></div>
             </div>
         </main>
 
@@ -527,6 +546,8 @@
             const printCompareButton = document.getElementById('print-compare-button');
             const searchForm = document.getElementById('search-form');
             const clearSearchButton = document.getElementById('clear-search-button');
+            const zoningForm = document.getElementById('zoning-form');
+            const zoningResultsContainer = document.getElementById('zoning-results-container');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
