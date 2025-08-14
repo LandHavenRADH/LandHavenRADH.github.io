@@ -165,6 +165,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 
     <script>
@@ -410,40 +411,43 @@
                 }
                 const selectedContacts = contacts.filter(c => selectedIds.includes(c.id));
                 
-                const escapeCsvCell = (cell) => {
-                    if (cell == null) {
-                        return '';
-                    }
-                    const strCell = String(cell);
-                    if (strCell.includes(',') || strCell.includes('"') || strCell.includes('\n')) {
-                        const escapedCell = strCell.replace(/"/g, '""');
-                        return `"${escapedCell}"`;
-                    }
-                    return strCell;
-                };
-
-                let csvContent = "data:text/csv;charset=utf-8,";
+                // Prepare data for SheetJS
                 const headers = ["Name", "Company", "Email", "Business Phone", "Mobile Phone"];
-                csvContent += headers.join(",") + "\n";
-                
-                selectedContacts.forEach(contact => {
-                    const row = [
-                        escapeCsvCell(contact.name),
-                        escapeCsvCell(contact.company),
-                        escapeCsvCell(contact.email),
-                        escapeCsvCell(contact.businessPhone),
-                        escapeCsvCell(contact.mobilePhone)
-                    ].join(",");
-                    csvContent += row + "\n";
-                });
+                const data = selectedContacts.map(contact => ({
+                    Name: contact.name || '',
+                    Company: contact.company || '',
+                    Email: contact.email || '',
+                    "Business Phone": contact.businessPhone || '',
+                    "Mobile Phone": contact.mobilePhone || ''
+                }));
 
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", "clients.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Create a new workbook
+                const wb = XLSX.utils.book_new();
+                // Convert data to a worksheet
+                const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+
+                // Calculate column widths
+                const colWidths = [];
+                // Header widths
+                headers.forEach((header, i) => {
+                    colWidths[i] = { wch: header.length };
+                });
+                // Data widths
+                data.forEach(row => {
+                    Object.values(row).forEach((cell, i) => {
+                        const len = cell ? String(cell).length : 10;
+                        if (!colWidths[i] || colWidths[i].wch < len) {
+                            colWidths[i] = { wch: len };
+                        }
+                    });
+                });
+                ws['!cols'] = colWidths;
+
+                // Add worksheet to the workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Clients");
+
+                // Write the workbook and trigger download
+                XLSX.writeFile(wb, "clients.xlsx");
             });
 
             // --- AI LEASE UPLOADER & ANALYZER ---
