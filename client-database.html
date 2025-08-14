@@ -410,10 +410,30 @@
                 }
                 const selectedContacts = contacts.filter(c => selectedIds.includes(c.id));
                 
+                const escapeCsvCell = (cell) => {
+                    if (cell == null) {
+                        return '';
+                    }
+                    const strCell = String(cell);
+                    if (strCell.includes(',') || strCell.includes('"') || strCell.includes('\n')) {
+                        const escapedCell = strCell.replace(/"/g, '""');
+                        return `"${escapedCell}"`;
+                    }
+                    return strCell;
+                };
+
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Name,Company,Email,Business Phone,Mobile Phone\n";
+                const headers = ["Name", "Company", "Email", "Business Phone", "Mobile Phone"];
+                csvContent += headers.join(",") + "\n";
+                
                 selectedContacts.forEach(contact => {
-                    const row = [contact.name, contact.company, contact.email, contact.businessPhone, contact.mobilePhone].join(",");
+                    const row = [
+                        escapeCsvCell(contact.name),
+                        escapeCsvCell(contact.company),
+                        escapeCsvCell(contact.email),
+                        escapeCsvCell(contact.businessPhone),
+                        escapeCsvCell(contact.mobilePhone)
+                    ].join(",");
                     csvContent += row + "\n";
                 });
 
