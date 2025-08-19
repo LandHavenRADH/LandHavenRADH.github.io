@@ -69,11 +69,7 @@
             <!-- Add Contact Form -->
             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
                 <h2 class="text-2xl font-bold text-slate-800 mb-4">Add a New Broker</h2>
-                <div class="mb-4">
-                    <label for="vcard-upload" class="block text-slate-700 font-medium mb-2">Upload vCard</label>
-                    <input type="file" id="vcard-upload" accept=".vcf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                </div>
-                <form id="add-contact-form" class="grid md:grid-cols-4 gap-6">
+                <form id="add-broker-form" class="grid md:grid-cols-4 gap-6">
                     <div>
                         <label for="name" class="block text-slate-700 font-medium mb-2">Name</label>
                         <input type="text" id="name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
@@ -82,17 +78,21 @@
                         <label for="company" class="block text-slate-700 font-medium mb-2">Company</label>
                         <input type="text" id="company" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
+                     <div>
+                        <label for="department" class="block text-slate-700 font-medium mb-2">Department</label>
+                        <input type="text" id="department" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
+                     <div>
+                        <label for="position" class="block text-slate-700 font-medium mb-2">Position</label>
+                        <input type="text" id="position" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
                     <div>
                         <label for="email" class="block text-slate-700 font-medium mb-2">Email</label>
                         <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label for="businessPhone" class="block text-slate-700 font-medium mb-2">Business Phone</label>
-                        <input type="tel" id="businessPhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                     <div>
-                        <label for="mobilePhone" class="block text-slate-700 font-medium mb-2">Mobile Phone</label>
-                        <input type="tel" id="mobilePhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        <label for="phone" class="block text-slate-700 font-medium mb-2">Phone</label>
+                        <input type="tel" id="phone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div class="md:col-span-4 text-right">
                         <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors">
@@ -101,27 +101,23 @@
                     </div>
                 </form>
             </div>
-            
-            <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
-                Export Selected to Excel
-            </button>
 
-            <!-- Contact Database Table -->
+            <!-- Broker Database Table -->
             <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100">
                         <tr>
-                            <th class="table-cell"><input type="checkbox" id="select-all"></th>
                             <th class="table-cell font-semibold sortable-header" data-key="name">Name</th>
                             <th class="table-cell font-semibold sortable-header" data-key="company">Company</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="department">Department</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="position">Position</th>
                             <th class="table-cell font-semibold sortable-header" data-key="email">Email</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="businessPhone">Business Phone</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="mobilePhone">Mobile Phone</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="phone">Phone</th>
                             <th class="table-cell font-semibold text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="contact-table-body">
-                        <!-- Contact rows will be inserted here by JavaScript -->
+                    <tbody id="broker-table-body">
+                        <!-- Broker rows will be inserted here by JavaScript -->
                     </tbody>
                 </table>
             </div>
@@ -156,26 +152,23 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const contactsCollection = db.collection("brokers");
+        const brokersCollection = db.collection("brokers");
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
             const mainContent = document.getElementById('main-content');
             const logoutButton = document.getElementById('logout-button');
-            const contactForm = document.getElementById('add-contact-form');
-            const tableBody = document.getElementById('contact-table-body');
-            const vcardUpload = document.getElementById('vcard-upload');
-            const selectAllCheckbox = document.getElementById('select-all');
-            const exportButton = document.getElementById('export-button');
+            const brokerForm = document.getElementById('add-broker-form');
+            const tableBody = document.getElementById('broker-table-body');
 
-            let contacts = [];
+            let brokers = [];
             let sortState = { key: 'name', direction: 'asc' };
 
             // --- AUTHENTICATION LOGIC ---
             auth.onAuthStateChanged(user => {
                 if (user) {
                     mainContent.classList.remove('hidden');
-                    loadContacts();
+                    loadBrokers();
                 } else {
                     window.location.href = 'login.html';
                 }
@@ -186,36 +179,36 @@
             });
 
             // --- DATA MANAGEMENT ---
-            async function loadContacts() {
-                const snapshot = await contactsCollection.orderBy(sortState.key, sortState.direction).get();
-                contacts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            async function loadBrokers() {
+                const snapshot = await brokersCollection.orderBy(sortState.key, sortState.direction).get();
+                brokers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTable();
             }
 
             // --- TABLE RENDERING ---
             function renderTable() {
                 tableBody.innerHTML = '';
-                if (contacts.length === 0) {
+                if (brokers.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-500">No brokers in the database. Add one using the form above.</td></tr>`;
                 } else {
-                    contacts.forEach(contact => {
-                        const row = createTableRow(contact);
+                    brokers.forEach(broker => {
+                        const row = createTableRow(broker);
                         tableBody.appendChild(row);
                     });
                 }
                 updateSortIndicators();
             }
 
-            function createTableRow(contact) {
+            function createTableRow(broker) {
                 const row = document.createElement('tr');
-                row.dataset.id = contact.id;
+                row.dataset.id = broker.id;
                 row.innerHTML = `
-                    <td class="table-cell"><input type="checkbox" class="row-checkbox" data-id="${contact.id}"></td>
-                    <td class="table-cell editable-cell" data-key="name">${contact.name || ''}</td>
-                    <td class="table-cell editable-cell" data-key="company">${contact.company || ''}</td>
-                    <td class="table-cell editable-cell" data-key="email">${contact.email || ''}</td>
-                    <td class="table-cell editable-cell" data-key="businessPhone">${contact.businessPhone || ''}</td>
-                    <td class="table-cell editable-cell" data-key="mobilePhone">${contact.mobilePhone || ''}</td>
+                    <td class="table-cell editable-cell" data-key="name">${broker.name || ''}</td>
+                    <td class="table-cell editable-cell" data-key="company">${broker.company || ''}</td>
+                    <td class="table-cell editable-cell" data-key="department">${broker.department || ''}</td>
+                    <td class="table-cell editable-cell" data-key="position">${broker.position || ''}</td>
+                    <td class="table-cell editable-cell" data-key="email">${broker.email || ''}</td>
+                    <td class="table-cell editable-cell" data-key="phone">${broker.phone || ''}</td>
                     <td class="table-cell text-center">
                         <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
                     </td>
@@ -234,27 +227,28 @@
             }
 
             // --- EVENT LISTENERS ---
-            contactForm.addEventListener('submit', async (e) => {
+            brokerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const submitButton = contactForm.querySelector('button[type="submit"]');
+                const submitButton = brokerForm.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
                 submitButton.innerHTML = 'Adding...';
 
-                const newContact = {
+                const newBroker = {
                     name: document.getElementById('name').value.trim(),
                     company: document.getElementById('company').value.trim(),
+                    department: document.getElementById('department').value.trim(),
+                    position: document.getElementById('position').value.trim(),
                     email: document.getElementById('email').value.trim(),
-                    businessPhone: document.getElementById('businessPhone').value.trim(),
-                    mobilePhone: document.getElementById('mobilePhone').value.trim(),
+                    phone: document.getElementById('phone').value.trim(),
                 };
 
                 try {
-                    await contactsCollection.add(newContact);
-                    contactForm.reset();
-                    loadContacts();
+                    await brokersCollection.add(newBroker);
+                    brokerForm.reset();
+                    loadBrokers();
                 } catch (error) {
                     console.error("Error adding document: ", error);
-                    alert("Failed to add contact.");
+                    alert("Failed to add broker.");
                 } finally {
                     submitButton.disabled = false;
                     submitButton.innerHTML = 'Add Broker';
@@ -266,11 +260,11 @@
                     const row = e.target.closest('tr');
                     const id = row.dataset.id;
                     try {
-                        await contactsCollection.doc(id).delete();
-                        loadContacts();
+                        await brokersCollection.doc(id).delete();
+                        loadBrokers();
                     } catch (error) {
                         console.error("Error removing document: ", error);
-                        alert("Failed to delete contact.");
+                        alert("Failed to delete broker.");
                     }
                 }
 
@@ -290,22 +284,22 @@
                 const key = cell.dataset.key;
                 const value = cell.textContent;
 
-                const contactIndex = contacts.findIndex(p => p.id === id);
-                const originalValue = contacts[contactIndex][key];
+                const brokerIndex = brokers.findIndex(p => p.id === id);
+                const originalValue = brokers[brokerIndex][key];
                 
                 if (value === originalValue) return;
                 
                 cell.innerHTML = '<i>Saving...</i>';
 
                 try {
-                    await contactsCollection.doc(id).update({ [key]: value });
+                    await brokersCollection.doc(id).update({ [key]: value });
                     setTimeout(() => {
-                        loadContacts(); 
+                        loadBrokers(); 
                     }, 500);
                 } catch (error) {
                     console.error("Error updating document: ", error);
-                    alert("Failed to update contact. Reverting change.");
-                    loadContacts();
+                    alert("Failed to update broker. Reverting change.");
+                    loadBrokers();
                 }
             });
             
@@ -318,82 +312,8 @@
                         sortState.key = key;
                         sortState.direction = 'asc';
                     }
-                    loadContacts();
+                    loadBrokers();
                 });
-            });
-            
-            vcardUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const vcardText = event.target.result;
-                    const lines = vcardText.split('\n');
-                    let name = '';
-                    let company = '';
-                    let email = '';
-                    let businessPhone = '';
-                    let mobilePhone = '';
-                    let genericPhone = '';
-
-                    lines.forEach(line => {
-                        if (line.startsWith('FN:')) {
-                            name = line.substring(3).trim();
-                        } else if (line.startsWith('ORG:')) {
-                            company = line.substring(4).trim();
-                        } else if (line.startsWith('EMAIL;')) {
-                            email = line.split(':').pop().trim();
-                        } else if (line.startsWith('TEL;')) {
-                            const phoneValue = line.split(':').pop().trim();
-                            if (line.includes('TYPE=WORK')) {
-                                businessPhone = phoneValue;
-                            } else if (line.includes('TYPE=CELL')) {
-                                mobilePhone = phoneValue;
-                            } else {
-                                genericPhone = phoneValue;
-                            }
-                        }
-                    });
-                    
-                    document.getElementById('name').value = name;
-                    document.getElementById('company').value = company;
-                    document.getElementById('email').value = email;
-                    document.getElementById('businessPhone').value = businessPhone;
-                    document.getElementById('mobilePhone').value = mobilePhone || genericPhone;
-                };
-                reader.readAsText(file);
-            });
-            
-            selectAllCheckbox.addEventListener('change', (e) => {
-                const checkboxes = document.querySelectorAll('.row-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = e.target.checked;
-                });
-            });
-
-            exportButton.addEventListener('click', () => {
-                const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.dataset.id);
-                if (selectedIds.length === 0) {
-                    alert("Please select at least one contact to export.");
-                    return;
-                }
-                const selectedContacts = contacts.filter(c => selectedIds.includes(c.id));
-                
-                let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Name,Company,Email,Business Phone,Mobile Phone\n";
-                selectedContacts.forEach(contact => {
-                    const row = [contact.name, contact.company, contact.email, contact.businessPhone, contact.mobilePhone].join(",");
-                    csvContent += row + "\n";
-                });
-
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", "brokers.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             });
         });
     </script>
