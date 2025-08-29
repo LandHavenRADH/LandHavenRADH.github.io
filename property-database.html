@@ -1122,7 +1122,7 @@
 
                 addLine("Asking Price:", formatCurrency(property.price));
                 addLine("Square Footage:", formatNumber(property.sqft));
-                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && prop.sqft) ? property.price / prop.sqft : 0));
+                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
                 addLine("Traffic Count (AADT):", formatNumber(property.aadt));
                 addLine("Signalized Intersection:", property.signalizedIntersection);
                 addLine("Intended ROI:", formatPercent(property.intendedRoi));
@@ -1364,7 +1364,8 @@
                 let delay = 2000; // Start with a 2-second delay
                 for (let i = 0; i < maxRetries; i++) {
                     try {
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                        const model = useSearch ? 'gemini-2.5-flash-preview-05-20' : 'gemini-1.5-flash-latest';
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
                         
                         const payload = {
                             contents: [{ parts: [{ text: prompt }] }],
