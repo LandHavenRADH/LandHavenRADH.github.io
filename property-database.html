@@ -525,8 +525,8 @@
         const storage = firebase.storage();
         const propertiesCollection = db.collection("properties");
         
-        // IMPORTANT: Add your Gemini API key here
-        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
+        // IMPORTANT: Replace "YOUR_API_KEY" with your actual Gemini API key
+        const GEMINI_API_KEY = "YOUR_API_KEY";
 
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
@@ -1358,7 +1358,7 @@
             }
             
             async function callGeminiWithExponentialBackoff(prompt, maxRetries = 7) {
-                let delay = 1500; // Start with a 1.5-second delay
+                let delay = 2000; // Start with a 2-second delay
                 for (let i = 0; i < maxRetries; i++) {
                     try {
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
@@ -1389,7 +1389,7 @@
                             throw error;
                         }
                         await new Promise(resolve => setTimeout(resolve, delay));
-                        delay = delay * 2 + Math.random() * 1000;
+                        delay = delay * 2 + Math.random() * 1000; // Exponential backoff with jitter
                     }
                 }
             }
