@@ -302,6 +302,21 @@
                 </form>
                 <div id="zoning-results-container" class="hidden mt-6 prose max-w-none"></div>
             </div>
+
+            <!-- AI Franchise Site Analyzer -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mt-12">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Franchise Site Analyzer</h2>
+                <form id="franchise-form" class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="franchise-name" class="block text-slate-700 font-medium mb-2">Franchise Name</label>
+                        <input type="text" id="franchise-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., Burger King" required>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" id="get-franchise-info-button" class="w-full bg-teal-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-teal-600">Get Site Requirements</button>
+                    </div>
+                </form>
+                <div id="franchise-results-container" class="hidden mt-6 prose max-w-none"></div>
+            </div>
         </main>
 
         <footer class="bg-slate-900 text-slate-400 mt-16">
@@ -548,6 +563,8 @@
             const clearSearchButton = document.getElementById('clear-search-button');
             const zoningForm = document.getElementById('zoning-form');
             const zoningResultsContainer = document.getElementById('zoning-results-container');
+            const franchiseForm = document.getElementById('franchise-form');
+            const franchiseResultsContainer = document.getElementById('franchise-results-container');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -1460,6 +1477,39 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = 'Get Zoning Info';
+                }
+            });
+
+            franchiseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('get-franchise-info-button');
+                button.disabled = true;
+                button.textContent = 'Analyzing...';
+                franchiseResultsContainer.classList.add('hidden');
+
+                const franchiseName = document.getElementById('franchise-name').value;
+
+                const prompt = `Provide a detailed summary of the real estate site selection requirements for the franchise "${franchiseName}". The summary should include, but not be limited to:
+                1.  **Lot Size:** Minimum and preferred acreage or square footage.
+                2.  **Building Size:** Typical square footage for their standard prototype.
+                3.  **Traffic Counts:** Minimum daily traffic (AADT) required.
+                4.  **Demographics:** Target population density, median income, and household data within a 1, 3, and 5-mile radius.
+                5.  **Visibility & Access:** Requirements for corner locations, signalized intersections, and ingress/egress.
+                6.  **Zoning:** Preferred commercial zoning designations.
+                7.  **Co-tenancy:** Desired nearby businesses or traffic generators.
+                Format the response with clear headings and bullet points. If specific data is not publicly available, provide a typical range for a franchise of this type and size.`;
+
+                try {
+                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    franchiseResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
+                    franchiseResultsContainer.classList.remove('hidden');
+                } catch (error) {
+                    console.error("Error getting franchise info:", error);
+                    franchiseResultsContainer.innerHTML = '<p class="text-red-500">Failed to retrieve franchise site requirements.</p>';
+                    franchiseResultsContainer.classList.remove('hidden');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Get Site Requirements';
                 }
             });
 
