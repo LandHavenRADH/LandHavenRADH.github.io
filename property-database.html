@@ -1360,15 +1360,24 @@
                 });
             }
             
-            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 7) {
+            async function callGeminiWithExponentialBackoff(prompt, useSearch = false, maxRetries = 7) {
                 let delay = 2000; // Start with a 2-second delay
                 for (let i = 0; i < maxRetries; i++) {
                     try {
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                        
+                        const payload = {
+                            contents: [{ parts: [{ text: prompt }] }],
+                        };
+
+                        if (useSearch) {
+                            payload.tools = [{ "google_search": {} }];
+                        }
+
                         const response = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                            body: JSON.stringify(payload)
                         });
 
                         if (response.status === 429) {
@@ -1483,7 +1492,7 @@
                 const prompt = `Provide a summary of the zoning regulations for a property in ${municipality} with a zoning designation of ${designation}. The summary should include: 1. **Permitted Uses:** A list of the primary uses allowed. 2. **Development Requirements:** Key details like minimum lot size, setbacks, and maximum building height. 3. **Parking Requirements:** The required number of parking spaces. 4. **Signage:** Rules for on-premise signs. Format the response with clear headings and bullet points.`;
 
                 try {
-                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    const rawText = await callGeminiWithExponentialBackoff(prompt, true);
                     zoningResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
                     zoningResultsContainer.classList.remove('hidden');
                 } catch (error) {
@@ -1516,7 +1525,7 @@
                 Format the response with clear headings and bullet points. If specific data is not publicly available, provide a typical range for a franchise of this type and size.`;
 
                 try {
-                    const rawText = await callGeminiWithExponentialBackoff(prompt);
+                    const rawText = await callGeminiWithExponentialBackoff(prompt, true);
                     franchiseResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
                     franchiseResultsContainer.classList.remove('hidden');
                 } catch (error) {
