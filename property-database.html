@@ -1357,8 +1357,8 @@
                 });
             }
             
-            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 5) {
-                let delay = 1000; // Start with a 1-second delay
+            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 7) {
+                let delay = 1500; // Start with a 1.5-second delay
                 for (let i = 0; i < maxRetries; i++) {
                     try {
                         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
@@ -1367,16 +1367,29 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                         });
+
                         if (response.status === 429) {
                             throw new Error('Rate limited');
                         }
-                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+
+                        if (!response.ok) {
+                            throw new Error(`API request failed with status ${response.status}`);
+                        }
+                        
                         const result = await response.json();
-                        return result.candidates[0].content.parts[0].text;
+                        if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0]) {
+                           return result.candidates[0].content.parts[0].text;
+                        } else {
+                           throw new Error("Invalid response structure from API.");
+                        }
+
                     } catch (error) {
-                        if (i === maxRetries - 1) throw error;
+                        console.warn(`Attempt ${i + 1} failed: ${error.message}. Retrying in ${delay}ms...`);
+                        if (i === maxRetries - 1) {
+                            throw error;
+                        }
                         await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // Double the delay for the next retry
+                        delay = delay * 2 + Math.random() * 1000;
                     }
                 }
             }
