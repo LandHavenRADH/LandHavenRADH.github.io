@@ -331,6 +331,9 @@
                     </div>
                 </form>
                 <div id="deed-results-container" class="hidden mt-6 prose max-w-none"></div>
+                <div id="deed-print-container" class="hidden mt-6 text-right">
+                    <button id="print-deed-analysis-button" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600">Download PDF</button>
+                </div>
             </div>
         </main>
 
@@ -588,6 +591,8 @@
             const franchiseResultsContainer = document.getElementById('franchise-results-container');
             const deedForm = document.getElementById('deed-form');
             const deedResultsContainer = document.getElementById('deed-results-container');
+            const deedPrintContainer = document.getElementById('deed-print-container');
+            const printDeedAnalysisButton = document.getElementById('print-deed-analysis-button');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -1593,6 +1598,7 @@
                 button.textContent = 'Analyzing...';
                 deedResultsContainer.classList.add('hidden');
                 deedResultsContainer.innerHTML = '';
+                deedPrintContainer.classList.add('hidden');
 
                 try {
                     const docxText = await extractTextFromDocx(file);
@@ -1602,6 +1608,7 @@
                     const rawText = await callGeminiWithExponentialBackoff(prompt, true);
                     deedResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
                     deedResultsContainer.classList.remove('hidden');
+                    deedPrintContainer.classList.remove('hidden');
 
                 } catch (error) {
                     console.error("Error analyzing deed:", error);
@@ -1610,6 +1617,31 @@
                 } finally {
                     button.disabled = false;
                     button.textContent = 'Analyze Document';
+                }
+            });
+            
+            printDeedAnalysisButton.addEventListener('click', () => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const resultsContainer = document.getElementById('deed-results-container');
+                    const text = resultsContainer.innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
+                    
+                    doc.setFontSize(18);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("AI Deed Restriction Analysis", 105, 20, { align: 'center' });
+                    doc.setLineWidth(0.5);
+                    doc.line(15, 25, 195, 25);
+
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "normal");
+                    const lines = doc.splitTextToSize(text, 180);
+                    doc.text(lines, 15, 40);
+
+                    doc.save('Deed_Restriction_Analysis.pdf');
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    alert("An error occurred while generating the PDF.");
                 }
             });
 
