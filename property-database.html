@@ -285,7 +285,7 @@
             </div>
             
             <!-- AI Zoning Analyzer -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
                 <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Zoning Analyzer</h2>
                 <form id="zoning-form" class="grid md:grid-cols-3 gap-6">
                     <div>
@@ -304,7 +304,7 @@
             </div>
 
             <!-- AI Franchise Site Analyzer -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mt-12">
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
                 <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Franchise Site Analyzer</h2>
                 <form id="franchise-form" class="grid md:grid-cols-3 gap-6">
                     <div class="md:col-span-2">
@@ -316,6 +316,21 @@
                     </div>
                 </form>
                 <div id="franchise-results-container" class="hidden mt-6 prose max-w-none"></div>
+            </div>
+            
+            <!-- AI Deed Restriction Analyzer -->
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Deed Restriction Analyzer</h2>
+                <form id="deed-form" class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="deed-upload" class="block text-slate-700 font-medium mb-2">Upload Deed (PDF)</label>
+                        <input type="file" id="deed-upload" accept=".pdf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required/>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" id="analyze-deed-button" class="w-full bg-rose-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-rose-600">Analyze Document</button>
+                    </div>
+                </form>
+                <div id="deed-results-container" class="hidden mt-6 prose max-w-none"></div>
             </div>
         </main>
 
@@ -507,6 +522,9 @@
 
 
     <script>
+        // Set the workerSrc for pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
         // --- API KEYS ---
         // This key is for Firebase services. It should have NO application restrictions.
         const FIREBASE_API_KEY = "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U"; 
@@ -568,6 +586,8 @@
             const zoningResultsContainer = document.getElementById('zoning-results-container');
             const franchiseForm = document.getElementById('franchise-form');
             const franchiseResultsContainer = document.getElementById('franchise-results-container');
+            const deedForm = document.getElementById('deed-form');
+            const deedResultsContainer = document.getElementById('deed-results-container');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -657,7 +677,7 @@
                 sortProperties();
                 tableBody.innerHTML = '';
                 if (filteredProperties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-slate-500">No properties match your search criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="17" class="text-center p-8 text-slate-500">No properties match your search criteria.</td></tr>`;
                 } else {
                     filteredProperties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -1538,6 +1558,64 @@
                     button.textContent = 'Get Site Requirements';
                 }
             });
+            
+            // --- DEED ANALYZER ---
+            async function extractTextFromPdf(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        try {
+                            const pdf = await pdfjsLib.getDocument(event.target.result).promise;
+                            let fullText = '';
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const textContent = await page.getTextContent();
+                                fullText += textContent.items.map(item => item.str).join(' ');
+                            }
+                            resolve(fullText);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = (error) => reject(error);
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            deedForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('analyze-deed-button');
+                const deedUpload = document.getElementById('deed-upload');
+                const file = deedUpload.files[0];
+
+                if (!file || file.type !== 'application/pdf') {
+                    alert("Please upload a valid PDF file.");
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Analyzing...';
+                deedResultsContainer.classList.add('hidden');
+                deedResultsContainer.innerHTML = '';
+
+                try {
+                    const pdfText = await extractTextFromPdf(file);
+                    
+                    const prompt = `Please act as an expert real estate paralegal. Review the following text extracted from a legal document and identify and summarize any and all deed restrictions. These could include restrictions on land use, building type, setbacks, minimum square footage, architectural styles, or any other covenants that limit the owner's use of the property. If no restrictions are found, please state that clearly. Here is the text: \n\n${pdfText}`;
+                    
+                    const rawText = await callGeminiWithExponentialBackoff(prompt, true);
+                    deedResultsContainer.innerHTML = rawText.replace(/\n/g, '<br>');
+                    deedResultsContainer.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error("Error analyzing deed:", error);
+                    deedResultsContainer.innerHTML = '<p class="text-red-500">Failed to analyze the document. The PDF might be image-based or corrupted.</p>';
+                    deedResultsContainer.classList.remove('hidden');
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Analyze Document';
+                }
+            });
 
             window.initMap = initMap;
         });
@@ -1545,3 +1623,4 @@
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
+
