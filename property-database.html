@@ -149,10 +149,6 @@
                         <input type="number" id="price" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 750000" required>
                     </div>
                     <div>
-                        <label for="sqft" class="block text-slate-700 font-medium mb-2">Square Footage</label>
-                        <input type="number" id="sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 2500">
-                    </div>
-                     <div>
                         <label for="acres" class="block text-slate-700 font-medium mb-2">Land Area (Acres)</label>
                         <input type="number" step="0.01" id="acres" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 1.75">
                     </div>
@@ -244,12 +240,12 @@
                         <input type="number" id="search-max-price" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label for="search-min-sqft" class="block text-slate-700 font-medium mb-2">Min Sq. Ft.</label>
-                        <input type="number" id="search-min-sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        <label for="search-min-acres" class="block text-slate-700 font-medium mb-2">Min Acres</label>
+                        <input type="number" id="search-min-acres" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div>
-                        <label for="search-max-sqft" class="block text-slate-700 font-medium mb-2">Max Sq. Ft.</label>
-                        <input type="number" id="search-max-sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                        <label for="search-max-acres" class="block text-slate-700 font-medium mb-2">Max Acres</label>
+                        <input type="number" id="search-max-acres" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                     </div>
                     <div class="md:col-span-4 flex justify-end space-x-4">
                         <button type="button" id="clear-search-button" class="bg-slate-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-slate-600">Clear</button>
@@ -289,8 +285,8 @@
                             <th class="table-cell font-semibold sortable-header" data-key="city">City</th>
                             <th class="table-cell font-semibold sortable-header" data-key="state">State</th>
                             <th class="table-cell font-semibold sortable-header" data-key="price">Asking Price</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="sqft">Sq. Footage</th>
                             <th class="table-cell font-semibold sortable-header" data-key="acres">Acres</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="sqft">Sq. Footage (Calc.)</th>
                             <th class="table-cell font-semibold sortable-header" data-key="pricePerSqFt">Price per SF</th>
                             <th class="table-cell font-semibold sortable-header" data-key="dom">Current DOM</th>
                             <th class="table-cell font-semibold sortable-header" data-key="aadt">Traffic Count</th>
@@ -386,7 +382,7 @@
             <img id="modal-details-image" src="" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
             <div class="grid grid-cols-2 gap-4 text-slate-700">
                 <p><strong>Asking Price:</strong> <span id="modal-price"></span></p>
-                <p><strong>Square Footage:</strong> <span id="modal-sqft"></span></p>
+                <p><strong>Acres:</strong> <span id="modal-acres"></span></p>
                 <p><strong>Traffic Count (AADT):</strong> <span id="modal-aadt"></span></p>
                 <p><strong>Notes:</strong> <span id="modal-notes"></span></p>
             </div>
@@ -605,8 +601,8 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
 
         // --- IMPORTANT: REPLACE WITH YOUR API KEYS ---
-        const FIREBASE_API_KEY = "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U";
-        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
+        const FIREBASE_API_KEY = "YOUR_FIREBASE_API_KEY";
+        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
         // The Google Maps key is in the script tag at the bottom of the body.
         
         // --- FIREBASE CONFIGURATION ---
@@ -730,8 +726,12 @@
             }
             
             function getPropertyValue(prop, key) {
+                if (key === 'sqft') {
+                    return prop.acres ? prop.acres * 43560 : 0;
+                }
                 if (key === 'pricePerSqFt') {
-                    return (prop.price && prop.sqft) ? prop.price / prop.sqft : 0;
+                    const sqft = prop.acres ? prop.acres * 43560 : 0;
+                    return (prop.price && sqft) ? prop.price / sqft : 0;
                 }
                 if (key === 'minRent') {
                     const targetValue = prop.price * (1 + (prop.intendedRoi || 0));
@@ -775,6 +775,7 @@
                 row.dataset.id = property.id;
                 
                 const pricePerSqFt = getPropertyValue(property, 'pricePerSqFt');
+                const calculatedSqft = getPropertyValue(property, 'sqft');
                 const minRent = getPropertyValue(property, 'minRent');
                 const currentDom = getPropertyValue(property, 'dom');
 
@@ -785,8 +786,8 @@
                     <td class="table-cell editable-cell" data-key="city">${property.city || ''}</td>
                     <td class="table-cell editable-cell" data-key="state">${property.state || ''}</td>
                     <td class="table-cell editable-cell" data-key="price">${formatCurrency(property.price)}</td>
-                    <td class="table-cell editable-cell" data-key="sqft">${formatNumber(property.sqft)}</td>
                     <td class="table-cell editable-cell" data-key="acres">${property.acres || ''}</td>
+                    <td class="table-cell">${formatNumber(calculatedSqft)}</td>
                     <td class="table-cell">${formatCurrencyWithDecimals(pricePerSqFt)}</td>
                     <td class="table-cell">${currentDom}</td>
                     <td class="table-cell editable-cell" data-key="aadt">${formatNumber(property.aadt)}</td>
@@ -846,7 +847,6 @@
                     city: document.getElementById('city').value.trim(),
                     state: document.getElementById('state').value,
                     price: parseFloat(document.getElementById('price').value),
-                    sqft: parseInt(document.getElementById('sqft').value) || null,
                     acres: parseFloat(document.getElementById('acres').value) || null,
                     initialDom: parseInt(document.getElementById('dom').value) || 0,
                     trafficRoad1: document.getElementById('trafficRoad1').value.trim(),
@@ -943,7 +943,7 @@
                 const propertyIndex = properties.findIndex(p => p.id === id);
                 const originalValue = properties[propertyIndex][key];
 
-                const numericKeys = ['price', 'sqft', 'acres', 'initialDom', 'aadt', 'aadt2', 'population', 'populationRadius'];
+                const numericKeys = ['price', 'acres', 'initialDom', 'aadt', 'aadt2', 'population', 'populationRadius'];
                 const percentKeys = ['intendedRoi', 'capRate'];
 
                 if (numericKeys.includes(key)) {
@@ -1000,9 +1000,9 @@
                 const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
                 
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Address,City,State,Asking Price,Sq. Footage,Acres,Traffic Count,Signalized Intersection,Notes\n";
+                csvContent += "Address,City,State,Asking Price,Acres,Traffic Count,Signalized Intersection,Notes\n";
                 selectedProperties.forEach(prop => {
-                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.acres, prop.aadt, prop.signalizedIntersection, `"${prop.notes}"`].join(",");
+                    const row = [prop.address, prop.city, prop.state, prop.price, prop.acres, prop.aadt, prop.signalizedIntersection, `"${prop.notes}"`].join(",");
                     csvContent += row + "\n";
                 });
 
@@ -1032,8 +1032,8 @@
                 const searchState = document.getElementById('search-state').value.toLowerCase();
                 const minPrice = parseFloat(document.getElementById('search-min-price').value);
                 const maxPrice = parseFloat(document.getElementById('search-max-price').value);
-                const minSqft = parseInt(document.getElementById('search-min-sqft').value);
-                const maxSqft = parseInt(document.getElementById('search-max-sqft').value);
+                const minAcres = parseFloat(document.getElementById('search-min-acres').value);
+                const maxAcres = parseFloat(document.getElementById('search-max-acres').value);
                 
                 filteredProperties = properties.filter(p => {
                     const addressMatch = !searchAddress || (p.address && p.address.toLowerCase().includes(searchAddress));
@@ -1041,10 +1041,10 @@
                     const stateMatch = !searchState || (p.state && p.state.toLowerCase().includes(searchState));
                     const minPriceMatch = isNaN(minPrice) || p.price >= minPrice;
                     const maxPriceMatch = isNaN(maxPrice) || p.price <= maxPrice;
-                    const minSqftMatch = isNaN(minSqft) || p.sqft >= minSqft;
-                    const maxSqftMatch = isNaN(maxSqft) || p.sqft <= maxSqft;
+                    const minAcresMatch = isNaN(minAcres) || p.acres >= minAcres;
+                    const maxAcresMatch = isNaN(maxAcres) || p.acres <= maxAcres;
                     
-                    return addressMatch && cityMatch && stateMatch && minPriceMatch && maxPriceMatch && minSqftMatch && maxSqftMatch;
+                    return addressMatch && cityMatch && stateMatch && minPriceMatch && maxPriceMatch && minAcresMatch && maxAcresMatch;
                 });
                 
                 renderTable();
@@ -1133,20 +1133,21 @@
                 document.getElementById('modal-address').textContent = `${property.address}, ${property.city}, ${property.state}`;
                 document.getElementById('modal-details-image').src = property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image';
                 document.getElementById('modal-price').textContent = formatCurrency(property.price);
-                document.getElementById('modal-sqft').textContent = formatNumber(property.sqft);
+                document.getElementById('modal-acres').textContent = property.acres || 'N/A';
                 document.getElementById('modal-aadt').textContent = formatNumber(property.aadt);
                 document.getElementById('modal-notes').textContent = property.notes || 'N/A';
                 detailsModal.classList.remove('hidden');
             }
             
             function showReportModal(property) {
+                const calculatedSqft = getPropertyValue(property, 'sqft');
                 reportContent.innerHTML = `
                     <h2 class="text-2xl font-bold text-slate-800 mb-4">${property.address}, ${property.city}, ${property.state}</h2>
                     <img src="${property.photoUrl || 'https://placehold.co/400x200/e2e8f0/0f172a?text=No+Image'}" alt="Property photo" class="w-full h-64 object-cover rounded-md mb-4">
                     <div class="grid grid-cols-2 gap-4 text-slate-700">
                         <p><strong>Asking Price:</strong> ${formatCurrency(property.price)}</p>
-                        <p><strong>Square Footage:</strong> ${formatNumber(property.sqft)}</p>
-                         <p><strong>Acres:</strong> ${property.acres || 'N/A'}</p>
+                        <p><strong>Acres:</strong> ${property.acres || 'N/A'}</p>
+                        <p><strong>Sq. Footage (Calc.):</strong> ${formatNumber(calculatedSqft)}</p>
                         <p><strong>Traffic Count (AADT):</strong> ${formatNumber(property.aadt)}</p>
                         <p><strong>Notes:</strong> ${property.notes || 'N/A'}</p>
                     </div>
@@ -1179,10 +1180,12 @@
                                 const base64data = reader.result;
                                 doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
                                 addPdfContent(doc, property);
+                                doc.save(`${(property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
                             };
                         } catch (e) {
                             console.error("CORS issue or image fetch failed, skipping image.", e);
                             addPdfContent(doc, property);
+                            doc.save(`${(property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
                         }
 
                     } else {
@@ -1191,6 +1194,7 @@
                         doc.setTextColor(150, 150, 150);
                         doc.text("No Image Available", 105, 85, { align: 'center' });
                         addPdfContent(doc, property);
+                        doc.save(`${(property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
                     }
                 } catch (error) {
                     console.error("PDF Generation Error:", error);
@@ -1211,16 +1215,15 @@
                 };
 
                 addLine("Asking Price:", formatCurrency(property.price));
-                addLine("Square Footage:", formatNumber(property.sqft));
                 addLine("Acres:", property.acres);
-                addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
+                addLine("Sq. Footage (Calc.):", formatNumber(getPropertyValue(property, 'sqft')));
+                addLine("Price per SF:", formatCurrencyWithDecimals(getPropertyValue(property, 'pricePerSqFt')));
                 addLine("Traffic Count (AADT):", formatNumber(property.aadt));
                 addLine("Signalized Intersection:", property.signalizedIntersection);
                 addLine("Intended ROI:", formatPercent(property.intendedRoi));
                 addLine("Capitalization Rate:", formatPercent(property.capRate));
                 
-                const targetValue = property.price * (1 + (property.intendedRoi || 0));
-                const minRent = targetValue * (property.capRate || 0);
+                const minRent = getPropertyValue(property, 'minRent');
                 addLine("Minimum Rental Rate:", formatCurrency(minRent));
                 
                 doc.setFont("helvetica", "bold");
@@ -1229,9 +1232,6 @@
                 doc.setFont("helvetica", "normal");
                 const notes = doc.splitTextToSize(property.notes || 'N/A', 180);
                 doc.text(notes, 15, y);
-
-                const safeAddress = (property.address || 'property_profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                doc.save(`${safeAddress}.pdf`);
             }
             
             // --- PROPOSAL GENERATOR ---
@@ -1262,7 +1262,7 @@
                     landlordWork: document.getElementById('proposal-landlord-work').value,
                     tenantWork: document.getElementById('proposal-tenant-work').value,
                     address: `${property.address}, ${property.city}, ${property.state}`,
-                    sqft: property.sqft,
+                    acres: property.acres,
                     aadt: property.aadt,
                 };
 
@@ -1279,7 +1279,7 @@
                 Delivery Condition: ${proposalData.deliveryCondition}
                 Landlord's Work: ${proposalData.landlordWork}
                 Tenant's Work: ${proposalData.tenantWork}
-                Property Square Footage: ${proposalData.sqft}
+                Property Size: ${proposalData.acres} Acres
                 Property Traffic Count: ${proposalData.aadt} AADT
                 The letter should be from "Ryan Alexander, Principal" of Restaurant GroundWorks.
                 Format it as a professional business letter.`;
@@ -1525,7 +1525,6 @@
             function openCompareModal(selectedProperties) {
                 let tableHTML = '<table class="w-full text-left">';
                 
-                // Header Row
                 tableHTML += '<thead><tr class="bg-slate-100">';
                 tableHTML += '<th class="table-cell font-semibold">Feature</th>';
                 selectedProperties.forEach(p => {
@@ -1533,12 +1532,11 @@
                 });
                 tableHTML += '</tr></thead>';
 
-                // Body Rows
                 tableHTML += '<tbody>';
                 const keysToCompare = [
                     { key: 'price', label: 'Asking Price', format: formatCurrency },
-                    { key: 'sqft', label: 'Sq. Footage', format: formatNumber },
                     { key: 'acres', label: 'Acres' },
+                    { key: 'sqft', label: 'Sq. Footage (Calc.)', format: formatNumber },
                     { key: 'pricePerSqFt', label: 'Price per SF', format: formatCurrencyWithDecimals },
                     { key: 'aadt', label: 'Traffic Count', format: formatNumber },
                     { key: 'signalizedIntersection', label: 'Signalized Intersection' },
@@ -1759,7 +1757,7 @@
 
             async function generateFlyerPDF(data, imageFile) {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'pt', 'letter'); // Using standard letter size in points
+                const doc = new jsPDF('p', 'pt', 'letter');
 
                 // --- Read Image File ---
                 const reader = new FileReader();
@@ -1768,13 +1766,11 @@
                 const mainImageBase64 = reader.result;
 
                 // --- Add Main Image ---
-                const imgProps = doc.getImageProperties(mainImageBase64);
-                const imgWidth = 595; // Full width of letter page (approx)
-                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                const imgWidth = doc.internal.pageSize.getWidth();
                 doc.addImage(mainImageBase64, 'JPEG', 0, 0, imgWidth, 400);
 
                 // --- Blue Banner ---
-                doc.setFillColor(15, 75, 146); // Blue color from flyer
+                doc.setFillColor(15, 75, 146);
                 doc.rect(0, 400, imgWidth, 50, 'F');
                 doc.setFontSize(24);
                 doc.setFont('helvetica', 'bold');
@@ -1794,21 +1790,26 @@
                 doc.setFont('helvetica', 'normal');
                 
                 if (data.acres) {
+                    doc.setFont('helvetica', 'bold');
                     doc.text(`${data.acres} Acres`, 20, yPos);
                     yPos += 20;
+                    doc.setFont('helvetica', 'normal');
                 }
                 
                 if (data.notes) {
                     const notesArray = data.notes.split('\n');
                     notesArray.forEach(note => {
-                        doc.text(`• ${note}`, 20, yPos);
-                        yPos += 15;
+                        if (note.trim()) {
+                           doc.text(`• ${note.trim()}`, 20, yPos);
+                           yPos += 15;
+                        }
                     });
                 }
                 
                 yPos += 20;
 
                 // --- Traffic and Population ---
+                doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.text('TRAFFIC COUNTS', 20, yPos);
                 yPos += 15;
@@ -1825,13 +1826,27 @@
                 if(data.populationRadius && data.population) doc.text(`${data.populationRadius} Mile Radius: ${formatNumber(data.population)}`, 20, yPos);
 
                 // --- Footer / Contact Info ---
-                const finalY = doc.internal.pageSize.height - 40;
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const footerY = pageHeight - 60;
+
+                // Logo placeholder
+                doc.setFillColor(220, 220, 220);
+                doc.rect(20, footerY, 150, 40, 'F');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text("Restaurant GroundWorks", 30, footerY + 25);
+                
+                // Contact info
+                const contactX = doc.internal.pageSize.getWidth() - 180;
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
                 doc.setFont('helvetica', 'bold');
-                doc.text("Ryan Alexander", 450, finalY - 20);
+                doc.text("Ryan Alexander", contactX, footerY + 10);
                 doc.setFont('helvetica', 'normal');
-                doc.text("Principal", 450, finalY - 5);
-                doc.text("317.403.2819", 450, finalY + 10);
-                doc.text("ryan@groundleasegroup.com", 450, finalY + 25);
+                doc.text("Principal", contactX, footerY + 22);
+                doc.text("317.403.2819", contactX, footerY + 34);
+                doc.setTextColor(4, 120, 87); // A green-ish color for email
+                doc.text("ryan@groundleasegroup.com", contactX, footerY + 46);
 
 
                 doc.save('Marketing_Flyer.pdf');
