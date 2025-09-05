@@ -144,10 +144,6 @@
                             <option value="WY">Wyoming</option>
                         </select>
                     </div>
-                     <div>
-                        <label for="dom" class="block text-slate-700 font-medium mb-2">Initial Days on Market</label>
-                        <input type="number" id="dom" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 30">
-                    </div>
                     <div>
                         <label for="price" class="block text-slate-700 font-medium mb-2">Asking Price ($)</label>
                         <input type="number" id="price" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 750000" required>
@@ -156,9 +152,37 @@
                         <label for="sqft" class="block text-slate-700 font-medium mb-2">Square Footage</label>
                         <input type="number" id="sqft" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 2500">
                     </div>
+                     <div>
+                        <label for="acres" class="block text-slate-700 font-medium mb-2">Land Area (Acres)</label>
+                        <input type="number" step="0.01" id="acres" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 1.75">
+                    </div>
                     <div>
-                        <label for="aadt" class="block text-slate-700 font-medium mb-2">Traffic Count (AADT)</label>
+                        <label for="dom" class="block text-slate-700 font-medium mb-2">Initial Days on Market</label>
+                        <input type="number" id="dom" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 30">
+                    </div>
+                    <div>
+                        <label for="trafficRoad1" class="block text-slate-700 font-medium mb-2">Primary Road Name</label>
+                        <input type="text" id="trafficRoad1" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., Main St">
+                    </div>
+                    <div>
+                        <label for="aadt" class="block text-slate-700 font-medium mb-2">Primary Traffic (AADT)</label>
                         <input type="number" id="aadt" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 15000">
+                    </div>
+                     <div>
+                        <label for="trafficRoad2" class="block text-slate-700 font-medium mb-2">Secondary Road Name</label>
+                        <input type="text" id="trafficRoad2" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., I-469">
+                    </div>
+                    <div>
+                        <label for="aadt2" class="block text-slate-700 font-medium mb-2">Secondary Traffic (AADT)</label>
+                        <input type="number" id="aadt2" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 32000">
+                    </div>
+                    <div>
+                        <label for="populationRadius" class="block text-slate-700 font-medium mb-2">Population Radius (mi)</label>
+                        <input type="number" id="populationRadius" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 5">
+                    </div>
+                     <div>
+                        <label for="population" class="block text-slate-700 font-medium mb-2">Population</label>
+                        <input type="number" id="population" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., 83312">
                     </div>
                     <div>
                         <label for="signalized-intersection" class="block text-slate-700 font-medium mb-2">Signalized Intersection</label>
@@ -266,6 +290,7 @@
                             <th class="table-cell font-semibold sortable-header" data-key="state">State</th>
                             <th class="table-cell font-semibold sortable-header" data-key="price">Asking Price</th>
                             <th class="table-cell font-semibold sortable-header" data-key="sqft">Sq. Footage</th>
+                            <th class="table-cell font-semibold sortable-header" data-key="acres">Acres</th>
                             <th class="table-cell font-semibold sortable-header" data-key="pricePerSqFt">Price per SF</th>
                             <th class="table-cell font-semibold sortable-header" data-key="dom">Current DOM</th>
                             <th class="table-cell font-semibold sortable-header" data-key="aadt">Traffic Count</th>
@@ -511,46 +536,96 @@
             </div>
         </div>
     </div>
+    
+    <!-- AI Flyer Generator Modal -->
+    <div id="flyer-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-2xl relative">
+            <button id="close-flyer-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">AI Marketing Flyer Generator</h2>
+            <form id="flyer-form">
+                <input type="hidden" id="flyer-property-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-slate-700 font-medium mb-2">Address</label>
+                        <input type="text" id="flyer-address" class="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100" readonly>
+                    </div>
+                    <div>
+                        <label for="flyer-acres" class="block text-slate-700 font-medium mb-2">Land Area (Acres)</label>
+                        <input type="number" step="0.01" id="flyer-acres" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label for="flyer-population-radius" class="block text-slate-700 font-medium mb-2">Population Radius (mi)</label>
+                        <input type="number" id="flyer-population-radius" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
+                    <div class="col-span-2">
+                         <label for="flyer-population" class="block text-slate-700 font-medium mb-2">Population</label>
+                        <input type="number" id="flyer-population" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
+                    <div class="col-span-2">
+                        <p class="block text-slate-700 font-medium mb-2">Traffic Counts</p>
+                        <div class="grid grid-cols-2 gap-2">
+                           <input type="text" id="flyer-road1-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="Road Name 1">
+                           <input type="number" id="flyer-road1-aadt" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="AADT 1">
+                           <input type="text" id="flyer-road2-name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="Road Name 2">
+                           <input type="number" id="flyer-road2-aadt" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="AADT 2">
+                        </div>
+                    </div>
+                    <div class="col-span-2">
+                        <label for="flyer-notes" class="block text-slate-700 font-medium mb-2">Highlights (one per line)</label>
+                        <textarea id="flyer-notes" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="e.g., Walmart Supercenter outlot"></textarea>
+                    </div>
+                    <div class="col-span-2">
+                        <label for="flyer-photo" class="block text-slate-700 font-medium mb-2">Main Aerial Photo</label>
+                        <input type="file" id="flyer-photo" accept="image/*" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required/>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button type="submit" id="generate-flyer-button" class="bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-emerald-600">Generate Flyer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <!-- Third-party libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    
+    <!-- Firebase SDK - Using the new modular syntax -->
+    <script type="module">
+        // Import functions from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-
-    <script>
         // Set the workerSrc for pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
 
-        // --- API KEYS ---
-        // This key is for Firebase services. It should have NO application restrictions.
-        const FIREBASE_API_KEY = "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U"; 
-        // This key is for the Gemini API. It SHOULD have website restrictions.
-        const GEMINI_API_KEY = "AIzaSyBcMgZjTqSF3w_hFh6QGmYxdGQGxpykZRE";
-
+        // --- IMPORTANT: REPLACE WITH YOUR API KEYS ---
+        const FIREBASE_API_KEY = "YOUR_FIREBASE_API_KEY";
+        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
+        // The Google Maps key is in the script tag at the bottom of the body.
+        
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
           apiKey: FIREBASE_API_KEY,
           authDomain: "restaurant-groundworks-db.firebaseapp.com",
           projectId: "restaurant-groundworks-db",
-          storageBucket: "restaurant-groundworks-db.firebasestorage.app",
+          storageBucket: "restaurant-groundworks-db.appspot.com",
           messagingSenderId: "391704584139",
           appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
           measurementId: "G-8LWLPVD3W1"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-        const propertiesCollection = db.collection("properties");
+        // --- INITIALIZE FIREBASE & SERVICES ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const propertiesCollection = collection(db, "properties");
         
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
@@ -593,6 +668,9 @@
             const deedResultsContainer = document.getElementById('deed-results-container');
             const deedPrintContainer = document.getElementById('deed-print-container');
             const printDeedAnalysisButton = document.getElementById('print-deed-analysis-button');
+            const flyerModal = document.getElementById('flyer-modal');
+            const closeFlyerModal = document.getElementById('close-flyer-modal');
+            const flyerForm = document.getElementById('flyer-form');
             
             let currentPropertyForAnalysis = null;
             let competitorMap;
@@ -606,7 +684,7 @@
             let markers = [];
 
             // --- AUTHENTICATION LOGIC ---
-            auth.onAuthStateChanged(user => {
+            onAuthStateChanged(auth, user => {
                 if (user) {
                     mainContent.classList.remove('hidden');
                     initMap();
@@ -617,12 +695,12 @@
             });
 
             logoutButton.addEventListener('click', () => {
-                auth.signOut();
+                signOut(auth);
             });
 
             // --- DATA MANAGEMENT ---
             async function loadProperties() {
-                const snapshot = await propertiesCollection.get();
+                const snapshot = await getDocs(propertiesCollection);
                 properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 filteredProperties = [...properties];
                 renderTable();
@@ -682,7 +760,7 @@
                 sortProperties();
                 tableBody.innerHTML = '';
                 if (filteredProperties.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="17" class="text-center p-8 text-slate-500">No properties match your search criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="18" class="text-center p-8 text-slate-500">No properties match your search criteria.</td></tr>`;
                 } else {
                     filteredProperties.forEach(prop => {
                         const row = createTableRow(prop);
@@ -708,6 +786,7 @@
                     <td class="table-cell editable-cell" data-key="state">${property.state || ''}</td>
                     <td class="table-cell editable-cell" data-key="price">${formatCurrency(property.price)}</td>
                     <td class="table-cell editable-cell" data-key="sqft">${formatNumber(property.sqft)}</td>
+                    <td class="table-cell editable-cell" data-key="acres">${property.acres || ''}</td>
                     <td class="table-cell">${formatCurrencyWithDecimals(pricePerSqFt)}</td>
                     <td class="table-cell">${currentDom}</td>
                     <td class="table-cell editable-cell" data-key="aadt">${formatNumber(property.aadt)}</td>
@@ -717,7 +796,8 @@
                     <td class="table-cell">${formatCurrency(minRent)}</td>
                     <td class="table-cell editable-cell" data-key="notes">${property.notes || ''}</td>
                     <td class="table-cell editable-cell" data-key="fileLink">${property.fileLink ? `<a href="${property.fileLink}" target="_blank" class="text-indigo-600 hover:underline">View File</a>` : ''}</td>
-                    <td class="table-cell text-center">
+                    <td class="table-cell text-center whitespace-nowrap">
+                        <button class="flyer-btn bg-emerald-500 text-white px-3 py-1 rounded-md text-sm hover:bg-emerald-600 mr-2">Flyer</button>
                         <button class="loi-btn bg-purple-500 text-white px-3 py-1 rounded-md text-sm hover:bg-purple-600 mr-2">LOI</button>
                         <button class="competitors-btn bg-yellow-500 text-white px-3 py-1 rounded-md text-sm hover:bg-yellow-600 mr-2">Competitors</button>
                         <button class="proposal-btn bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 mr-2">Proposal</button>
@@ -748,17 +828,17 @@
                 const photoFile = document.getElementById('photo-upload').files[0];
                 let photoUrl = '';
                 if (photoFile) {
-                    const storageRef = storage.ref(`property_images/${Date.now()}_${photoFile.name}`);
-                    await storageRef.put(photoFile);
-                    photoUrl = await storageRef.getDownloadURL();
+                    const storageRef = ref(storage, `property_images/${Date.now()}_${photoFile.name}`);
+                    await uploadBytes(storageRef, photoFile);
+                    photoUrl = await getDownloadURL(storageRef);
                 }
                 
                 const file = document.getElementById('file-upload').files[0];
                 let fileUrl = '';
                 if (file) {
-                    const storageRef = storage.ref(`property_files/${Date.now()}_${file.name}`);
-                    await storageRef.put(file);
-                    fileUrl = await storageRef.getDownloadURL();
+                    const storageRef = ref(storage, `property_files/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    fileUrl = await getDownloadURL(storageRef);
                 }
 
                 const newProperty = {
@@ -767,8 +847,14 @@
                     state: document.getElementById('state').value,
                     price: parseFloat(document.getElementById('price').value),
                     sqft: parseInt(document.getElementById('sqft').value) || null,
+                    acres: parseFloat(document.getElementById('acres').value) || null,
                     initialDom: parseInt(document.getElementById('dom').value) || 0,
+                    trafficRoad1: document.getElementById('trafficRoad1').value.trim(),
                     aadt: parseInt(document.getElementById('aadt').value) || null,
+                    trafficRoad2: document.getElementById('trafficRoad2').value.trim(),
+                    aadt2: parseInt(document.getElementById('aadt2').value) || null,
+                    populationRadius: parseInt(document.getElementById('populationRadius').value) || null,
+                    population: parseInt(document.getElementById('population').value) || null,
                     signalizedIntersection: document.getElementById('signalized-intersection').value,
                     dateAdded: new Date().toISOString(),
                     notes: document.getElementById('notes').value.trim(),
@@ -779,7 +865,7 @@
                 };
 
                 try {
-                    await propertiesCollection.add(newProperty);
+                    await addDoc(propertiesCollection, newProperty);
                     propertyForm.reset();
                     loadProperties();
                 } catch (error) {
@@ -792,44 +878,35 @@
             });
 
             tableBody.addEventListener('click', async (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+
+                const id = row.dataset.id;
+                
                 if (e.target.classList.contains('delete-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
+                    if (!confirm("Are you sure you want to delete this property?")) return;
                     try {
-                        await propertiesCollection.doc(id).delete();
+                        await deleteDoc(doc(db, "properties", id));
                         loadProperties();
                     } catch (error) {
                         console.error("Error removing document: ", error);
                         alert("Failed to delete property.");
                     }
                 } else if (e.target.classList.contains('pdf-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
-                    if (property) {
-                        showReportModal(property);
-                    }
+                    if (property) showReportModal(property);
                 } else if (e.target.classList.contains('proposal-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
-                    if (property) {
-                        openProposalModal(property);
-                    }
+                    if (property) openProposalModal(property);
                 } else if (e.target.classList.contains('loi-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
-                    if (property) {
-                        openLoiModal(property);
-                    }
+                    if (property) openLoiModal(property);
                 } else if (e.target.classList.contains('competitors-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
                     const property = properties.find(p => p.id === id);
-                    if (property) {
-                        openCompetitorModal(property);
-                    }
+                    if (property) openCompetitorModal(property);
+                } else if (e.target.classList.contains('flyer-btn')) {
+                    const property = properties.find(p => p.id === id);
+                    if (property) openFlyerModal(property);
                 } else if (e.target.classList.contains('thumbnail-img')) {
                     const fullSrc = e.target.dataset.fullSrc;
                     if (fullSrc) {
@@ -845,33 +922,14 @@
                 document.execCommand('selectAll', false, null);
             });
 
-            closeModal.addEventListener('click', () => {
-                imageModal.classList.add('hidden');
-            });
-            
-            closeDetailsModal.addEventListener('click', () => {
-                detailsModal.classList.add('hidden');
-            });
-            
-            closeProposalModal.addEventListener('click', () => {
-                proposalModal.classList.add('hidden');
-            });
-            
-            closeLoiModal.addEventListener('click', () => {
-                loiModal.classList.add('hidden');
-            });
-            
-            closeCompetitorModal.addEventListener('click', () => {
-                competitorModal.classList.add('hidden');
-            });
-            
-            closeReportModal.addEventListener('click', () => {
-                reportModal.classList.add('hidden');
-            });
-            
-            closeCompareModal.addEventListener('click', () => {
-                compareModal.classList.add('hidden');
-            });
+            closeModal.addEventListener('click', () => imageModal.classList.add('hidden'));
+            closeDetailsModal.addEventListener('click', () => detailsModal.classList.add('hidden'));
+            closeProposalModal.addEventListener('click', () => proposalModal.classList.add('hidden'));
+            closeLoiModal.addEventListener('click', () => loiModal.classList.add('hidden'));
+            closeCompetitorModal.addEventListener('click', () => competitorModal.classList.add('hidden'));
+            closeReportModal.addEventListener('click', () => reportModal.classList.add('hidden'));
+            closeCompareModal.addEventListener('click', () => compareModal.classList.add('hidden'));
+            closeFlyerModal.addEventListener('click', () => flyerModal.classList.add('hidden'));
 
             tableBody.addEventListener('focusout', async (e) => {
                 const cell = e.target.closest('.editable-cell');
@@ -885,7 +943,7 @@
                 const propertyIndex = properties.findIndex(p => p.id === id);
                 const originalValue = properties[propertyIndex][key];
 
-                const numericKeys = ['price', 'sqft', 'initialDom', 'aadt'];
+                const numericKeys = ['price', 'sqft', 'acres', 'initialDom', 'aadt', 'aadt2', 'population', 'populationRadius'];
                 const percentKeys = ['intendedRoi', 'capRate'];
 
                 if (numericKeys.includes(key)) {
@@ -902,7 +960,8 @@
                 cell.innerHTML = '<i>Saving...</i>';
 
                 try {
-                    await propertiesCollection.doc(id).update({ [key]: value });
+                    const propertyRef = doc(db, "properties", id);
+                    await updateDoc(propertyRef, { [key]: value });
                     setTimeout(() => {
                         loadProperties(); 
                     }, 500);
@@ -927,8 +986,7 @@
             });
 
             selectAllCheckbox.addEventListener('change', (e) => {
-                const checkboxes = document.querySelectorAll('.row-checkbox');
-                checkboxes.forEach(checkbox => {
+                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
                     checkbox.checked = e.target.checked;
                 });
             });
@@ -942,9 +1000,9 @@
                 const selectedProperties = properties.filter(p => selectedIds.includes(p.id));
                 
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Address,City,State,Asking Price,Sq. Footage,Traffic Count,Signalized Intersection,Notes\n";
+                csvContent += "Address,City,State,Asking Price,Sq. Footage,Acres,Traffic Count,Signalized Intersection,Notes\n";
                 selectedProperties.forEach(prop => {
-                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.aadt, prop.signalizedIntersection, `"${prop.notes}"`].join(",");
+                    const row = [prop.address, prop.city, prop.state, prop.price, prop.sqft, prop.acres, prop.aadt, prop.signalizedIntersection, `"${prop.notes}"`].join(",");
                     csvContent += row + "\n";
                 });
 
@@ -1088,6 +1146,7 @@
                     <div class="grid grid-cols-2 gap-4 text-slate-700">
                         <p><strong>Asking Price:</strong> ${formatCurrency(property.price)}</p>
                         <p><strong>Square Footage:</strong> ${formatNumber(property.sqft)}</p>
+                         <p><strong>Acres:</strong> ${property.acres || 'N/A'}</p>
                         <p><strong>Traffic Count (AADT):</strong> ${formatNumber(property.aadt)}</p>
                         <p><strong>Notes:</strong> ${property.notes || 'N/A'}</p>
                     </div>
@@ -1111,15 +1170,21 @@
                     doc.text(`${property.address || ''}, ${property.city || ''}, ${property.state || ''}`, 105, 30, { align: 'center' });
 
                     if (property.photoUrl) {
-                        const response = await fetch(property.photoUrl);
-                        const blob = await response.blob();
-                        const reader = new FileReader();
-                        reader.readAsDataURL(blob);
-                        reader.onloadend = () => {
-                            const base64data = reader.result;
-                            doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
+                        try {
+                            const response = await fetch(`https://cors-anywhere.herokuapp.com/${property.photoUrl}`);
+                            const blob = await response.blob();
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob);
+                            reader.onloadend = () => {
+                                const base64data = reader.result;
+                                doc.addImage(base64data, 'JPEG', 15, 40, 180, 90);
+                                addPdfContent(doc, property);
+                            };
+                        } catch (e) {
+                            console.error("CORS issue or image fetch failed, skipping image.", e);
                             addPdfContent(doc, property);
-                        };
+                        }
+
                     } else {
                         doc.setFillColor(230, 230, 230);
                         doc.rect(15, 40, 180, 90, 'F');
@@ -1147,6 +1212,7 @@
 
                 addLine("Asking Price:", formatCurrency(property.price));
                 addLine("Square Footage:", formatNumber(property.sqft));
+                addLine("Acres:", property.acres);
                 addLine("Price per SF:", formatCurrencyWithDecimals((property.price && property.sqft) ? property.price / property.sqft : 0));
                 addLine("Traffic Count (AADT):", formatNumber(property.aadt));
                 addLine("Signalized Intersection:", property.signalizedIntersection);
@@ -1288,7 +1354,6 @@
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
                     
-                    // Header
                     doc.setFontSize(18);
                     doc.setFont("helvetica", "bold");
                     doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
@@ -1411,7 +1476,8 @@
                         }
 
                         if (!response.ok) {
-                            throw new Error(`API request failed with status ${response.status}`);
+                            const errorBody = await response.text();
+                            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
                         }
                         
                         const result = await response.json();
@@ -1437,7 +1503,6 @@
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
                     
-                    // Header
                     doc.setFontSize(18);
                     doc.setFont("helvetica", "bold");
                     doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
@@ -1473,6 +1538,7 @@
                 const keysToCompare = [
                     { key: 'price', label: 'Asking Price', format: formatCurrency },
                     { key: 'sqft', label: 'Sq. Footage', format: formatNumber },
+                    { key: 'acres', label: 'Acres' },
                     { key: 'pricePerSqFt', label: 'Price per SF', format: formatCurrencyWithDecimals },
                     { key: 'aadt', label: 'Traffic Count', format: formatNumber },
                     { key: 'signalizedIntersection', label: 'Signalized Intersection' },
@@ -1644,11 +1710,138 @@
                     alert("An error occurred while generating the PDF.");
                 }
             });
+            
+            // --- FLYER GENERATOR ---
+            function openFlyerModal(property) {
+                document.getElementById('flyer-property-id').value = property.id;
+                document.getElementById('flyer-address').value = `${property.address}, ${property.city}, ${property.state}`;
+                document.getElementById('flyer-acres').value = property.acres || '';
+                document.getElementById('flyer-population-radius').value = property.populationRadius || '';
+                document.getElementById('flyer-population').value = property.population || '';
+                document.getElementById('flyer-road1-name').value = property.trafficRoad1 || '';
+                document.getElementById('flyer-road1-aadt').value = property.aadt || '';
+                document.getElementById('flyer-road2-name').value = property.trafficRoad2 || '';
+                document.getElementById('flyer-road2-aadt').value = property.aadt2 || '';
+                flyerModal.classList.remove('hidden');
+            }
+
+            flyerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const button = document.getElementById('generate-flyer-button');
+                button.disabled = true;
+                button.textContent = 'Generating...';
+
+                const flyerData = {
+                    address: document.getElementById('flyer-address').value,
+                    acres: document.getElementById('flyer-acres').value,
+                    populationRadius: document.getElementById('flyer-population-radius').value,
+                    population: document.getElementById('flyer-population').value,
+                    road1Name: document.getElementById('flyer-road1-name').value,
+                    road1Aadt: document.getElementById('flyer-road1-aadt').value,
+                    road2Name: document.getElementById('flyer-road2-name').value,
+                    road2Aadt: document.getElementById('flyer-road2-aadt').value,
+                    notes: document.getElementById('flyer-notes').value,
+                };
+                
+                const mainPhotoFile = document.getElementById('flyer-photo').files[0];
+
+                try {
+                    await generateFlyerPDF(flyerData, mainPhotoFile);
+                } catch (error) {
+                    console.error("Error generating flyer:", error);
+                    alert("Failed to generate flyer. See console for details.");
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Generate Flyer';
+                    flyerModal.classList.add('hidden');
+                }
+            });
+
+            async function generateFlyerPDF(data, imageFile) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'letter'); // Using standard letter size in points
+
+                // --- Read Image File ---
+                const reader = new FileReader();
+                reader.readAsDataURL(imageFile);
+                await new Promise(resolve => reader.onload = resolve);
+                const mainImageBase64 = reader.result;
+
+                // --- Add Main Image ---
+                const imgProps = doc.getImageProperties(mainImageBase64);
+                const imgWidth = 595; // Full width of letter page (approx)
+                const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                doc.addImage(mainImageBase64, 'JPEG', 0, 0, imgWidth, 400);
+
+                // --- Blue Banner ---
+                doc.setFillColor(15, 75, 146); // Blue color from flyer
+                doc.rect(0, 400, imgWidth, 50, 'F');
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(255, 255, 255);
+                doc.text('GROUND LEASE OPPORTUNITY', 20, 435);
+                
+                let yPos = 480;
+
+                // --- Property Details ---
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text(data.address, 20, yPos);
+                yPos += 25;
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                
+                if (data.acres) {
+                    doc.text(`${data.acres} Acres`, 20, yPos);
+                    yPos += 20;
+                }
+                
+                if (data.notes) {
+                    const notesArray = data.notes.split('\n');
+                    notesArray.forEach(note => {
+                        doc.text(`• ${note}`, 20, yPos);
+                        yPos += 15;
+                    });
+                }
+                
+                yPos += 20;
+
+                // --- Traffic and Population ---
+                doc.setFont('helvetica', 'bold');
+                doc.text('TRAFFIC COUNTS', 20, yPos);
+                yPos += 15;
+                doc.setFont('helvetica', 'normal');
+                if(data.road1Name && data.road1Aadt) doc.text(`${data.road1Name}: ${formatNumber(data.road1Aadt)} AADT`, 20, yPos);
+                yPos += 15;
+                if(data.road2Name && data.road2Aadt) doc.text(`${data.road2Name}: ${formatNumber(data.road2Aadt)} AADT`, 20, yPos);
+                yPos += 30;
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('POPULATION', 20, yPos);
+                yPos += 15;
+                doc.setFont('helvetica', 'normal');
+                if(data.populationRadius && data.population) doc.text(`${data.populationRadius} Mile Radius: ${formatNumber(data.population)}`, 20, yPos);
+
+                // --- Footer / Contact Info ---
+                const finalY = doc.internal.pageSize.height - 40;
+                doc.setFont('helvetica', 'bold');
+                doc.text("Ryan Alexander", 450, finalY - 20);
+                doc.setFont('helvetica', 'normal');
+                doc.text("Principal", 450, finalY - 5);
+                doc.text("317.403.2819", 450, finalY + 10);
+                doc.text("ryan@groundleasegroup.com", 450, finalY + 25);
+
+
+                doc.save('Marketing_Flyer.pdf');
+            }
+
 
             window.initMap = initMap;
         });
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbwa_DBSKhY7E4Akj0nIceTZuWIOPe4nQ&libraries=places,geometry&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
 
