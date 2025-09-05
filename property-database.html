@@ -574,6 +574,10 @@
                         <label for="flyer-photo" class="block text-slate-700 font-medium mb-2">Main Aerial Photo</label>
                         <input type="file" id="flyer-photo" accept="image/*" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required/>
                     </div>
+                    <div class="col-span-2">
+                        <label for="flyer-photo-inset" class="block text-slate-700 font-medium mb-2">Inset Site Plan Photo</label>
+                        <input type="file" id="flyer-photo-inset" accept="image/*" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required/>
+                    </div>
                 </div>
                 <div class="mt-6 text-right">
                     <button type="submit" id="generate-flyer-button" class="bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-emerald-600">Generate Flyer</button>
@@ -1739,9 +1743,10 @@
                 };
                 
                 const mainPhotoFile = document.getElementById('flyer-photo').files[0];
+                const insetPhotoFile = document.getElementById('flyer-photo-inset').files[0];
 
                 try {
-                    await generateFlyerPDF(flyerData, mainPhotoFile);
+                    await generateFlyerPDF(flyerData, mainPhotoFile, insetPhotoFile);
                 } catch (error) {
                     console.error("Error generating flyer:", error);
                     alert("Failed to generate flyer. See console for details.");
@@ -1752,15 +1757,27 @@
                 }
             });
 
-            async function generateFlyerPDF(data, imageFile) {
+            async function generateFlyerPDF(data, imageFile, insetImageFile) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'pt', 'letter');
 
-                // --- Read Image File ---
-                const reader = new FileReader();
-                reader.readAsDataURL(imageFile);
-                await new Promise(resolve => reader.onload = resolve);
-                const mainImageBase64 = reader.result;
+                // --- Read Image Files ---
+                const mainImageBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(imageFile);
+                    reader.onload = () => resolve(reader.result);
+                });
+
+                const insetImageBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(insetImageFile);
+                    reader.onload = () => resolve(reader.result);
+                });
+                
+                // This is a placeholder Base64 string for the green GLG logo.
+                // In a real application, you would load this from a file or URL.
+                const logoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMjAgODgiPjxkZWZzPjxzdHlsZT4uY2xzLTF7ZmlsbDojN2NjYzE7fS5jbHMtMntmaWxsOiNmZmY7fTwvc3R5bGU+PC9kZWZzPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTg1LjY5LDg4SDBMNDIuODUsMEg4NS42OVoiLz48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNzEuMzgsODhIODUuNjlsNDIuODUtODhoNDIuODVaIi8+PHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMzQuMjgsNjguODloOC42N2ExMi4xNiwxMi4xNiwwLDAsMCw5LjgxLTQuNzYsMTMuODUsMTMuODUsMCwwLDAsMy4yMi05LjcxVjQxLjY0YTguODMsOC44MywwLDAsMC0yLjg4LTctMTEuMywxMS4zLDAsMCwwLTcuNDctMi41M0gzNC4yOFpNNTEuNjEsNDguNjlhNS4zNyw1LjM3LDAsMCwxLTEuNjMsNC4yMiw2LjMyLDYuMzIsMCwwLDEtNS4yMywxLjg3SDQyLjE0VjM5LjgyaDIuNjJhMTAuOTIsMTAuOTIsMCwwLDEsNy43NSwyLjg4LDguODMsOC44MywwLDAsMSwyLjEsNi4xNFoiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0xMjguMDgsNjguODloOC42N2ExMi4xNiwxMi4xNiwwLDAsMCw5LjgxLTQuNzYsMTMuODUsMTMuODUsMCwwLDAsMy4yMi05LjcxVjQxLjY0YTguODMsOC44MywwLDAsMC0yLjg4LTctMTEuMywxMS4zLDAsMCwwLTcuNDctMi41M0gxMjguMDhaTTE0NS40Miw0OC42OWE1LTM3LDUuMzcsMCwwLDEtMS42Myw0LjIyLDYuMzIsNi4zMiwwLDAsMS01LjIzLDEuODdoLTQuNjlWMzkuODJoMi42MmExMC45MiwxMC45MiwwLDAsMSw3Ljc1LDIuODgsOC44Myw4LjgzLDAsMCwxLDIuMSw2LjE0WiIvPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTgxLjc3LDY4Ljg5aC04VjM1Ljc1aDguMDZaIi8+PC9zdmc+";
+
 
                 // --- Add Main Image ---
                 const imgWidth = doc.internal.pageSize.getWidth();
@@ -1776,15 +1793,14 @@
                 
                 let yPos = 480;
 
-                // --- Property Details ---
-                doc.setFontSize(16);
+                // --- Left Column (Property Details) ---
+                doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(0, 0, 0);
                 doc.text(data.address, 20, yPos);
                 yPos += 25;
                 
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(11);
                 
                 if (data.acres) {
                     doc.setFont('helvetica', 'bold');
@@ -1803,7 +1819,7 @@
                     });
                 }
                 
-                yPos += 20;
+                yPos += 25;
 
                 // --- Traffic and Population ---
                 doc.setFontSize(10);
@@ -1811,40 +1827,40 @@
                 doc.text('TRAFFIC COUNTS', 20, yPos);
                 yPos += 15;
                 doc.setFont('helvetica', 'normal');
-                if(data.road1Name && data.road1Aadt) doc.text(`${data.road1Name}: ${formatNumber(data.road1Aadt)} AADT`, 20, yPos);
+                if(data.road1Name && data.road1Aadt) doc.text(`${data.road1Name}`, 20, yPos);
+                if(data.road1Aadt) doc.text(`${formatNumber(data.road1Aadt)} AADT`, 150, yPos);
                 yPos += 15;
-                if(data.road2Name && data.road2Aadt) doc.text(`${data.road2Name}: ${formatNumber(data.road2Aadt)} AADT`, 20, yPos);
+                if(data.road2Name && data.road2Aadt) doc.text(`${data.road2Name}`, 20, yPos);
+                if(data.road2Aadt) doc.text(`${formatNumber(data.road2Aadt)} AADT`, 150, yPos);
+
                 yPos += 30;
 
                 doc.setFont('helvetica', 'bold');
                 doc.text('POPULATION', 20, yPos);
                 yPos += 15;
                 doc.setFont('helvetica', 'normal');
-                if(data.populationRadius && data.population) doc.text(`${data.populationRadius} Mile Radius: ${formatNumber(data.population)}`, 20, yPos);
+                if(data.populationRadius && data.population) doc.text(`${data.populationRadius} Mile Radius`, 20, yPos);
+                if(data.population) doc.text(`${formatNumber(data.population)}`, 150, yPos);
+
+                // --- Right Column (Inset Image) ---
+                doc.addImage(insetImageBase64, 'JPEG', 350, 470, 240, 200);
 
                 // --- Footer / Contact Info ---
                 const pageHeight = doc.internal.pageSize.getHeight();
-                const footerY = pageHeight - 60;
-
-                // Logo placeholder
-                doc.setFillColor(220, 220, 220);
-                doc.rect(20, footerY, 150, 40, 'F');
-                doc.setFontSize(10);
-                doc.setTextColor(100, 100, 100);
-                doc.text("Restaurant GroundWorks", 30, footerY + 25);
+                const footerY = pageHeight - 80;
                 
-                // Contact info
-                const contactX = doc.internal.pageSize.getWidth() - 180;
+                doc.addImage(logoBase64, 'SVG', 20, footerY, 150, 50);
+
+                const contactX = doc.internal.pageSize.getWidth() - 200;
                 doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
                 doc.setFont('helvetica', 'bold');
-                doc.text("Ryan Alexander", contactX, footerY + 10);
+                doc.text("Ryan Alexander", contactX, footerY + 15);
                 doc.setFont('helvetica', 'normal');
-                doc.text("Principal", contactX, footerY + 22);
-                doc.text("317.403.2819", contactX, footerY + 34);
-                doc.setTextColor(4, 120, 87); // A green-ish color for email
-                doc.text("ryan@groundleasegroup.com", contactX, footerY + 46);
-
+                doc.text("Principal", contactX + 85, footerY + 15);
+                doc.text("317.403.2819", contactX, footerY + 30);
+                doc.setTextColor(4, 120, 87);
+                doc.text("ryan@groundleasegroup.com", contactX, footerY + 45);
 
                 doc.save('Marketing_Flyer.pdf');
             }
