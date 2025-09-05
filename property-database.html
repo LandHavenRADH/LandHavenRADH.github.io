@@ -589,39 +589,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     
-    <!-- Firebase SDK - Using the new modular syntax -->
+    <!-- Main Application Logic -->
     <script type="module">
-        // Import functions from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { firebaseConfig, GEMINI_API_KEY, GOOGLE_MAPS_API_KEY } from './config.js';
 
         // Set the workerSrc for pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
-
-        // --- IMPORTANT: REPLACE WITH YOUR API KEYS ---
-        const FIREBASE_API_KEY = "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U";
-        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
-        // The Google Maps key is in the script tag at the bottom of the body.
         
-        // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-          apiKey: FIREBASE_API_KEY,
-          authDomain: "restaurant-groundworks-db.firebaseapp.com",
-          projectId: "restaurant-groundworks-db",
-          storageBucket: "restaurant-groundworks-db.appspot.com",
-          messagingSenderId: "391704584139",
-          appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
-          measurementId: "G-8LWLPVD3W1"
-        };
-
         // --- INITIALIZE FIREBASE & SERVICES ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
         const propertiesCollection = collection(db, "properties");
+        
+        // --- DYNAMICALLY LOAD GOOGLE MAPS SCRIPT ---
+        function loadGoogleMapsScript() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
@@ -683,7 +676,7 @@
             onAuthStateChanged(auth, user => {
                 if (user) {
                     mainContent.classList.remove('hidden');
-                    initMap();
+                    loadGoogleMapsScript();
                     loadProperties();
                 } else {
                     window.location.href = 'login.html';
@@ -700,7 +693,9 @@
                 properties = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 filteredProperties = [...properties];
                 renderTable();
-                updateAllMarkers();
+                if (window.google) {
+                   updateAllMarkers();
+                }
             }
 
             // --- FORMATTING HELPERS ---
@@ -1059,7 +1054,7 @@
             });
 
             // --- GOOGLE MAPS INTEGRATION ---
-            function initMap() {
+            window.initMap = function() {
                 geocoder = new google.maps.Geocoder();
                 const usa = { lat: 39.8283, lng: -98.5795 };
                 map = new google.maps.Map(document.getElementById("map"), {
@@ -1076,6 +1071,7 @@
                         }
                     }
                 });
+                updateAllMarkers();
             }
             
             function addMarkerToMap(property) {
@@ -1124,6 +1120,7 @@
             }
 
             function updateAllMarkers() {
+                 if (!window.google || !map) return;
                 markers.forEach(({ marker }) => marker.setMap(null));
                 markers = [];
                 filteredProperties.forEach(addMarkerToMap);
@@ -1451,7 +1448,7 @@
             }
             
             async function callGeminiWithExponentialBackoff(prompt, useSearch = false, maxRetries = 7) {
-                let delay = 2000; // Start with a 2-second delay
+                let delay = 2000; 
                 for (let i = 0; i < maxRetries; i++) {
                     try {
                         const model = useSearch ? 'gemini-2.5-flash-preview-05-20' : 'gemini-1.5-flash-latest';
@@ -1493,7 +1490,7 @@
                             throw error;
                         }
                         await new Promise(resolve => setTimeout(resolve, delay));
-                        delay = delay * 2 + Math.random() * 1000; // Exponential backoff with jitter
+                        delay = delay * 2 + Math.random() * 1000;
                     }
                 }
             }
@@ -1851,12 +1848,8 @@
 
                 doc.save('Marketing_Flyer.pdf');
             }
-
-
-            window.initMap = initMap;
         });
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places,geometry&callback=initMap"></script>
 </body>
 </html>
 
