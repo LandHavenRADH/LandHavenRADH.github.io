@@ -3,60 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Contact Database | Restaurant GroundWorks</title>
+    <title>Client Database | Restaurant GroundWorks</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .table-cell {
-            padding: 12px 16px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .editable-cell:hover {
-            background-color: #f1f5f9;
-            cursor: pointer;
-        }
-        .table-cell[contenteditable="true"] {
-            background-color: #fef9c3;
-            outline: 2px solid #f59e0b;
-        }
-        .sortable-header {
-            cursor: pointer;
-            user-select: none;
-        }
-        .sortable-header:hover {
-            background-color: #f1f5f9;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #F59E0B;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
-
-    <!-- Main Content (Initially Hidden) -->
-    <div id="main-content" class="hidden">
-        <!-- Header -->
-        <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-40 shadow-sm">
+    <div class="flex flex-col min-h-screen">
+        <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-6 py-4">
                 <div class="flex items-center justify-between">
                     <div class="font-extrabold text-2xl text-slate-900">
                         Restaurant GroundWorks
                     </div>
-                    <div class="flex items-center space-x-4">
+                     <div class="flex items-center space-x-4">
                         <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
                             Property Database
                         </a>
@@ -71,503 +33,43 @@
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="container mx-auto px-6 py-12">
+        <main class="flex-grow container mx-auto px-6 py-12">
             <div class="text-center mb-12">
-                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Client Contact Database</h1>
-                <p class="text-lg text-slate-600 mt-4 max-w-3xl mx-auto">A shared database for client contacts, updated in real-time.</p>
-            </div>
-
-            <!-- Add Contact Form -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
-                <h2 class="text-2xl font-bold text-slate-800 mb-4">Add a New Contact</h2>
-                <div class="mb-4">
-                    <label for="vcard-upload" class="block text-slate-700 font-medium mb-2">Upload vCard</label>
-                    <input type="file" id="vcard-upload" accept=".vcf" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                </div>
-                <form id="add-contact-form" class="grid md:grid-cols-4 gap-6">
-                    <div>
-                        <label for="name" class="block text-slate-700 font-medium mb-2">Name</label>
-                        <input type="text" id="name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="company" class="block text-slate-700 font-medium mb-2">Company</label>
-                        <input type="text" id="company" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="email" class="block text-slate-700 font-medium mb-2">Email</label>
-                        <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="businessPhone" class="block text-slate-700 font-medium mb-2">Business Phone</label>
-                        <input type="tel" id="businessPhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                     <div>
-                        <label for="mobilePhone" class="block text-slate-700 font-medium mb-2">Mobile Phone</label>
-                        <input type="tel" id="mobilePhone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div class="md:col-span-4 text-right">
-                        <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors">
-                            Add Contact
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <button id="export-button" class="mb-4 bg-green-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-green-600 transition-colors">
-                Export Selected to Excel
-            </button>
-
-            <!-- Contact Database Table -->
-            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto mb-12">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th class="table-cell"><input type="checkbox" id="select-all"></th>
-                            <th class="table-cell font-semibold sortable-header" data-key="name">Name</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="company">Company</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="email">Email</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="businessPhone">Business Phone</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="mobilePhone">Mobile Phone</th>
-                            <th class="table-cell font-semibold text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="contact-table-body">
-                        <!-- Contact rows will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- AI Lease Uploader & Analyzer -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">AI Lease Analyzer</h2>
-                <p class="text-slate-600 mb-4">Upload a Word document of a ground lease agreement to get an AI-powered analysis.</p>
-                <div class="mb-4">
-                    <label for="lease-upload" class="block text-slate-700 font-medium mb-2">Upload Lease Document</label>
-                    <input type="file" id="lease-upload" accept="application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                </div>
-                <button id="upload-lease-button" class="w-full bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600">Analyze Document</button>
-                <div id="upload-status" class="mt-4 text-center"></div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Client Database</h1>
+                <p class="text-lg text-slate-600 mt-4 max-w-3xl mx-auto">This page is under construction. Please check back later.</p>
             </div>
         </main>
 
-        <footer class="bg-slate-900 text-slate-400 mt-16">
+        <footer class="bg-slate-900 text-slate-400">
             <div class="container mx-auto px-6 py-8 text-center">
                 <p class="font-bold text-white text-lg mb-2">Restaurant GroundWorks</p>
                 <p>&copy; 2025 Restaurant GroundWorks. All Rights Reserved.</p>
             </div>
         </footer>
     </div>
+     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        const FIREBASE_API_KEY = "YOUR_FIREBASE_API_KEY";
 
-
-    <script>
-        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-          apiKey: "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U",
+          apiKey: FIREBASE_API_KEY,
           authDomain: "restaurant-groundworks-db.firebaseapp.com",
           projectId: "restaurant-groundworks-db",
-          storageBucket: "restaurant-groundworks-db.firebasestorage.app",
+          storageBucket: "restaurant-groundworks-db.appspot.com",
           messagingSenderId: "391704584139",
           appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
           measurementId: "G-8LWLPVD3W1"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const contactsCollection = db.collection("contacts");
-        
-        // IMPORTANT: Add your Gemini API key here
-        const GEMINI_API_KEY = "AIzaSyDd8CaWXTxRZbY3HShUveETF22xdz5p7cU";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS ---
-            const mainContent = document.getElementById('main-content');
-            const logoutButton = document.getElementById('logout-button');
-            const contactForm = document.getElementById('add-contact-form');
-            const tableBody = document.getElementById('contact-table-body');
-            const vcardUpload = document.getElementById('vcard-upload');
-            const selectAllCheckbox = document.getElementById('select-all');
-            const exportButton = document.getElementById('export-button');
-
-            let contacts = [];
-            let sortState = { key: 'name', direction: 'asc' };
-
-            // --- AUTHENTICATION LOGIC ---
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    mainContent.classList.remove('hidden');
-                    loadContacts();
-                } else {
-                    window.location.href = 'login.html';
-                }
+        document.getElementById('logout-button').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = 'login.html';
             });
-
-            logoutButton.addEventListener('click', () => {
-                auth.signOut();
-            });
-
-            // --- DATA MANAGEMENT ---
-            async function loadContacts() {
-                const snapshot = await contactsCollection.orderBy(sortState.key, sortState.direction).get();
-                contacts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTable();
-            }
-
-            // --- TABLE RENDERING ---
-            function renderTable() {
-                tableBody.innerHTML = '';
-                if (contacts.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-500">No contacts in the database. Add one using the form above.</td></tr>`;
-                } else {
-                    contacts.forEach(contact => {
-                        const row = createTableRow(contact);
-                        tableBody.appendChild(row);
-                    });
-                }
-                updateSortIndicators();
-            }
-
-            function createTableRow(contact) {
-                const row = document.createElement('tr');
-                row.dataset.id = contact.id;
-                row.innerHTML = `
-                    <td class="table-cell"><input type="checkbox" class="row-checkbox" data-id="${contact.id}"></td>
-                    <td class="table-cell editable-cell" data-key="name">${contact.name || ''}</td>
-                    <td class="table-cell editable-cell" data-key="company">${contact.company || ''}</td>
-                    <td class="table-cell editable-cell" data-key="email">${contact.email || ''}</td>
-                    <td class="table-cell editable-cell" data-key="businessPhone">${contact.businessPhone || ''}</td>
-                    <td class="table-cell editable-cell" data-key="mobilePhone">${contact.mobilePhone || ''}</td>
-                    <td class="table-cell text-center">
-                        <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
-                    </td>
-                `;
-                return row;
-            }
-
-            function updateSortIndicators() {
-                document.querySelectorAll('.sortable-header').forEach(header => {
-                    const key = header.dataset.key;
-                    header.innerHTML = header.innerHTML.replace(/ [▲▼]/, '');
-                    if (key === sortState.key) {
-                        header.innerHTML += sortState.direction === 'asc' ? ' ▲' : ' ▼';
-                    }
-                });
-            }
-
-            // --- EVENT LISTENERS ---
-            contactForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const submitButton = contactForm.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.innerHTML = 'Adding...';
-
-                const newContact = {
-                    name: document.getElementById('name').value.trim(),
-                    company: document.getElementById('company').value.trim(),
-                    email: document.getElementById('email').value.trim(),
-                    businessPhone: document.getElementById('businessPhone').value.trim(),
-                    mobilePhone: document.getElementById('mobilePhone').value.trim(),
-                };
-
-                try {
-                    await contactsCollection.add(newContact);
-                    contactForm.reset();
-                    loadContacts();
-                } catch (error) {
-                    console.error("Error adding document: ", error);
-                    alert("Failed to add contact.");
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = 'Add Contact';
-                }
-            });
-
-            tableBody.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
-                    try {
-                        await contactsCollection.doc(id).delete();
-                        loadContacts();
-                    } catch (error) {
-                        console.error("Error removing document: ", error);
-                        alert("Failed to delete contact.");
-                    }
-                }
-
-                const cell = e.target.closest('.editable-cell');
-                if (!cell || cell.isContentEditable) return;
-                cell.setAttribute('contenteditable', 'true');
-                cell.focus();
-                document.execCommand('selectAll', false, null);
-            });
-
-            tableBody.addEventListener('focusout', async (e) => {
-                const cell = e.target.closest('.editable-cell');
-                if (!cell || !cell.isContentEditable) return;
-                cell.setAttribute('contenteditable', 'false');
-
-                const id = cell.closest('tr').dataset.id;
-                const key = cell.dataset.key;
-                const value = cell.textContent;
-
-                const contactIndex = contacts.findIndex(p => p.id === id);
-                const originalValue = contacts[contactIndex][key];
-                
-                if (value === originalValue) return;
-                
-                cell.innerHTML = '<i>Saving...</i>';
-
-                try {
-                    await contactsCollection.doc(id).update({ [key]: value });
-                    setTimeout(() => {
-                        loadContacts(); 
-                    }, 500);
-                } catch (error) {
-                    console.error("Error updating document: ", error);
-                    alert("Failed to update contact. Reverting change.");
-                    loadContacts();
-                }
-            });
-            
-            document.querySelectorAll('.sortable-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const key = header.dataset.key;
-                    if (sortState.key === key) {
-                        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortState.key = key;
-                        sortState.direction = 'asc';
-                    }
-                    loadContacts();
-                });
-            });
-
-            vcardUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const vcardText = event.target.result;
-                    const lines = vcardText.split('\n');
-                    let name = '';
-                    let company = '';
-                    let email = '';
-                    let businessPhone = '';
-                    let mobilePhone = '';
-                    let genericPhone = '';
-
-                    lines.forEach(line => {
-                        if (line.startsWith('FN:')) {
-                            name = line.substring(3).trim();
-                        } else if (line.startsWith('ORG:')) {
-                            company = line.substring(4).trim();
-                        } else if (line.startsWith('EMAIL;')) {
-                            email = line.split(':').pop().trim();
-                        } else if (line.startsWith('TEL;')) {
-                            const phoneValue = line.split(':').pop().trim();
-                            if (line.includes('TYPE=WORK')) {
-                                businessPhone = phoneValue;
-                            } else if (line.includes('TYPE=CELL')) {
-                                mobilePhone = phoneValue;
-                            } else {
-                                genericPhone = phoneValue;
-                            }
-                        }
-                    });
-                    
-                    document.getElementById('name').value = name;
-                    document.getElementById('company').value = company;
-                    document.getElementById('email').value = email;
-                    document.getElementById('businessPhone').value = businessPhone;
-                    document.getElementById('mobilePhone').value = mobilePhone || genericPhone;
-                };
-                reader.readAsText(file);
-            });
-            
-            selectAllCheckbox.addEventListener('change', (e) => {
-                const checkboxes = document.querySelectorAll('.row-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = e.target.checked;
-                });
-            });
-
-            exportButton.addEventListener('click', () => {
-                const selectedIds = [...document.querySelectorAll('.row-checkbox:checked')].map(cb => cb.dataset.id);
-                if (selectedIds.length === 0) {
-                    alert("Please select at least one contact to export.");
-                    return;
-                }
-                const selectedContacts = contacts.filter(c => selectedIds.includes(c.id));
-                
-                // Prepare data for SheetJS
-                const headers = ["Name", "Company", "Email", "Business Phone", "Mobile Phone"];
-                const data = selectedContacts.map(contact => ({
-                    Name: contact.name || '',
-                    Company: contact.company || '',
-                    Email: contact.email || '',
-                    "Business Phone": contact.businessPhone || '',
-                    "Mobile Phone": contact.mobilePhone || ''
-                }));
-
-                // Create a new workbook
-                const wb = XLSX.utils.book_new();
-                // Convert data to a worksheet
-                const ws = XLSX.utils.json_to_sheet(data, { header: headers });
-
-                // Calculate column widths
-                const colWidths = [];
-                // Header widths
-                headers.forEach((header, i) => {
-                    colWidths[i] = { wch: header.length };
-                });
-                // Data widths
-                data.forEach(row => {
-                    Object.values(row).forEach((cell, i) => {
-                        const len = cell ? String(cell).length : 10;
-                        if (!colWidths[i] || colWidths[i].wch < len) {
-                            colWidths[i] = { wch: len };
-                        }
-                    });
-                });
-                ws['!cols'] = colWidths;
-
-                // Add worksheet to the workbook
-                XLSX.utils.book_append_sheet(wb, ws, "Clients");
-
-                // Write the workbook and trigger download
-                XLSX.writeFile(wb, "clients.xlsx");
-            });
-
-            // --- AI LEASE UPLOADER & ANALYZER ---
-            const uploadButton = document.getElementById('upload-lease-button');
-            const fileInput = document.getElementById('lease-upload');
-            const uploadStatus = document.getElementById('upload-status');
-
-            uploadButton.addEventListener('click', async () => {
-                const file = fileInput.files[0];
-                if (!file) {
-                    alert("Please select a file to upload.");
-                    return;
-                }
-
-                uploadStatus.textContent = 'Reading document...';
-                uploadButton.disabled = true;
-
-                try {
-                    const reader = new FileReader();
-                    reader.readAsArrayBuffer(file);
-                    reader.onload = async (event) => {
-                        const arrayBuffer = event.target.result;
-                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                        const textContent = result.value;
-
-                        uploadStatus.textContent = 'Analyzing document...';
-                        const prompt = `Act as a commercial real estate attorney. Analyze the following ground lease agreement text. For the "Key Terms" and "Annual Rental Payments" sections, analyze from a landlord's perspective. For the "Potential Risks" and "Negotiation Points" sections, also analyze from a landlord's perspective. Provide a detailed summary that includes: 1. **Key Terms:** A simple explanation of the most important clauses for a landlord. 2. **Annual Rental Payments:** Detail the base rent, any percentage rent, and the schedule of rent escalations. This section is critical and should be extracted verbatim if possible. If no rent is mentioned, state that. 3. **Potential Risks for the Landlord:** Identify any language that could be unfavorable to the landlord. 4. **Negotiation Points for the Landlord:** Suggest specific questions to ask or changes to propose to protect the landlord's interests. Format the response with clear headings and bullet points.\n\nLease Text:\n${textContent}`;
-                        
-                        const rawText = await callGeminiWithExponentialBackoff(prompt);
-                        generateLeaseAnalysisPDF(rawText);
-                        uploadStatus.textContent = 'Analysis complete. Your PDF is downloading.';
-                    };
-                } catch (error) {
-                    console.error("Error processing document:", error);
-                    uploadStatus.textContent = "Failed to read or analyze document.";
-                } finally {
-                    uploadButton.disabled = false;
-                }
-            });
-
-            async function callGeminiWithExponentialBackoff(prompt, maxRetries = 5) {
-                let delay = 1000; // Start with a 1-second delay
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                        });
-                        if (response.status === 429) {
-                            throw new Error('Rate limited');
-                        }
-                        if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                        const result = await response.json();
-                        return result.candidates[0].content.parts[0].text;
-                    } catch (error) {
-                        if (i === maxRetries - 1) throw error;
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // Double the delay for the next retry
-                    }
-                }
-            }
-
-            function generateLeaseAnalysisPDF(text) {
-                try {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-                    
-                    // Header
-                    doc.setFontSize(18);
-                    doc.setFont("helvetica", "bold");
-                    doc.text("Restaurant GroundWorks", 105, 20, { align: 'center' });
-                    doc.setFontSize(12);
-                    doc.setFont("helvetica", "normal");
-                    doc.text("Ground Lease Analysis Report", 105, 28, { align: 'center' });
-                    doc.setLineWidth(0.5);
-                    doc.line(15, 35, 195, 35);
-
-
-                    let y = 50;
-                    const lines = text.split('\n');
-
-                    lines.forEach(line => {
-                        if (y > 270) {
-                            doc.addPage();
-                            y = 20;
-                        }
-                        
-                        let textToPrint = line.trim();
-                        if (textToPrint.startsWith('**') && textToPrint.endsWith('**')) {
-                            doc.setFont("helvetica", "bold");
-                            textToPrint = textToPrint.slice(2, -2);
-                            y += 7;
-                            doc.text(textToPrint, 15, y);
-                            y += 7;
-                        } else if (textToPrint.startsWith('-') || textToPrint.startsWith('*')) {
-                            doc.setFont("helvetica", "normal");
-                            textToPrint = textToPrint.substring(1).trim();
-                            const splitText = doc.splitTextToSize(textToPrint, 170);
-                            doc.text(`• ${splitText[0]}`, 20, y);
-                            if (splitText.length > 1) {
-                                doc.text(splitText.slice(1), 25, y + 5);
-                                y += (splitText.length -1) * 5;
-                            }
-                            y += 7;
-                        } else if (textToPrint.length > 0) {
-                           const splitText = doc.splitTextToSize(textToPrint, 180);
-                           doc.text(splitText, 15, y);
-                           y += (splitText.length * 5) + 2;
-                        }
-                    });
-
-                    doc.save('Lease_Analysis_Report.pdf');
-                } catch (error) {
-                    console.error("PDF Generation Error:", error);
-                    alert("An error occurred while generating the PDF.");
-                }
-            }
-
         });
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Restaurant GroundWorks Database</title>
+    <title>Login | Restaurant GroundWorks</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,36 +14,45 @@
         }
     </style>
 </head>
-<body class="bg-slate-50">
-    <div class="min-h-screen flex items-center justify-center">
-        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm">
-            <h2 class="text-2xl font-bold text-slate-800 mb-4 text-center">Restaurant GroundWorks</h2>
-            <p class="text-slate-600 mb-6 text-center">Please enter your credentials to access the database.</p>
+<body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-slate-900">Restaurant GroundWorks</h1>
+            <p class="text-lg text-slate-600 mt-2">Sign in to access your databases</p>
+        </div>
+        <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
             <form id="login-form">
                 <div class="mb-4">
-                    <label for="email" class="block text-slate-700 font-medium mb-2">Email</label>
-                    <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <label for="email" class="block text-slate-700 font-medium mb-2">Email Address</label>
+                    <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
                 </div>
-                <div class="mb-4">
+                <div class="mb-6">
                     <label for="password" class="block text-slate-700 font-medium mb-2">Password</label>
-                    <input type="password" id="password" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
                 </div>
-                <p id="login-error" class="text-red-500 text-sm mb-4 h-5"></p>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">
-                    Login
-                </button>
+                <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4"></div>
+                <div class="flex items-center justify-between gap-4">
+                    <button type="button" id="signup-button" class="w-full bg-slate-200 text-slate-800 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                        Sign Up
+                    </button>
+                    <button type="submit" id="login-button" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                        Login
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <script>
-        // --- FIREBASE CONFIGURATION ---
+        // --- IMPORTANT: REPLACE WITH YOUR API KEY ---
+        const FIREBASE_API_KEY = "YOUR_FIREBASE_API_KEY";
+
         const firebaseConfig = {
-          apiKey: "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U",
+          apiKey: FIREBASE_API_KEY,
           authDomain: "restaurant-groundworks-db.firebaseapp.com",
           projectId: "restaurant-groundworks-db",
           storageBucket: "restaurant-groundworks-db.appspot.com",
@@ -52,35 +61,57 @@
           measurementId: "G-8LWLPVD3W1"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const loginError = document.getElementById('login-error');
+        const loginForm = document.getElementById('login-form');
+        const loginButton = document.getElementById('login-button');
+        const signupButton = document.getElementById('signup-button');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('error-message');
 
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    // If user is already logged in, redirect to the property database
-                    window.location.href = 'property-database.html';
-                }
-            });
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging in...';
+            errorMessage.classList.add('hidden');
 
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = emailInput.value;
-                const password = passwordInput.value;
-                auth.signInWithEmailAndPassword(email, password)
-                    .then(() => {
-                        // Redirect is handled by the onAuthStateChanged listener
-                    })
-                    .catch(error => {
-                        loginError.textContent = error.message;
-                    });
-            });
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = 'property-database.html';
+            } catch (error) {
+                console.error("Login Error:", error);
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+            }
+        });
+
+        signupButton.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            signupButton.disabled = true;
+            signupButton.textContent = 'Signing up...';
+            errorMessage.classList.add('hidden');
+
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                window.location.href = 'property-database.html';
+            } catch (error) {
+                console.error("Sign Up Error:", error);
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                signupButton.disabled = false;
+                signupButton.textContent = 'Sign Up';
+            }
         });
     </script>
 </body>

@@ -3,48 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broker Contact Database | Restaurant GroundWorks</title>
+    <title>Broker Database | Restaurant GroundWorks</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .table-cell {
-            padding: 12px 16px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .editable-cell:hover {
-            background-color: #f1f5f9;
-            cursor: pointer;
-        }
-        .table-cell[contenteditable="true"] {
-            background-color: #fef9c3;
-            outline: 2px solid #f59e0b;
-        }
-        .sortable-header {
-            cursor: pointer;
-            user-select: none;
-        }
-        .sortable-header:hover {
-            background-color: #f1f5f9;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
-
-    <!-- Main Content (Initially Hidden) -->
-    <div id="main-content" class="hidden">
-        <!-- Header -->
-        <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-40 shadow-sm">
+    <div class="flex flex-col min-h-screen">
+        <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-40 shadow-sm">
             <div class="container mx-auto px-6 py-4">
                 <div class="flex items-center justify-between">
                     <div class="font-extrabold text-2xl text-slate-900">
                         Restaurant GroundWorks
                     </div>
-                    <div class="flex items-center space-x-4">
+                     <div class="flex items-center space-x-4">
                         <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
                             Property Database
                         </a>
@@ -59,261 +33,42 @@
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="container mx-auto px-6 py-12">
+        <main class="flex-grow container mx-auto px-6 py-12">
             <div class="text-center mb-12">
-                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Broker Contact Database</h1>
-                <p class="text-lg text-slate-600 mt-4 max-w-3xl mx-auto">A shared database for broker contacts, updated in real-time.</p>
-            </div>
-
-            <!-- Add Contact Form -->
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 mb-12">
-                <h2 class="text-2xl font-bold text-slate-800 mb-4">Add a New Broker</h2>
-                <form id="add-broker-form" class="grid md:grid-cols-4 gap-6">
-                    <div>
-                        <label for="name" class="block text-slate-700 font-medium mb-2">Name</label>
-                        <input type="text" id="name" class="w-full px-4 py-2 border border-slate-300 rounded-lg" required>
-                    </div>
-                    <div>
-                        <label for="company" class="block text-slate-700 font-medium mb-2">Company</label>
-                        <input type="text" id="company" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                     <div>
-                        <label for="department" class="block text-slate-700 font-medium mb-2">Department</label>
-                        <input type="text" id="department" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                     <div>
-                        <label for="position" class="block text-slate-700 font-medium mb-2">Position</label>
-                        <input type="text" id="position" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="email" class="block text-slate-700 font-medium mb-2">Email</label>
-                        <input type="email" id="email" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="phone" class="block text-slate-700 font-medium mb-2">Phone</label>
-                        <input type="tel" id="phone" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    </div>
-                    <div class="md:col-span-4 text-right">
-                        <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors">
-                            Add Broker
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Broker Database Table -->
-            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th class="table-cell font-semibold sortable-header" data-key="name">Name</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="company">Company</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="department">Department</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="position">Position</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="email">Email</th>
-                            <th class="table-cell font-semibold sortable-header" data-key="phone">Phone</th>
-                            <th class="table-cell font-semibold text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="broker-table-body">
-                        <!-- Broker rows will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Broker Database</h1>
+                <p class="text-lg text-slate-600 mt-4 max-w-3xl mx-auto">This page is under construction. Please check back later.</p>
             </div>
         </main>
 
-        <footer class="bg-slate-900 text-slate-400 mt-16">
+        <footer class="bg-slate-900 text-slate-400">
             <div class="container mx-auto px-6 py-8 text-center">
                 <p class="font-bold text-white text-lg mb-2">Restaurant GroundWorks</p>
                 <p>&copy; 2025 Restaurant GroundWorks. All Rights Reserved.</p>
             </div>
         </footer>
     </div>
+     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+        const FIREBASE_API_KEY = "YOUR_FIREBASE_API_KEY";
 
-    <script>
-        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
-          apiKey: "AIzaSyDTwvo7MYXxgdb5cEwYbd6DQzm_i5bnk3U",
+          apiKey: FIREBASE_API_KEY,
           authDomain: "restaurant-groundworks-db.firebaseapp.com",
           projectId: "restaurant-groundworks-db",
-          storageBucket: "restaurant-groundworks-db.firebasestorage.app",
+          storageBucket: "restaurant-groundworks-db.appspot.com",
           messagingSenderId: "391704584139",
           appId: "1:391704584139:web:e427a9dd0df7aa0df8a04e",
           measurementId: "G-8LWLPVD3W1"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const brokersCollection = db.collection("brokers");
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM ELEMENTS ---
-            const mainContent = document.getElementById('main-content');
-            const logoutButton = document.getElementById('logout-button');
-            const brokerForm = document.getElementById('add-broker-form');
-            const tableBody = document.getElementById('broker-table-body');
-
-            let brokers = [];
-            let sortState = { key: 'name', direction: 'asc' };
-
-            // --- AUTHENTICATION LOGIC ---
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    mainContent.classList.remove('hidden');
-                    loadBrokers();
-                } else {
-                    window.location.href = 'login.html';
-                }
-            });
-
-            logoutButton.addEventListener('click', () => {
-                auth.signOut();
-            });
-
-            // --- DATA MANAGEMENT ---
-            async function loadBrokers() {
-                const snapshot = await brokersCollection.orderBy(sortState.key, sortState.direction).get();
-                brokers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTable();
-            }
-
-            // --- TABLE RENDERING ---
-            function renderTable() {
-                tableBody.innerHTML = '';
-                if (brokers.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-500">No brokers in the database. Add one using the form above.</td></tr>`;
-                } else {
-                    brokers.forEach(broker => {
-                        const row = createTableRow(broker);
-                        tableBody.appendChild(row);
-                    });
-                }
-                updateSortIndicators();
-            }
-
-            function createTableRow(broker) {
-                const row = document.createElement('tr');
-                row.dataset.id = broker.id;
-                row.innerHTML = `
-                    <td class="table-cell editable-cell" data-key="name">${broker.name || ''}</td>
-                    <td class="table-cell editable-cell" data-key="company">${broker.company || ''}</td>
-                    <td class="table-cell editable-cell" data-key="department">${broker.department || ''}</td>
-                    <td class="table-cell editable-cell" data-key="position">${broker.position || ''}</td>
-                    <td class="table-cell editable-cell" data-key="email">${broker.email || ''}</td>
-                    <td class="table-cell editable-cell" data-key="phone">${broker.phone || ''}</td>
-                    <td class="table-cell text-center">
-                        <button class="delete-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
-                    </td>
-                `;
-                return row;
-            }
-
-            function updateSortIndicators() {
-                document.querySelectorAll('.sortable-header').forEach(header => {
-                    const key = header.dataset.key;
-                    header.innerHTML = header.innerHTML.replace(/ [▲▼]/, '');
-                    if (key === sortState.key) {
-                        header.innerHTML += sortState.direction === 'asc' ? ' ▲' : ' ▼';
-                    }
-                });
-            }
-
-            // --- EVENT LISTENERS ---
-            brokerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const submitButton = brokerForm.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.innerHTML = 'Adding...';
-
-                const newBroker = {
-                    name: document.getElementById('name').value.trim(),
-                    company: document.getElementById('company').value.trim(),
-                    department: document.getElementById('department').value.trim(),
-                    position: document.getElementById('position').value.trim(),
-                    email: document.getElementById('email').value.trim(),
-                    phone: document.getElementById('phone').value.trim(),
-                };
-
-                try {
-                    await brokersCollection.add(newBroker);
-                    brokerForm.reset();
-                    loadBrokers();
-                } catch (error) {
-                    console.error("Error adding document: ", error);
-                    alert("Failed to add broker.");
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = 'Add Broker';
-                }
-            });
-
-            tableBody.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const row = e.target.closest('tr');
-                    const id = row.dataset.id;
-                    try {
-                        await brokersCollection.doc(id).delete();
-                        loadBrokers();
-                    } catch (error) {
-                        console.error("Error removing document: ", error);
-                        alert("Failed to delete broker.");
-                    }
-                }
-
-                const cell = e.target.closest('.editable-cell');
-                if (!cell || cell.isContentEditable) return;
-                cell.setAttribute('contenteditable', 'true');
-                cell.focus();
-                document.execCommand('selectAll', false, null);
-            });
-
-            tableBody.addEventListener('focusout', async (e) => {
-                const cell = e.target.closest('.editable-cell');
-                if (!cell || !cell.isContentEditable) return;
-                cell.setAttribute('contenteditable', 'false');
-
-                const id = cell.closest('tr').dataset.id;
-                const key = cell.dataset.key;
-                const value = cell.textContent;
-
-                const brokerIndex = brokers.findIndex(p => p.id === id);
-                const originalValue = brokers[brokerIndex][key];
-                
-                if (value === originalValue) return;
-                
-                cell.innerHTML = '<i>Saving...</i>';
-
-                try {
-                    await brokersCollection.doc(id).update({ [key]: value });
-                    setTimeout(() => {
-                        loadBrokers(); 
-                    }, 500);
-                } catch (error) {
-                    console.error("Error updating document: ", error);
-                    alert("Failed to update broker. Reverting change.");
-                    loadBrokers();
-                }
-            });
-            
-            document.querySelectorAll('.sortable-header').forEach(header => {
-                header.addEventListener('click', () => {
-                    const key = header.dataset.key;
-                    if (sortState.key === key) {
-                        sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortState.key = key;
-                        sortState.direction = 'asc';
-                    }
-                    loadBrokers();
-                });
+        document.getElementById('logout-button').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = 'login.html';
             });
         });
     </script>
