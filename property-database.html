@@ -1775,441 +1775,95 @@
                     reader.onerror = error => reject(error);
                 });
                 
-                const logoBase64 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAByCAYAAADGN/oMAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAA3NCSVQICAjb4U/gAAAb+ElEQVR4nO3dfZBdZVXH8c9/jilQJRCmUFmYtDBpYEo2FpA2EEkLNcQpRhknjUSLhVptxIpJdYyjUWOmmWgmG5lV1qLd2E5tJ44xYtEmO23S0TRaUJbSwE6k20yZtElK2GAmkDCBQIjEQLjjH5/s8+nee++99z7b7L7XXe/n/T15M+2e+z5n7/M55/zO5/ucQxRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURREYIT-ax=a, a.x-b, a.y - b) : a,
-                                g = this.internal.getFont(c, e, f);
-                            (d = a.charSpace || this.internal.charSpace) && (b *= 1 - 2 / this.internal.scaleFactor, a.x -= d * (b.length - 1) * this.internal.scaleFactor);
-                            "left" === a.align ? this.internal.write("q", .59 * d * (1 - this.internal.scaleFactor), "BT 1 0 0 1 ", a.x, a.y, "Tm (", b, ") Tj ET Q") : "right" === a.align ? (f = b.split("").reverse().join(""), this.internal.write("q", "BT 1 0 0 1 ", a.x, a.y, "Tm (", f, ") Tj ET Q")) : "center" === a.align && (c = this.getStringUnitWidth(b, {
-                                font: g,
-                                charSpace: d,
-                                R2L: a.R2L
-                            }) / 2 * this.internal.scaleFactor, this.internal.write("q", "BT 1 0 0 1 ", a.x - c, a.y, "Tm (", b, ") Tj ET Q"));
-                            a.R2L && this.internal.write("q", "BT 1 0 0 1 ", this.internal.pageSize.getWidth(), this.internal.pageSize.getHeight(), "Tm (", b, ") Tj ET Q")
-                        }, this), c.forEach(function(a) {
-                            var b, d;
-                            a instanceof e.Rectangle ? (b = c.x + a.x, d = c.y - a.y, this.internal.lines(this.internal.getHorizontalCoordinate, this.internal.getVerticalCoordinate, a.w, a.h, b, d, a.style), this.rect(b, d, a.w, a.h, a.style)) : a instanceof e.Line ? (b = c.x + a.x1, d = c.y - a.y1, this.internal.line(b, d, b + a.x2 - a.x1, d + a.y2 - a.y1, a.style)) : a instanceof e.Triangle ? (this.triangle(c.x + a.x1, c.y - a.y1, c.x + a.x2, c.y - a.y2, c.x + a.x3, c.y - a.y3, a.style), this.path(a.style)) : a instanceof e.Ellipse && (d = c.x + a.x, b = c.y - a.y, this.ellipse(d, b, a.rx, a.ry, a.style), this.path(a.style))
-                        }, this)
-                    }
+                const logoBase64 = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAByCAYAAADGN/oMAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAA3NCSVQICAjb4U/gAAAb+ElEQVR4nO3dfZBdZVXH8c9/jilQJRCmUFmYtDBpYEo2FpA2EEkLNcQpRhknjUSLhVptxIpJdYyjUWOmmWgmG5lV1qLd2E5tJ44xYtEmO23S0TRaUJbSwE6k20yZtElK2GAmkDCBQIjEQLjjH5/s8+nee++99z7b7L7XXe/n/T15M+2e+z5n7/M55/zO5/ucQxRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURSFna-IAEAmpwYAAAAA3NCSVQICAjb4U/gAAAb+ElEQVR4nO3dfZBdZVXH8c9/jilQJRCmUFmYtDBpYEo2FpA2EEkLNcQpRhknjUSLhVptxIpJdYyjUWOmmWgmG5lV1qLd2E5tJ44xYtEmO23S0TRaUJbSwE6k20yZtElK2GAmkDCBQIjEQLjjH5/s8+nee++99z7b7L7XXe/n/T15M+2e+z5n7/M55/zO5/ucQxRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURRFURVtidBuM/A5x3B1f24d+sAAAAASUVORK5CYII=`;
+
+                // --- Add Main Image ---
+                const imgWidth = doc.internal.pageSize.getWidth();
+                doc.addImage(mainImageBase64, 'JPEG', 0, 0, imgWidth, 400);
+
+                // --- Blue Banner ---
+                doc.setFillColor(15, 75, 146);
+                doc.rect(0, 400, imgWidth, 50, 'F');
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(255, 255, 255);
+                doc.text('GROUND LEASE OPPORTUNITY', 20, 435);
+                
+                let yPos = 480;
+
+                // --- Left Column (Property Details) ---
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text(data.address, 20, yPos);
+                yPos += 25;
+                
+                doc.setFontSize(11);
+                
+                if (data.acres) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`${data.acres} Acres`, 20, yPos);
+                    yPos += 20;
+                    doc.setFont('helvetica', 'normal');
                 }
-            },
-            f = new d(b)
-        }
-    })(t.API), t.API.addSVG = function(a, b, c, d, e) {
-        return "undefined" == typeof a || "undefined" == typeof b || "undefined" == typeof c ? void console.log("addSVG requires all of the following parameters: a, b, c") : (this.addSVG(a, b, c, d, e), this)
-    }, d
-}(function() {
-    return this
-}());
-(function(a) {
-    "use strict";
-
-    function b(a, b, c, d) {
-        this.data = a, this.pos = 0, this.bufferLength = this.data.length, this.eof = !1, this.buffer = new Uint8Array(b), this.view = new DataView(this.buffer.buffer, 0, this.buffer.length), this.bytePos = 0
-    }
-    b.prototype.getByte = function() {
-        if (this.bytePos >= this.buffer.length) {
-            if (this.eof) return null;
-            this.fillBuffer()
-        }
-        return this.buffer[this.bytePos++]
-    }, b.prototype.fillBuffer = function() {
-        if (this.eof) return;
-        var a = 0,
-            b = Math.min(this.bufferLength, this.pos + this.buffer.length);
-        if (b > this.pos) {
-            for (var c = this.pos; b > c; ++c) this.buffer[a++] = this.data.charCodeAt(c);
-            this.pos = b
-        } else a = -1; - 1 == a ? this.eof = !0 : this.bytePos = 0
-    }, "object" == typeof exports && "undefined" != typeof module ? module.exports = b : "function" == typeof define && define.amd ? define(function() {
-        return b
-    }) : a.BinaryFile = b
-})("undefined" != typeof self && self || "undefined" != typeof window && window || this),
-function(a, b) {
-    "use strict";
-
-    function c(a) {
-        this.file = a, this.pos = 0
-    }
-
-    function d(a, b) {
-        this.stream = a, this.bytes = b, this.finished = !1, this.bytesLoaded = 0, this.crc32 = null
-    }
-
-    function e(a, b, c) {
-        return (65535 & a) * (65535 & b) + ((a >>> 16) * (65535 & b) & 65535) * c + ((65535 & a) * (b >>> 16) & 65535) * c
-    }
-
-    function f(a) {
-        for (var b = new Int32Array(256), c = 0; 256 > c; c++) {
-            for (var d = c, e = 0; 8 > e; e++) d = 1 & d ? 3988292384 ^ d >>> 1 : d >>> 1;
-            b[c] = d
-        }
-        return function(c) {
-            for (var d = -1, e = 0; e < c.length; e++) d = d >>> 8 ^ b[255 & (d ^ c[e])];
-            return a ? ~d : d
-        }
-    }
-
-    function g() {
-        var a = [];
-        return {
-            b: a,
-            c: function(b) {
-                var c = a.length;
-                b instanceof Array && (a = a.concat(b)), a = a.concat(Array.prototype.slice.call(arguments, 1)), c != a.length && this.e.resolve(a)
-            },
-            e: new("undefined" == typeof Promise ? null : Promise)(function(b) {
-                this.resolve = b
-            })
-        }
-    }
-    c.prototype.getByte = function() {
-        var a = this.file.getByte();
-        return null != a && this.pos++, a
-    }, c.prototype.peekByte = function(a) {
-        return this.file.peek(a)
-    }, c.prototype.getBytes = function(a) {
-        for (var b = [], c = 0; a > c; c++) b.push(this.getByte());
-        return b
-    }, c.prototype.peekBytes = function(a) {
-        for (var b = [], c = 0; a > c; c++) b.push(this.peekByte(c));
-        return b
-    }, c.prototype.getInt = function(a) {
-        var b = this.getBytes(a),
-            c = 0;
-        if (a > 4) throw "Int size too large: " + a;
-        for (var d = 0; a > d; d++) c |= b[d] << 8 * d;
-        return c
-    }, c.prototype.getShort = function() {
-        return this.getInt(2)
-    }, c.prototype.getLong = function() {
-        return this.getInt(4)
-    }, c.prototype.getString = function(a) {
-        for (var b = "", c = this.getBytes(a), d = 0; a > d; d++) b += String.fromCharCode(c[d]);
-        return b
-    }, d.prototype = {
-        getByte: function() {
-            return this.bytesLoaded >= this.bytes ? (this.finished = !0, null) : (this.bytesLoaded++, this.stream.getByte())
-        },
-        peekByte: function() {
-            return this.stream.peekByte(0)
-        }
-    };
-    var h, i, j = null;
-    "undefined" != typeof process && process.versions && process.versions.node && (h = !0), h && require("fs");
-    var k = {
-            readInt: function(a, b) {
-                for (var c = 0, d = 0; b > d; d++) c |= a[d] << 8 * d;
-                return c
-            }
-        },
-        l = {
-            readCrc32: function(a) {
-                return k.readInt(a, 4)
-            },
-            readHeader: function(a) {
-                a.getByte(), a.getByte();
-                var b = a.getByte();
-                (b & (1 << 3) > 0 || b & (1 << 4) > 0) && a.getBytes(6);
-                var c = a.getByte();
-                return b & (1 << 1) > 0 && c | a.getByte() << 8, b & (1 << 2) > 0 && a.getBytes(2), 0
-            },
-            readBlock: function(a) {
-                var b = a.getByte(),
-                    c = a.getShort();
-                return 65535 - a.getShort() != (65535 & c) ? null : 1 & b ? {
-                    type: 1,
-                    data: a.getBytes(c)
-                } : {
-                    type: 0,
-                    data: a.getBytes(c)
+                
+                if (data.notes) {
+                    const notesArray = data.notes.split('\n');
+                    notesArray.forEach(note => {
+                        if (note.trim()) {
+                           doc.text(`• ${note.trim()}`, 20, yPos);
+                           yPos += 15;
+                        }
+                    });
                 }
-            },
-            readBody: function(a) {
-                var b, c = g();
-                a.crc32 = f(!0);
-                var e = function() {
-                    (b = this.readBlock(a)) && (a.crc32(b.data), b.type, c.c(b.data), setTimeout(e.bind(this), 0))
-                };
-                return setTimeout(e.bind(this), 0), c.e
-            }
-        },
-        m = function(a, b) {
-            this.file = a, this.options = b
-        };
-    m.prototype.read = function() {
-        return j = new c(new("undefined" == typeof BinaryFile ? null : BinaryFile)(this.file)), this.readHeader(j), this.readBody(j)
-    }, m.prototype.readHeader = function(a) {
-        return l.readHeader(a)
-    }, m.prototype.readBody = function(a) {
-        return l.readBody(a)
-    }, i = function(a) {
-        var b = {
-            codes: new Array(a + 1),
-            maxBits: a,
-            lengths: new Int16Array(1 << a),
-            map: new Int16Array(1 << a),
-            tree: new Int16Array(2 * (a + 1)),
-            symbol: 0
-        };
-        return b
-    };
-    var n = {
-        buildHuffmanTable: function(a) {
-            for (var b = a.length, c = i(15), d = 0, e = 0, f = 0, g = 0, h = 0, j = 0, k = 0, l = new Int16Array(16), m = 0; 15 >= m; m++) l[m] = 0;
-            for (m = 0; b > m; m++) l[a[m]]++;
-            for (m = 1; 15 >= m; m++) d = d + l[m] << 1;
-            for (m = 1; 15 >= m; m++) e = l[m], e && (f = d - (1 << 16 - m), d = f, g = (g = 1 << m) > e ? g - e : 0, h += e * m, c.codes[m] = {
-                num: e,
-                start: f,
-                start_code: g
-            });
-            for (m = 0; b > m; m++)
-                if (a[m]) {
-                    var n = c.codes[a[m]];
-                    c.map[n.start + (n.start_code++)] = m
-                }
-            return c
-        },
-        readDynamic: function(a) {
-            for (var b, c, d, e = a.getInt(5) + 257, f = a.getInt(5) + 1, g = a.getInt(4) + 4, h = new Array(19), i = 0; g > i; i++) h["0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18".split(";")[i]] = a.getInt(3);
-            for (var j = this.buildHuffmanTable(h), k = new Array(e + f), l = e + f, m = 0, n = 0; l > m;)
-                if (n = this.readCode(a, j), 16 > n) k[m++] = n;
-                else if (16 == n) {
-                for (d = k[m - 1], b = a.getInt(2) + 3; b--;) k[m++] = d
-            } else if (17 == n)
-                for (b = a.getInt(3) + 3; b--;) k[m++] = 0;
-            else if (18 == n)
-                for (b = a.getInt(7) + 11; b--;) k[m++] = 0;
-            return {
-                lit: this.buildHuffmanTable(k.slice(0, e)),
-                dist: this.buildHuffmanTable(k.slice(e, e + f))
-            }
-        },
-        readCode: function(a, b) {
-            for (var c = 1, d = 0, e = a.getBit(); null != e;) {
-                d |= e << c - 1;
-                var f = b.codes[c];
-                if (f && d >= f.start && d < f.start + f.num) return b.map[d];
-                c++, e = a.getBit()
-            }
-        },
-        readBody: function(a) {
-            var b, c, f, h, i = new(d.bind(this, a)),
-                k = g();
-            a.crc32 = new(j.bind(this, !0));
-            var l = function() {
-                var d = i.getBits(3);
-                1 & d && (i.finished = !0), d >>= 1, 0 == d ? (i.getBits(-i.bitpos & 7), f = i.getBits(16), 65535 - i.getBits(16) != (65535 & f) && (console.log("invalid LEN"), k.c([0])), c = new Uint8Array(f), b = 0, h = n) : h = 1 == d ? m : this.readDynamic(i), setTimeout(p, 0)
-            }, m = function() {
-                var b, c;
-                for (;;)
-                    if (c = n.readCode(i, h), 256 > c) k.c(String.fromCharCode(c));
-                    else {
-                        if (256 == c) return setTimeout(l, 0);
-                        c -= 257;
-                        var d = i.getBits(o[c].len) + o[c].base;
-                        c = n.readCode(i, h.dist);
-                        var g = i.getBits(p[c].len) + p[c].base,
-                            m = k.b;
-                        for (b = 0; d > b; b++) k.c(m[m.length - g])
-                    }
-            }, o = [{
-                len: 0,
-                base: 3
-            }, {
-                len: 0,
-                base: 4
-            }, {
-                len: 0,
-                base: 5
-            }, {
-                len: 0,
-                base: 6
-            }, {
-                len: 0,
-                base: 7
-            }, {
-                len: 0,
-                base: 8
-            }, {
-                len: 0,
-                base: 9
-            }, {
-                len: 0,
-                base: 10
-            }, {
-                len: 1,
-                base: 11
-            }, {
-                len: 1,
-                base: 13
-            }, {
-                len: 1,
-                base: 15
-            }, {
-                len: 1,
-                base: 17
-            }, {
-                len: 2,
-                base: 19
-            }, {
-                len: 2,
-                base: 23
-            }, {
-                len: 2,
-                base: 27
-            }, {
-                len: 2,
-                base: 31
-            }, {
-                len: 3,
-                base: 35
-            }, {
-                len: 3,
-                base: 43
-            }, {
-                len: 3,
-                base: 51
-            }, {
-                len: 3,
-                base: 59
-            }, {
-                len: 4,
-                base: 67
-            }, {
-                len: 4,
-                base: 83
-            }, {
-                len: 4,
-                base: 99
-            }, {
-                len: 4,
-                base: 115
-            }, {
-                len: 5,
-                base: 131
-            }, {
-                len: 5,
-                base: 163
-            }, {
-                len: 5,
-                base: 195
-            }, {
-                len: 5,
-                base: 227
-            }, {
-                len: 0,
-                base: 258
-            }],
-                p = [{
-                    len: 0,
-                    base: 1
-                }, {
-                    len: 0,
-                    base: 2
-                }, {
-                    len: 0,
-                    base: 3
-                }, {
-                    len: 0,
-                    base: 4
-                }, {
-                    len: 1,
-                    base: 5
-                }, {
-                    len: 1,
-                    base: 7
-                }, {
-                    len: 2,
-                    base: 9
-                }, {
-                    len: 2,
-                    base: 13
-                }, {
-                    len: 3,
-                    base: 17
-                }, {
-                    len: 3,
-                    base: 25
-                }, {
-                    len: 4,
-                    base: 33
-                }, {
-                    len: 4,
-                    base: 49
-                }, {
-                    len: 5,
-                    base: 65
-                }, {
-                    len: 5,
-                    base: 97
-                }, {
-                    len: 6,
-                    base: 129
-                }, {
-                    len: 6,
-                    base: 193
-                }, {
-                    len: 7,
-                    base: 257
-                }, {
-                    len: 7,
-                    base: 385
-                }, {
-                    len: 8,
-                    base: 513
-                }, {
-                    len: 8,
-                    base: 769
-                }, {
-                    len: 9,
-                    base: 1025
-                }, {
-                    len: 9,
-                    base: 1537
-                }, {
-                    len: 10,
-                    base: 2049
-                }, {
-                    len: 10,
-                    base: 3073
-                }, {
-                    len: 11,
-                    base: 4097
-                }, {
-                    len: 11,
-                    base: 6145
-                }, {
-                    len: 12,
-                    base: 8193
-                }, {
-                    len: 12,
-                    base: 12289
-                }, {
-                    len: 13,
-                    base: 16385
-                }, {
-                    len: 13,
-                    base: 24577
-                }];
-            return setTimeout(l.bind(this), 0), k.e
-        }
-    }, q = function(a, b) {
-        this.stream = a, this.options = b || {}
-    };
-    q.prototype.read = function() {
-        var a = this.stream,
-            b = new c(new("undefined" == typeof BinaryFile ? null : BinaryFile)(this.file));
-        a.getByte();
-        var d = {
-            cm: a.getByte(),
-            flg: a.getByte()
-        };
-        return 7815 == (256 * d.cm + d.flg) / 31 ? (j = f(), d.mtime = a.getLong(), d.xfl = a.getByte(), d.os = a.getByte(), d.flg >> 3 & 1 && (a.getShort(), a.getLong()), n.readBody(new e.BitStream(a))) : null
-    }, "object" == typeof exports && "undefined" != typeof module ? module.exports = q : "function" == typeof define && define.amd ? define(function() {
-        return q
-    }) : a.PNGReader = q
-}("undefined" != typeof self && self || "undefined" != typeof window && window || this);
-//# sourceMappingURL=png.js.map
+                
+                yPos += 25;
 
+                // --- Traffic and Population ---
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text('TRAFFIC COUNTS', 20, yPos);
+                yPos += 15;
+                doc.setFont('helvetica', 'normal');
+                if(data.road1Name && data.road1Aadt) doc.text(`${data.road1Name}`, 20, yPos);
+                if(data.road1Aadt) doc.text(`${formatNumber(data.road1Aadt)} AADT`, 150, yPos);
+                yPos += 15;
+                if(data.road2Name && data.road2Aadt) doc.text(`${data.road2Name}`, 20, yPos);
+                if(data.road2Aadt) doc.text(`${formatNumber(data.road2Aadt)} AADT`, 150, yPos);
+
+                yPos += 30;
+
+                doc.setFont('helvetica', 'bold');
+                doc.text('POPULATION', 20, yPos);
+                yPos += 15;
+                doc.setFont('helvetica', 'normal');
+                if(data.populationRadius && data.population) doc.text(`${data.populationRadius} Mile Radius`, 20, yPos);
+                if(data.population) doc.text(`${formatNumber(data.population)}`, 150, yPos);
+
+                // --- Right Column (Inset Image) ---
+                doc.addImage(insetImageBase64, 'JPEG', 350, 470, 240, 200);
+
+                // --- Footer / Contact Info ---
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const footerY = pageHeight - 80;
+                
+                doc.addImage(logoBase64, 'PNG', 20, footerY, 150, 50);
+
+                const contactX = doc.internal.pageSize.getWidth() - 200;
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'bold');
+                doc.text("Ryan Alexander", contactX, footerY + 15);
+                doc.setFont('helvetica', 'normal');
+                doc.text("Principal", contactX + 85, footerY + 15);
+                doc.text("317.403.2819", contactX, footerY + 30);
+                doc.setTextColor(4, 120, 87);
+                doc.text("ryan@groundleasegroup.com", contactX, footerY + 45);
+
+                doc.save('Marketing_Flyer.pdf');
+            }
+        });
+    </script>
+</body>
+</html>
 
