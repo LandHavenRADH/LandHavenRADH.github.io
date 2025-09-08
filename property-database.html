@@ -1805,12 +1805,12 @@
                 doc.setFontSize(24);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(255, 255, 255);
-                doc.text('GROUND LEASE OPPORTUNITY', 20, 435);
+                doc.text('GROUND LEASE OPPORTUNITY', 20, 435, {charSpace: 2});
                 
                 let yPos = 480;
 
                 // --- Left Column (Property Details) ---
-                doc.setFontSize(14);
+                doc.setFontSize(16);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(15, 75, 146);
                 doc.text(data.address, 20, yPos);
@@ -1870,12 +1870,12 @@
                 const pageHeight = doc.internal.pageSize.getHeight();
                 const footerY = pageHeight - 80;
                 
-                const logoWidth = 250;
-                const logoHeight = 50;
-                doc.addImage(logoBase64, 'JPEG', 20, footerY, logoWidth, logoHeight);
-
-
                 const contactX = doc.internal.pageSize.getWidth() - 200;
+                const logoWidth = contactX - 40;
+                const logoHeight = logoWidth * (96 / 486);
+                doc.addImage(logoBase64, 'JPEG', 20, footerY + (50 - logoHeight) / 2, logoWidth, logoHeight);
+
+
                 doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
                 doc.setFont('helvetica', 'bold');
