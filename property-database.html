@@ -1858,7 +1858,10 @@
                 const pageHeight = doc.internal.pageSize.getHeight();
                 const footerY = pageHeight - 80;
                 
-                doc.addImage(logoBase64, 'JPEG', 20, footerY, 150, 50);
+                const logoWidth = 220; // Increased width for the logo
+                const logoHeight = 44; // Adjusted height to maintain aspect ratio
+                doc.addImage(logoBase64, 'JPEG', 20, footerY, logoWidth, logoHeight);
+
 
                 const contactX = doc.internal.pageSize.getWidth() - 200;
                 doc.setFontSize(10);
