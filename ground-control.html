@@ -20,6 +20,19 @@
             scrollbar-width: none;  /* Firefox */
         }
         .drag-card:hover { transform: translateY(-2px); }
+        .editable:hover {
+            background-color: #f1f5f9;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .editing-input {
+            width: 100%;
+            background: #fef9c3;
+            border: 1px solid #f59e0b;
+            padding: 2px 4px;
+            border-radius: 4px;
+            outline: none;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
@@ -79,7 +92,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v1.2.1 • Live Sync
+                v1.3.0 • Editable Fields
             </div>
         </div>
 
@@ -91,7 +104,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
-                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease.</p>
+                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease. <span class="text-emerald-600 text-xs">(Click a deal to edit)</span></p>
                     </div>
                     <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Deal
@@ -111,7 +124,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Critical Dates & Tasks</h2>
-                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos.</p>
+                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos. <span class="text-emerald-600 text-xs">(Click text to edit)</span></p>
                     </div>
                     <button onclick="openModal('task-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Task
@@ -142,7 +155,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
-                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials.</p>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click fields to edit)</span></p>
                     </div>
                     <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Contact
@@ -158,14 +171,15 @@
 
     <!-- MODALS -->
     
-    <!-- Deal Modal -->
+    <!-- Deal Modal (New/Edit) -->
     <div id="deal-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50">
-                <h3 class="text-lg font-bold text-slate-800">Add New Deal</h3>
+                <h3 class="text-lg font-bold text-slate-800" id="deal-modal-title">Add New Deal</h3>
                 <button onclick="closeModal('deal-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <form id="deal-form" class="p-6 space-y-4">
+                <input type="hidden" id="deal-id"> <!-- Hidden ID for updates -->
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Deal Name / Tenant</label>
                     <input type="text" id="deal-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Starbucks - Greenwood" required>
@@ -190,12 +204,12 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
+                <button type="submit" id="deal-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
             </form>
         </div>
     </div>
 
-    <!-- Task Modal -->
+    <!-- Task Modal (New Only - Edit done inline) -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50">
@@ -227,7 +241,7 @@
         </div>
     </div>
 
-    <!-- Contact Modal -->
+    <!-- Contact Modal (New Only - Edit done inline) -->
     <div id="contact-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50">
@@ -310,9 +324,34 @@
 
         // --- Modal Logic ---
         window.openModal = (id) => {
+            if (id === 'deal-modal') {
+                // Reset for "New Deal"
+                document.getElementById('deal-form').reset();
+                document.getElementById('deal-id').value = ''; 
+                document.getElementById('deal-modal-title').textContent = 'Add New Deal';
+                document.getElementById('deal-submit-btn').textContent = 'Create Deal';
+            }
             document.getElementById(id).classList.remove('hidden');
             if(id === 'task-modal' || id === 'contact-modal') populateDealSelects();
         };
+
+        // Edit Deal Modal
+        window.editDeal = (id) => {
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+
+            document.getElementById('deal-id').value = deal.id;
+            document.getElementById('deal-name').value = deal.name || '';
+            document.getElementById('deal-address').value = deal.address || '';
+            document.getElementById('deal-value').value = deal.value || '';
+            document.getElementById('deal-stage').value = deal.stage || 'prospect';
+            
+            document.getElementById('deal-modal-title').textContent = 'Edit Deal';
+            document.getElementById('deal-submit-btn').textContent = 'Update Deal';
+            
+            document.getElementById('deal-modal').classList.remove('hidden');
+        };
+
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
         // --- Initialization ---
@@ -368,17 +407,17 @@
                     </div>
                     <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
                         ${stageDeals.map(deal => `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card">
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="editDeal('${deal.id}')">
                                 <div class="flex justify-between items-start mb-2">
                                     <h4 class="font-bold text-slate-800">${deal.name}</h4>
-                                    <button onclick="deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
+                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
                                 </div>
                                 <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
                                     <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
                                 </p>
                                 <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                                     <span class="text-xs font-mono font-medium text-emerald-600">$${deal.value || '0'}</span>
-                                    <select onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
+                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
                                         ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
                                     </select>
                                 </div>
@@ -392,7 +431,7 @@
             lucide.createIcons();
         }
 
-        // --- RENDER TASKS ---
+        // --- RENDER TASKS (With Inline Editing) ---
         function renderTasks() {
             const tbody = document.getElementById('tasks-table-body');
             const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
@@ -402,171 +441,4 @@
                 return;
             }
 
-            tbody.innerHTML = sortedTasks.map(task => {
-                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
-                const isOverdue = !task.completed && new Date(task.date) < new Date().setHours(0,0,0,0);
-                return `
-                    <tr class="group hover:bg-slate-50 transition ${task.completed ? 'bg-slate-50/50' : ''}">
-                        <td class="p-4 text-center">
-                            <button onclick="toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
-                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
-                            </button>
-                        </td>
-                        <td class="p-4">
-                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
-                            ${task.notes ? `<p class="text-xs text-slate-500 mt-1">${task.notes}</p>` : ''}
-                        </td>
-                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
-                        <td class="p-4">
-                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${new Date(task.date).toLocaleDateString()}
-                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
-                            </div>
-                        </td>
-                        <td class="p-4 text-right">
-                            <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        // --- RENDER CONTACTS ---
-        function renderContacts() {
-            const grid = document.getElementById('contacts-grid');
-            if(contacts.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
-                return;
-            }
-
-            grid.innerHTML = contacts.map(c => {
-                const dealName = deals.find(d => d.id === c.dealId)?.name || 'General';
-                return `
-                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group">
-                        <button onclick="deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                                ${c.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800">${c.name}</h4>
-                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'Contact'}</p>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                            <div class="flex items-center gap-2"><i data-lucide="mail" width="14" class="text-slate-400"></i> <a href="mailto:${c.email}" class="hover:text-emerald-600 truncate">${c.email || '-'}</a></div>
-                            <div class="flex items-center gap-2"><i data-lucide="phone" width="14" class="text-slate-400"></i> ${c.phone || '-'}</div>
-                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealName}</span></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        // --- Helpers ---
-        function populateDealSelects() {
-            const options = `<option value="">-- General / Unassigned --</option>` + 
-                            deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-            document.getElementById('task-deal-id').innerHTML = options;
-            document.getElementById('contact-deal-id').innerHTML = options;
-        }
-
-        // --- CRUD Operations ---
-        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
-        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
-        
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
-
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
-
-        // --- Form Submissions with Error Handling ---
-        
-        document.getElementById('deal-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const data = {
-                    name: document.getElementById('deal-name').value,
-                    address: document.getElementById('deal-address').value,
-                    value: document.getElementById('deal-value').value,
-                    stage: document.getElementById('deal-stage').value,
-                    createdAt: serverTimestamp()
-                };
-                await addDoc(collection(db, "gc_deals"), data);
-                e.target.reset();
-                closeModal('deal-modal');
-            } catch (error) {
-                console.error("Error adding deal:", error);
-                alert("Failed to create deal. Error: " + error.message + "\n\n(Likely insufficient database permissions for 'gc_deals' collection)");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('task-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const data = {
-                    title: document.getElementById('task-title').value,
-                    date: document.getElementById('task-date').value,
-                    dealId: document.getElementById('task-deal-id').value,
-                    notes: document.getElementById('task-notes').value,
-                    completed: false,
-                    createdAt: serverTimestamp()
-                };
-                await addDoc(collection(db, "gc_tasks"), data);
-                e.target.reset();
-                closeModal('task-modal');
-            } catch (error) {
-                console.error("Error adding task:", error);
-                alert("Failed to save task: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const data = {
-                    name: document.getElementById('contact-name').value,
-                    role: document.getElementById('contact-role').value,
-                    email: document.getElementById('contact-email').value,
-                    phone: document.getElementById('contact-phone').value,
-                    dealId: document.getElementById('contact-deal-id').value,
-                    createdAt: serverTimestamp()
-                };
-                await addDoc(collection(db, "gc_contacts"), data);
-                e.target.reset();
-                closeModal('contact-modal');
-            } catch (error) {
-                console.error("Error adding contact:", error);
-                alert("Failed to save contact: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-    </script>
-</body>
-</html>
+            tbody.innerHTML = sortedTasks.map(task =>
