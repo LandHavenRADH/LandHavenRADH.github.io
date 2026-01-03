@@ -89,7 +89,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v1.5.0 • Calendar View
+                v1.6.0 • Deal Detail View
             </div>
         </div>
 
@@ -101,7 +101,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
-                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease. <span class="text-emerald-600 text-xs">(Click a deal to edit)</span></p>
+                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease. <span class="text-emerald-600 text-xs">(Click a deal to view details)</span></p>
                     </div>
                     <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Deal
@@ -224,6 +224,68 @@
         </div>
     </div>
 
+    <!-- Deal Detail Modal (Shows Related Items) -->
+    <div id="deal-detail-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-6 border-b bg-slate-50 shrink-0">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800" id="detail-deal-name">Deal Name</h3>
+                    <p class="text-slate-500 text-sm flex items-center gap-2 mt-1">
+                        <i data-lucide="map-pin" width="14"></i> <span id="detail-deal-address">Address</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="editCurrentDeal()" class="text-slate-500 hover:text-emerald-600 font-medium text-sm flex items-center gap-1">
+                        <i data-lucide="edit-2" width="14"></i> Edit Deal
+                    </button>
+                    <button onclick="closeModal('deal-detail-modal')" class="text-slate-400 hover:text-red-500 ml-4">
+                        <i data-lucide="x" width="24"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Left Column: Tasks -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="calendar" class="text-emerald-600" width="18"></i> Related Tasks
+                            </h4>
+                            <button onclick="openModal('task-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Task</button>
+                        </div>
+                        <div id="detail-tasks-list" class="space-y-2">
+                            <!-- Tasks injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Contacts -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="users" class="text-emerald-600" width="18"></i> Related Contacts
+                            </h4>
+                            <button onclick="openModal('contact-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Contact</button>
+                        </div>
+                        <div id="detail-contacts-list" class="space-y-2">
+                            <!-- Contacts injected here -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="p-4 border-t bg-white flex justify-between items-center text-sm text-slate-500">
+                <span id="detail-deal-value" class="font-mono font-medium text-emerald-600"></span>
+                <span id="detail-deal-stage" class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold uppercase"></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Task Modal (New/Edit) -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
@@ -312,6 +374,7 @@
         let contacts = [];
         let currentUserId = null;
         let calendar = null;
+        let currentDealId = null; // Track currently open deal
 
         // --- Auth ---
         onAuthStateChanged(auth, (user) => {
@@ -381,7 +444,7 @@
         };
 
         // --- Modal Logic ---
-        window.openModal = (id) => {
+        window.openModal = (id, dealId = null) => {
             if (id === 'deal-modal') {
                 document.getElementById('deal-form').reset();
                 document.getElementById('deal-id').value = ''; 
@@ -393,17 +456,83 @@
                 document.getElementById('task-modal-title').textContent = 'New Task';
                 document.getElementById('task-submit-btn').textContent = 'Save Task';
                 populateDealSelects();
+                if(dealId) document.getElementById('task-deal-id').value = dealId;
             } else if (id === 'contact-modal') {
                 document.getElementById('contact-form').reset();
                 document.getElementById('contact-id').value = ''; 
                 document.getElementById('contact-modal-title').textContent = 'Add Contact';
                 document.getElementById('contact-submit-btn').textContent = 'Save Contact';
                 populateDealSelects();
+                if(dealId) document.getElementById('contact-deal-id').value = dealId;
             }
             document.getElementById(id).classList.remove('hidden');
         };
 
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        // --- Deal Detail Logic ---
+        window.openDealDetail = (id) => {
+            currentDealId = id;
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+
+            document.getElementById('detail-deal-name').textContent = deal.name;
+            document.getElementById('detail-deal-address').textContent = deal.address;
+            document.getElementById('detail-deal-value').textContent = deal.value ? `$${deal.value}` : '$0';
+            const stageLabel = STAGES.find(s => s.id === deal.stage)?.label || deal.stage;
+            document.getElementById('detail-deal-stage').textContent = stageLabel;
+
+            renderRelatedTasks(id);
+            renderRelatedContacts(id);
+
+            document.getElementById('deal-detail-modal').classList.remove('hidden');
+        }
+
+        window.editCurrentDeal = () => {
+            closeModal('deal-detail-modal');
+            editDeal(currentDealId);
+        }
+
+        function renderRelatedTasks(dealId) {
+            const container = document.getElementById('detail-tasks-list');
+            const relatedTasks = tasks.filter(t => t.dealId === dealId);
+            
+            if (relatedTasks.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No tasks linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedTasks.map(t => `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
+                    <div>
+                        <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
+                        <div class="text-xs text-slate-500">${t.date ? new Date(t.date).toLocaleDateString() : 'No Date'}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
+                        ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderRelatedContacts(dealId) {
+            const container = document.getElementById('detail-contacts-list');
+            const relatedContacts = contacts.filter(c => c.dealId === dealId);
+            
+            if (relatedContacts.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No contacts linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedContacts.map(c => `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition cursor-pointer" onclick="editContact('${c.id}')">
+                    <div class="font-medium text-sm text-slate-800">${c.name}</div>
+                    <div class="text-xs text-slate-500 uppercase font-semibold">${c.role || 'No Role'}</div>
+                    ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
+                </div>
+            `).join('');
+        }
 
         // --- Edit Logic ---
         
@@ -471,6 +600,10 @@
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderPipeline();
                     populateDealSelects();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        openDealDetail(currentDealId);
+                    }
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
                     alert("Error syncing deals: " + error.message + "\nCheck your Firestore permissions.");
@@ -480,11 +613,19 @@
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderTasks();
                     updateCalendarEvents();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedTasks(currentDealId);
+                    }
                 }, (error) => console.error("Tasks Sync Error:", error));
 
                 onSnapshot(collection(db, "gc_contacts"), (snapshot) => {
                     contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderContacts();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedContacts(currentDealId);
+                    }
                 }, (error) => console.error("Contacts Sync Error:", error));
             } catch (e) {
                 console.error("Init Error:", e);
@@ -563,7 +704,7 @@
                     </div>
                     <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
                         ${stageDeals.map(deal => `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="editDeal('${deal.id}')">
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
                                 <div class="flex justify-between items-start mb-2">
                                     <h4 class="font-bold text-slate-800">${deal.name}</h4>
                                     <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
