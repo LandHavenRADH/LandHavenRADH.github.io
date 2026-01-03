@@ -44,6 +44,15 @@
                         <a href="client-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
                             Client Database
                         </a>
+			<a href="ground-control.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">
+    			    Ground Control
+			</a>
+
+### **Summary of Changes:**
+1.  **Created `ground-control.html`**: A new standalone page that runs your Deal Pipeline, Tasks, and Contacts logic using standard HTML/JS instead of React.
+2.  **Shared Config**: It uses your existing `config.js` file for Firebase connection.
+3.  **Database**: It stores data in 3 new collections in your database: `gc_deals`, `gc_tasks`, and `gc_contacts` so it won't interfere with your existing property data.
+4.  **Navigation**: The new page has navigation links to "Property DB", "Client DB", etc., at the top. You just need to add the link *to* this page on your other files.
                         <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-amber-600 transition-colors">
                             Logout
                         </button>

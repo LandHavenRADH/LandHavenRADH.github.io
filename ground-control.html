@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ground Control | Restaurant GroundWorks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .drag-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- Global Header (Matches other pages) -->
+    <header class="bg-white/80 backdrop-blur-lg z-40 shadow-sm border-b border-slate-200 shrink-0">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="font-extrabold text-2xl text-slate-900 flex items-center gap-2">
+                    Restaurant GroundWorks
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Property DB
+                    </a>
+                    <a href="client-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Client DB
+                    </a>
+                    <a href="broker-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Broker DB
+                    </a>
+                    <!-- Current Page Indicator -->
+                    <span class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg shadow-inner text-sm">
+                        Ground Control
+                    </span>
+                    <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Layout -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 bg-slate-900 text-white flex flex-col shrink-0 z-10 shadow-xl">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="building" class="text-emerald-400"></i>
+                    Ground<span class="text-emerald-400">Control</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-2">Retail Lease Management</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="switchView('pipeline')" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
+                    <i data-lucide="map-pin" size="20"></i>
+                    <span class="font-medium">Deal Pipeline</span>
+                </button>
+                <button onclick="switchView('tasks')" id="nav-tasks" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="calendar" size="20"></i>
+                    <span class="font-medium">Tasks & Dates</span>
+                </button>
+                <button onclick="switchView('contacts')" id="nav-contacts" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="users" size="20"></i>
+                    <span class="font-medium">Contact Book</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+                v1.2.0 • Live Sync
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 relative bg-slate-100 overflow-hidden">
+            
+            <!-- VIEW: PIPELINE -->
+            <div id="view-pipeline" class="view-section absolute inset-0 p-8 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
+                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease.</p>
+                    </div>
+                    <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <i data-lucide="plus" size="18"></i> New Deal
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+                    <div class="flex gap-6 min-w-max h-full" id="pipeline-container">
+                        <!-- Stages will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: TASKS -->
+            <div id="view-tasks" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Critical Dates & Tasks</h2>
+                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos.</p>
+                    </div>
+                    <button onclick="openModal('task-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <i data-lucide="plus" size="18"></i> New Task
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+                    <div class="overflow-y-auto flex-1 p-0">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-4 w-12 text-center">Done</th>
+                                    <th class="p-4">Task / Action</th>
+                                    <th class="p-4">Related Deal</th>
+                                    <th class="p-4">Due Date</th>
+                                    <th class="p-4 w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-table-body" class="divide-y divide-slate-100">
+                                <!-- Tasks injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CONTACTS -->
+            <div id="view-contacts" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials.</p>
+                    </div>
+                    <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <i data-lucide="plus" size="18"></i> Add Contact
+                    </button>
+                </div>
+                <div id="contacts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-4">
+                    <!-- Contacts injected here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- Deal Modal -->
+    <div id="deal-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800">Add New Deal</h3>
+                <button onclick="closeModal('deal-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="deal-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Deal Name / Tenant</label>
+                    <input type="text" id="deal-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Starbucks - Greenwood" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Property Address</label>
+                    <input type="text" id="deal-address" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="123 Main St" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Est. Value ($)</label>
+                        <input type="text" id="deal-value" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1,200,000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Stage</label>
+                        <select id="deal-stage" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="prospect">Prospecting</option>
+                            <option value="loi">LOI / Offer</option>
+                            <option value="dd">Due Diligence</option>
+                            <option value="closing">Closing</option>
+                            <option value="leased">Active Lease</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4">Create Deal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800">New Task</h3>
+                <button onclick="closeModal('task-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="task-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Task / Action</label>
+                    <input type="text" id="task-title" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sign Purchase Agreement" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                    <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Related Deal</label>
+                    <select id="task-deal-id" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                        <option value="">-- General Task --</option>
+                        <!-- Deals injected here -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                    <textarea id="task-notes" rows="3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4">Save Task</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contact-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800">Add Contact</h3>
+                <button onclick="closeModal('contact-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="contact-form" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                    <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <input type="email" id="contact-email" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                        <input type="tel" id="contact-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Associated Deal</label>
+                    <select id="contact-deal-id" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                        <option value="">-- General Contact --</option>
+                        <!-- Deals injected here -->
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4">Save Contact</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from './config.js';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- State ---
+        let deals = [];
+        let tasks = [];
+        let contacts = [];
+        let currentUserId = null;
+
+        // --- Auth ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                initApp();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // --- View Switching ---
+        window.switchView = (viewName) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            
+            // Update Sidebar
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-300', 'hover:bg-slate-800');
+            });
+            const activeBtn = document.getElementById(`nav-${viewName}`);
+            activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800');
+            activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+        };
+
+        // --- Modal Logic ---
+        window.openModal = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'task-modal' || id === 'contact-modal') populateDealSelects();
+        };
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        // --- Initialization ---
+        function initApp() {
+            lucide.createIcons();
+            
+            // Listeners
+            onSnapshot(collection(db, "gc_deals"), (snapshot) => {
+                deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderPipeline();
+                populateDealSelects();
+            });
+
+            onSnapshot(collection(db, "gc_tasks"), (snapshot) => {
+                tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderTasks();
+            });
+
+            onSnapshot(collection(db, "gc_contacts"), (snapshot) => {
+                contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderContacts();
+            });
+        }
+
+        // --- RENDER PIPELINE ---
+        const STAGES = [
+            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
+            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
+            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
+            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
+            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
+        ];
+
+        function renderPipeline() {
+            const container = document.getElementById('pipeline-container');
+            container.innerHTML = '';
+
+            STAGES.forEach(stage => {
+                const stageDeals = deals.filter(d => d.stage === stage.id);
+                const col = document.createElement('div');
+                col.className = 'w-80 flex flex-col h-full';
+                col.innerHTML = `
+                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
+                        <span class="flex-1">${stage.label}</span>
+                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
+                    </div>
+                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
+                        ${stageDeals.map(deal => `
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
+                                    <button onclick="deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
+                                </div>
+                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
+                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
+                                </p>
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                    <span class="text-xs font-mono font-medium text-emerald-600">$${deal.value || '0'}</span>
+                                    <select onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
+                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${stageDeals.length === 0 ? '<div class="text-center py-8 text-slate-400 italic text-sm">No deals</div>' : ''}
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+            lucide.createIcons();
+        }
+
+        // --- RENDER TASKS ---
+        function renderTasks() {
+            const tbody = document.getElementById('tasks-table-body');
+            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
+            
+            if(sortedTasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sortedTasks.map(task => {
+                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
+                const isOverdue = !task.completed && new Date(task.date) < new Date().setHours(0,0,0,0);
+                return `
+                    <tr class="group hover:bg-slate-50 transition ${task.completed ? 'bg-slate-50/50' : ''}">
+                        <td class="p-4 text-center">
+                            <button onclick="toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
+                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
+                            </button>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
+                            ${task.notes ? `<p class="text-xs text-slate-500 mt-1">${task.notes}</p>` : ''}
+                        </td>
+                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
+                                ${new Date(task.date).toLocaleDateString()}
+                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // --- RENDER CONTACTS ---
+        function renderContacts() {
+            const grid = document.getElementById('contacts-grid');
+            if(contacts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
+                return;
+            }
+
+            grid.innerHTML = contacts.map(c => {
+                const dealName = deals.find(d => d.id === c.dealId)?.name || 'General';
+                return `
+                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group">
+                        <button onclick="deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                ${c.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">${c.name}</h4>
+                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'Contact'}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 mt-4 text-sm text-slate-600">
+                            <div class="flex items-center gap-2"><i data-lucide="mail" width="14" class="text-slate-400"></i> <a href="mailto:${c.email}" class="hover:text-emerald-600 truncate">${c.email || '-'}</a></div>
+                            <div class="flex items-center gap-2"><i data-lucide="phone" width="14" class="text-slate-400"></i> ${c.phone || '-'}</div>
+                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealName}</span></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // --- Helpers ---
+        function populateDealSelects() {
+            const options = `<option value="">-- General / Unassigned --</option>` + 
+                            deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            document.getElementById('task-deal-id').innerHTML = options;
+            document.getElementById('contact-deal-id').innerHTML = options;
+        }
+
+        // --- CRUD Operations ---
+        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
+        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
+        
+        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
+        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
+
+        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
+
+        // --- Form Submissions ---
+        document.getElementById('deal-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('deal-name').value,
+                address: document.getElementById('deal-address').value,
+                value: document.getElementById('deal-value').value,
+                stage: document.getElementById('deal-stage').value,
+                createdAt: serverTimestamp()
+            };
+            await addDoc(collection(db, "gc_deals"), data);
+            e.target.reset();
+            closeModal('deal-modal');
+        });
+
+        document.getElementById('task-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('task-title').value,
+                date: document.getElementById('task-date').value,
+                dealId: document.getElementById('task-deal-id').value,
+                notes: document.getElementById('task-notes').value,
+                completed: false,
+                createdAt: serverTimestamp()
+            };
+            await addDoc(collection(db, "gc_tasks"), data);
+            e.target.reset();
+            closeModal('task-modal');
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('contact-name').value,
+                role: document.getElementById('contact-role').value,
+                email: document.getElementById('contact-email').value,
+                phone: document.getElementById('contact-phone').value,
+                dealId: document.getElementById('contact-deal-id').value,
+                createdAt: serverTimestamp()
+            };
+            await addDoc(collection(db, "gc_contacts"), data);
+            e.target.reset();
+            closeModal('contact-modal');
+        });
+
+    </script>
+</body>
+</html>
