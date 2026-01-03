@@ -20,19 +20,6 @@
             scrollbar-width: none;  /* Firefox */
         }
         .drag-card:hover { transform: translateY(-2px); }
-        .editable:hover {
-            background-color: #f1f5f9;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .editing-input {
-            width: 100%;
-            background: #fef9c3;
-            border: 1px solid #f59e0b;
-            padding: 2px 4px;
-            border-radius: 4px;
-            outline: none;
-        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
@@ -92,7 +79,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v1.3.1 • Editable Fields
+                v1.4.0 • Modal Editors
             </div>
         </div>
 
@@ -124,7 +111,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Critical Dates & Tasks</h2>
-                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos. <span class="text-emerald-600 text-xs">(Click text to edit)</span></p>
+                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos. <span class="text-emerald-600 text-xs">(Click a task to edit)</span></p>
                     </div>
                     <button onclick="openModal('task-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Task
@@ -155,7 +142,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
-                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click fields to edit)</span></p>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click a contact to edit)</span></p>
                     </div>
                     <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Contact
@@ -179,7 +166,7 @@
                 <button onclick="closeModal('deal-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <form id="deal-form" class="p-6 space-y-4">
-                <input type="hidden" id="deal-id"> <!-- Hidden ID for updates -->
+                <input type="hidden" id="deal-id">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Deal Name / Tenant</label>
                     <input type="text" id="deal-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Starbucks - Greenwood" required>
@@ -209,14 +196,15 @@
         </div>
     </div>
 
-    <!-- Task Modal (New Only - Edit done inline) -->
+    <!-- Task Modal (New/Edit) -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50">
-                <h3 class="text-lg font-bold text-slate-800">New Task</h3>
+                <h3 class="text-lg font-bold text-slate-800" id="task-modal-title">New Task</h3>
                 <button onclick="closeModal('task-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <form id="task-form" class="p-6 space-y-4">
+                <input type="hidden" id="task-id">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Task / Action</label>
                     <input type="text" id="task-title" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sign Purchase Agreement" required>
@@ -236,19 +224,20 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
                     <textarea id="task-notes" rows="3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Task</button>
+                <button type="submit" id="task-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Task</button>
             </form>
         </div>
     </div>
 
-    <!-- Contact Modal (New Only - Edit done inline) -->
+    <!-- Contact Modal (New/Edit) -->
     <div id="contact-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50">
-                <h3 class="text-lg font-bold text-slate-800">Add Contact</h3>
+                <h3 class="text-lg font-bold text-slate-800" id="contact-modal-title">Add Contact</h3>
                 <button onclick="closeModal('contact-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
             </div>
             <form id="contact-form" class="p-6 space-y-4">
+                <input type="hidden" id="contact-id">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
@@ -274,7 +263,7 @@
                         <!-- Deals injected here -->
                     </select>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Contact</button>
+                <button type="submit" id="contact-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Contact</button>
             </form>
         </div>
     </div>
@@ -325,17 +314,30 @@
         // --- Modal Logic ---
         window.openModal = (id) => {
             if (id === 'deal-modal') {
-                // Reset for "New Deal"
                 document.getElementById('deal-form').reset();
                 document.getElementById('deal-id').value = ''; 
                 document.getElementById('deal-modal-title').textContent = 'Add New Deal';
                 document.getElementById('deal-submit-btn').textContent = 'Create Deal';
+            } else if (id === 'task-modal') {
+                document.getElementById('task-form').reset();
+                document.getElementById('task-id').value = ''; 
+                document.getElementById('task-modal-title').textContent = 'New Task';
+                document.getElementById('task-submit-btn').textContent = 'Save Task';
+                populateDealSelects();
+            } else if (id === 'contact-modal') {
+                document.getElementById('contact-form').reset();
+                document.getElementById('contact-id').value = ''; 
+                document.getElementById('contact-modal-title').textContent = 'Add Contact';
+                document.getElementById('contact-submit-btn').textContent = 'Save Contact';
+                populateDealSelects();
             }
             document.getElementById(id).classList.remove('hidden');
-            if(id === 'task-modal' || id === 'contact-modal') populateDealSelects();
         };
 
-        // Edit Deal Modal
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        // --- Edit Logic ---
+        
         window.editDeal = (id) => {
             const deal = deals.find(d => d.id === id);
             if (!deal) return;
@@ -352,7 +354,38 @@
             document.getElementById('deal-modal').classList.remove('hidden');
         };
 
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.editTask = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            populateDealSelects();
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title').value = task.title || '';
+            document.getElementById('task-date').value = task.date || '';
+            document.getElementById('task-deal-id').value = task.dealId || '';
+            document.getElementById('task-notes').value = task.notes || '';
+
+            document.getElementById('task-modal-title').textContent = 'Edit Task';
+            document.getElementById('task-submit-btn').textContent = 'Update Task';
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.editContact = (id) => {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            populateDealSelects();
+            document.getElementById('contact-id').value = contact.id;
+            document.getElementById('contact-name').value = contact.name || '';
+            document.getElementById('contact-role').value = contact.role || '';
+            document.getElementById('contact-email').value = contact.email || '';
+            document.getElementById('contact-phone').value = contact.phone || '';
+            document.getElementById('contact-deal-id').value = contact.dealId || '';
+
+            document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+            document.getElementById('contact-submit-btn').textContent = 'Update Contact';
+            document.getElementById('contact-modal').classList.remove('hidden');
+        }
 
         // --- Initialization ---
         function initApp() {
@@ -436,7 +469,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // --- RENDER TASKS (With Inline Editing) ---
+        // --- RENDER TASKS ---
         function renderTasks() {
             const tbody = document.getElementById('tasks-table-body');
             const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
@@ -450,25 +483,25 @@
                 const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
                 const isOverdue = !task.completed && new Date(task.date) < new Date().setHours(0,0,0,0);
                 return `
-                    <tr class="group hover:bg-slate-50 transition ${task.completed ? 'bg-slate-50/50' : ''}">
+                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
                         <td class="p-4 text-center">
-                            <button onclick="toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
+                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
                                 ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
                             </button>
                         </td>
                         <td class="p-4">
-                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : 'editable'}" onclick="makeEditable(this, 'gc_tasks', '${task.id}', 'title')">${task.title}</p>
-                            <p class="text-xs text-slate-500 mt-1 ${task.completed ? '' : 'editable'}" onclick="makeEditable(this, 'gc_tasks', '${task.id}', 'notes')">${task.notes || 'Add notes...'}</p>
+                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
+                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
                         </td>
                         <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
                         <td class="p-4">
-                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'} editable" onclick="makeDateEditable(this, 'gc_tasks', '${task.id}', 'date', '${task.date}')">
+                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
                                 ${new Date(task.date).toLocaleDateString()}
                                 ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
                             </div>
                         </td>
                         <td class="p-4 text-right">
-                            <button onclick="deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
                         </td>
                     </tr>
                 `;
@@ -476,7 +509,7 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // --- RENDER CONTACTS (With Inline Editing) ---
+        // --- RENDER CONTACTS ---
         function renderContacts() {
             const grid = document.getElementById('contacts-grid');
             if(contacts.length === 0) {
@@ -486,29 +519,28 @@
 
             grid.innerHTML = contacts.map(c => {
                 const dealName = deals.find(d => d.id === c.dealId)?.name || 'General';
-                // Safe check for name to prevent crashing if a doc is missing 'name'
                 const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
                 
                 return `
-                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group">
-                        <button onclick="deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
+                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
                         <div class="flex items-center gap-3 mb-3">
                             <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
                                 ${initial}
                             </div>
                             <div>
-                                <h4 class="font-bold text-slate-800 editable" onclick="makeEditable(this, 'gc_contacts', '${c.id}', 'name')">${c.name || 'No Name'}</h4>
-                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold editable" onclick="makeEditable(this, 'gc_contacts', '${c.id}', 'role')">${c.role || 'No Role'}</p>
+                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
+                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
                             </div>
                         </div>
                         <div class="space-y-2 mt-4 text-sm text-slate-600">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="mail" width="14" class="text-slate-400"></i> 
-                                <span class="editable truncate hover:text-emerald-600" onclick="makeEditable(this, 'gc_contacts', '${c.id}', 'email')">${c.email || 'No Email'}</span>
+                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <i data-lucide="phone" width="14" class="text-slate-400"></i> 
-                                <span class="editable" onclick="makeEditable(this, 'gc_contacts', '${c.id}', 'phone')">${c.phone || 'No Phone'}</span>
+                                <span>${c.phone || 'No Phone'}</span>
                             </div>
                             <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealName}</span></div>
                         </div>
@@ -525,65 +557,6 @@
             document.getElementById('task-deal-id').innerHTML = options;
             document.getElementById('contact-deal-id').innerHTML = options;
         }
-
-        // --- Inline Editing Functions ---
-        window.makeEditable = (element, collectionName, docId, field) => {
-            if (element.querySelector('input')) return; // Already editing
-            
-            const currentValue = element.innerText === 'Add notes...' || element.innerText === 'No Role' || element.innerText === 'No Email' || element.innerText === 'No Phone' ? '' : element.innerText;
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = currentValue;
-            input.className = 'editing-input';
-            
-            // Replace text with input
-            element.innerHTML = '';
-            element.appendChild(input);
-            input.focus();
-            
-            // Save on blur or enter
-            const save = async () => {
-                const newValue = input.value;
-                if (newValue !== currentValue) {
-                    await updateDoc(doc(db, collectionName, docId), { [field]: newValue });
-                } else {
-                    // Revert if unchanged (the listener will actually handle re-rendering, but this is a fallback for UI smoothness)
-                    // We rely on the snapshot listener to re-render the original text
-                }
-            };
-
-            input.addEventListener('blur', save);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    input.blur();
-                }
-            });
-            input.addEventListener('click', (e) => e.stopPropagation()); // Prevent bubbling
-        };
-
-        window.makeDateEditable = (element, collectionName, docId, field, currentDate) => {
-            if (element.querySelector('input')) return;
-
-            const input = document.createElement('input');
-            input.type = 'date';
-            input.value = currentDate;
-            input.className = 'editing-input';
-            
-            element.innerHTML = '';
-            element.appendChild(input);
-            input.focus();
-
-            const save = async () => {
-                const newValue = input.value;
-                if (newValue && newValue !== currentDate) {
-                    await updateDoc(doc(db, collectionName, docId), { [field]: newValue });
-                }
-            };
-            
-            input.addEventListener('blur', save);
-            input.addEventListener('click', (e) => e.stopPropagation());
-        }
-
 
         // --- CRUD Operations ---
         window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
@@ -613,10 +586,8 @@
                 };
 
                 if (dealId) {
-                    // Update existing
                     await updateDoc(doc(db, "gc_deals", dealId), data);
                 } else {
-                    // Create new
                     data.createdAt = serverTimestamp();
                     await addDoc(collection(db, "gc_deals"), data);
                 }
@@ -634,25 +605,32 @@
 
         document.getElementById('task-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
+            const btn = document.getElementById('task-submit-btn');
             const originalText = btn.innerText;
             btn.innerText = 'Saving...';
             btn.disabled = true;
 
             try {
+                const taskId = document.getElementById('task-id').value;
                 const data = {
                     title: document.getElementById('task-title').value,
                     date: document.getElementById('task-date').value,
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
-                    completed: false,
-                    createdAt: serverTimestamp()
                 };
-                await addDoc(collection(db, "gc_tasks"), data);
+
+                if (taskId) {
+                    await updateDoc(doc(db, "gc_tasks", taskId), data);
+                } else {
+                    data.completed = false;
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "gc_tasks"), data);
+                }
+                
                 e.target.reset();
                 closeModal('task-modal');
             } catch (error) {
-                console.error("Error adding task:", error);
+                console.error("Error saving task:", error);
                 alert("Failed to save task: " + error.message);
             } finally {
                 btn.innerText = originalText;
@@ -662,25 +640,32 @@
 
         document.getElementById('contact-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = e.target.querySelector('button[type="submit"]');
+            const btn = document.getElementById('contact-submit-btn');
             const originalText = btn.innerText;
             btn.innerText = 'Saving...';
             btn.disabled = true;
 
             try {
+                const contactId = document.getElementById('contact-id').value;
                 const data = {
                     name: document.getElementById('contact-name').value,
                     role: document.getElementById('contact-role').value,
                     email: document.getElementById('contact-email').value,
                     phone: document.getElementById('contact-phone').value,
                     dealId: document.getElementById('contact-deal-id').value,
-                    createdAt: serverTimestamp()
                 };
-                await addDoc(collection(db, "gc_contacts"), data);
+
+                if (contactId) {
+                    await updateDoc(doc(db, "gc_contacts", contactId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "gc_contacts"), data);
+                }
+
                 e.target.reset();
                 closeModal('contact-modal');
             } catch (error) {
-                console.error("Error adding contact:", error);
+                console.error("Error saving contact:", error);
                 alert("Failed to save contact: " + error.message);
             } finally {
                 btn.innerText = originalText;
