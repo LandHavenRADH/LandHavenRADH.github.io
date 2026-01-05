@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.9.0 • Company Added
+                v2.10.0 • Interest Only
             </div>
         </div>
 
@@ -245,6 +245,10 @@
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Amortization (Mo)</label>
                                      <input type="number" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <label class="flex items-center gap-2 mt-2 cursor-pointer">
+                                        <input type="checkbox" id="calc-interest-only" class="calc-input rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3 h-3">
+                                        <span class="text-xs text-slate-500 font-medium">Interest Only</span>
+                                     </label>
                                  </div>
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">DSCR Target</label>
@@ -814,7 +818,8 @@
                 cap: 6.0,
                 marketLtv: 70,
                 useContractRent: false,
-                contractRent: 0
+                contractRent: 0,
+                interestOnly: false
             };
             
             // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
@@ -828,24 +833,34 @@
             const marketLtv = parseFloat(params.marketLtv) || defaults.marketLtv;
             const useContractRent = params.useContractRent || defaults.useContractRent;
             const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
+            const interestOnly = params.interestOnly || defaults.interestOnly;
 
             const loanAmount = purchasePrice * (purchaseLtv / 100);
-            const r = (interestRate / 100) / 12;
-            const n = amortization;
             
+            let annualService = 0;
             let pmt = 0;
-            if (r > 0 && n > 0 && loanAmount > 0) {
-                pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-            } else if (n > 0 && loanAmount > 0) {
-                pmt = loanAmount / n;
+
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization Calculation
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
             }
 
-            const annualService = pmt * 12;
-            
             // Determine Rent Source
             let rentalRate = annualService * dscr; 
             let rentLabel = "Required Rent (NOI)";
-            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate, ${dscr} DSCR, ${capRate}% Cap)`;
+            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate${interestOnly ? ', Interest Only' : ''}, ${dscr} DSCR, ${capRate}% Cap)`;
 
             if (useContractRent) {
                 rentalRate = contractRentValue;
@@ -1088,7 +1103,11 @@
                 document.getElementById('calc-cap').value = params.cap || 6.0;
                 document.getElementById('calc-market-ltv').value = params.marketLtv || 70;
                 
-                // Checkbox state
+                // Interest Only Checkbox
+                const ioCheckbox = document.getElementById('calc-interest-only');
+                ioCheckbox.checked = params.interestOnly || false;
+
+                // Contract Rent Checkbox state
                 const checkbox = document.getElementById('calc-use-contract');
                 checkbox.checked = params.useContractRent || false;
                 
@@ -1119,6 +1138,8 @@
             const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
             const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
             
+            const interestOnly = document.getElementById('calc-interest-only').checked;
+
             // Contract Rent Override Logic
             const useContractRent = document.getElementById('calc-use-contract').checked;
             const contractRentInput = document.getElementById('calc-contract-rent');
@@ -1145,7 +1166,8 @@
                     cap: capRate,
                     marketLtv: marketLtv,
                     useContractRent: useContractRent,
-                    contractRent: contractRentValue
+                    contractRent: contractRentValue,
+                    interestOnly: interestOnly
                 };
                 
                 // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
@@ -1157,18 +1179,26 @@
             // 2. Loan Calculations
             const loanAmount = purchasePrice * (purchaseLtv / 100);
             
-            // PMT Formula
-            const r = (interestRate / 100) / 12;
-            const n = amortization;
-            
+            let annualService = 0;
             let pmt = 0;
-            if (r > 0 && n > 0 && loanAmount > 0) {
-                pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-            } else if (n > 0 && loanAmount > 0) {
-                pmt = loanAmount / n;
-            }
 
-            const annualService = pmt * 12;
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                // Annual Interest = Principal * Rate
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization (PMT Formula)
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
+            }
             
             // Determine which Rental Rate to use
             let rentalRate = annualService * dscr; // Default (Required NOI)
