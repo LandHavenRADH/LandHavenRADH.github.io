@@ -89,7 +89,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v1.7.0 • Multi-Deal Contacts
+                v1.8.0 • Date Fix
             </div>
         </div>
 
@@ -509,7 +509,7 @@
                 <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
                     <div>
                         <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
-                        <div class="text-xs text-slate-500">${t.date ? new Date(t.date).toLocaleDateString() : 'No Date'}</div>
+                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
                     </div>
                     <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
                         ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
@@ -698,6 +698,16 @@
             }
         }
 
+        // --- HELPER: Date Formatting Fix ---
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return 'No Date';
+            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
+            const [year, month, day] = dateString.split('-').map(Number);
+            // Month is 0-indexed in JS Date constructor
+            const date = new Date(year, month - 1, day); 
+            return date.toLocaleDateString();
+        }
+
         // --- RENDER PIPELINE ---
         const STAGES = [
             { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
@@ -777,7 +787,7 @@
                         <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
                         <td class="p-4">
                             <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${new Date(task.date).toLocaleDateString()}
+                                ${formatDateForDisplay(task.date)}
                                 ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
                             </div>
                         </td>
