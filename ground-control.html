@@ -89,7 +89,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v1.6.0 • Deal Detail View
+                v1.7.0 • Multi-Deal Contacts
             </div>
         </div>
 
@@ -347,11 +347,10 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Associated Deal</label>
-                    <select id="contact-deal-id" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-                        <option value="">-- General Contact --</option>
-                        <!-- Deals injected here -->
-                    </select>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Associated Deals</label>
+                    <div id="contact-deal-container" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white h-32 overflow-y-auto space-y-1">
+                        <!-- Checkboxes injected via JS -->
+                    </div>
                 </div>
                 <button type="submit" id="contact-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Contact</button>
             </form>
@@ -463,7 +462,11 @@
                 document.getElementById('contact-modal-title').textContent = 'Add Contact';
                 document.getElementById('contact-submit-btn').textContent = 'Save Contact';
                 populateDealSelects();
-                if(dealId) document.getElementById('contact-deal-id').value = dealId;
+                // Check specific deal if passed
+                if(dealId) {
+                    const checkbox = document.getElementById(`contact-deal-${dealId}`);
+                    if (checkbox) checkbox.checked = true;
+                }
             }
             document.getElementById(id).classList.remove('hidden');
         };
@@ -518,7 +521,11 @@
 
         function renderRelatedContacts(dealId) {
             const container = document.getElementById('detail-contacts-list');
-            const relatedContacts = contacts.filter(c => c.dealId === dealId);
+            // Filter contacts that have this dealId in their array OR matches legacy string
+            const relatedContacts = contacts.filter(c => {
+                if (c.dealIds && Array.isArray(c.dealIds)) return c.dealIds.includes(dealId);
+                return c.dealId === dealId;
+            });
             
             if (relatedContacts.length === 0) {
                 container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No contacts linked to this deal.</div>';
@@ -578,7 +585,18 @@
             document.getElementById('contact-role').value = contact.role || '';
             document.getElementById('contact-email').value = contact.email || '';
             document.getElementById('contact-phone').value = contact.phone || '';
-            document.getElementById('contact-deal-id').value = contact.dealId || '';
+            
+            // Handle Multi-Select Checkboxes
+            const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
+            checkboxes.forEach(cb => cb.checked = false); // Reset first
+
+            // Prioritize new array format, fallback to legacy string
+            const linkedDealIds = contact.dealIds || (contact.dealId ? [contact.dealId] : []);
+            
+            linkedDealIds.forEach(dealId => {
+                const checkbox = document.getElementById(`contact-deal-${dealId}`);
+                if (checkbox) checkbox.checked = true;
+            });
 
             document.getElementById('contact-modal-title').textContent = 'Edit Contact';
             document.getElementById('contact-submit-btn').textContent = 'Update Contact';
@@ -777,9 +795,22 @@
             }
 
             grid.innerHTML = contacts.map(c => {
-                const dealName = deals.find(d => d.id === c.dealId)?.name || 'General';
                 const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
                 
+                // Logic to display deal names
+                let dealDisplay = 'General Contact';
+                const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
+                
+                if (linkedDealIds.length > 0) {
+                    const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
+                    const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
+                    if (linkedDealIds.length > 1) {
+                        dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
+                    } else {
+                        dealDisplay = firstName;
+                    }
+                }
+
                 return `
                     <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
                         <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
@@ -801,7 +832,7 @@
                                 <i data-lucide="phone" width="14" class="text-slate-400"></i> 
                                 <span>${c.phone || 'No Phone'}</span>
                             </div>
-                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealName}</span></div>
+                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
                         </div>
                     </div>
                 `;
@@ -811,10 +842,26 @@
 
         // --- Helpers ---
         function populateDealSelects() {
-            const options = `<option value="">-- General / Unassigned --</option>` + 
+            // Task Select (Still Single)
+            const taskOptions = `<option value="">-- General / Unassigned --</option>` + 
                             deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-            document.getElementById('task-deal-id').innerHTML = options;
-            document.getElementById('contact-deal-id').innerHTML = options;
+            const taskSelect = document.getElementById('task-deal-id');
+            if(taskSelect) taskSelect.innerHTML = taskOptions;
+
+            // Contact Select (Multi-Checkbox)
+            const contactContainer = document.getElementById('contact-deal-container');
+            if(contactContainer) {
+                if (deals.length === 0) {
+                    contactContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No deals available.</div>';
+                } else {
+                    contactContainer.innerHTML = deals.map(d => `
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="contact-deal-${d.id}" class="text-sm text-slate-700 cursor-pointer select-none truncate">${d.name}</label>
+                        </div>
+                    `).join('');
+                }
+            }
         }
 
         // --- CRUD Operations ---
@@ -906,12 +953,17 @@
 
             try {
                 const contactId = document.getElementById('contact-id').value;
+                
+                // Harvest Checked Deal IDs
+                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
+
                 const data = {
                     name: document.getElementById('contact-name').value,
                     role: document.getElementById('contact-role').value,
                     email: document.getElementById('contact-email').value,
                     phone: document.getElementById('contact-phone').value,
-                    dealId: document.getElementById('contact-deal-id').value,
+                    dealIds: selectedDealIds, // New Array Field
+                    dealId: null // Clear old legacy field to avoid confusion
                 };
 
                 if (contactId) {
