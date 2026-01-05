@@ -721,7 +721,11 @@
                         <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
                     </div>
                     <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
-                        ${stageDeals.map(deal => `
+                        ${stageDeals.map(deal => {
+                            // Format value with commas
+                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
+                            
+                            return `
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
                                 <div class="flex justify-between items-start mb-2">
                                     <h4 class="font-bold text-slate-800">${deal.name}</h4>
@@ -731,13 +735,13 @@
                                     <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
                                 </p>
                                 <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-xs font-mono font-medium text-emerald-600">$${deal.value || '0'}</span>
+                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
                                     <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
                                         ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
                                     </select>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                         ${stageDeals.length === 0 ? '<div class="text-center py-8 text-slate-400 italic text-sm">No deals</div>' : ''}
                     </div>
                 `;
