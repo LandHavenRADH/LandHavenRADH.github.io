@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.0.2 • Full Code
+                v2.1.0 • Deal Summary
             </div>
         </div>
 
@@ -433,8 +433,37 @@
 
             <!-- Content -->
             <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                
+                <!-- Rent Calculator Summary (New) -->
+                <div id="deal-calc-summary" class="bg-white p-4 rounded-lg border border-blue-100 shadow-sm mb-6 hidden">
+                    <h4 class="font-bold text-slate-700 flex items-center gap-2 mb-3">
+                        <i data-lucide="trending-up" class="text-blue-600" width="18"></i> Financial Snapshot
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="block text-slate-500 text-xs">Required Rent (NOI)</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-rent">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">Projected Value</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-value">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">Potential Profit</span>
+                            <span class="block font-bold text-emerald-600 text-lg" id="summary-profit">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">100% Finance?</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-finance">--</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
+                        <span>Based on standard assumptions (100% LTV, 6% Rate, 1.20 DSCR, 6% Cap)</span>
+                        <a href="#" onclick="closeModal('deal-detail-modal'); switchView('calculator'); loadDealToCalculator(currentDealId);" class="text-blue-600 hover:underline">Open in Calculator</a>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
                     <!-- Left Column: Tasks -->
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
@@ -673,6 +702,7 @@
 
             renderRelatedTasks(id);
             renderRelatedContacts(id);
+            renderDealSummary(deal); // New Summary Logic
 
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
@@ -725,6 +755,51 @@
                     ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
                 </div>
             `).join('');
+        }
+
+        // --- New Function: Render Deal Summary Logic ---
+        function renderDealSummary(deal) {
+            const summaryContainer = document.getElementById('deal-calc-summary');
+            if(!deal.value) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+            summaryContainer.classList.remove('hidden');
+
+            // Quick Calculation based on defaults
+            const purchasePrice = parseFloat(deal.value.toString().replace(/,/g, '')) || 0;
+            if(purchasePrice === 0) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+
+            // Defaults: 100% LTV, 6% Rate, 300mo, 1.20 DSCR, 6% Cap, 70% Market LTV
+            const loanAmount = purchasePrice; // 100% LTV
+            const r = (6.0 / 100) / 12;
+            const n = 300;
+            const pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+            const annualService = pmt * 12;
+            const rentalRate = annualService * 1.20; // 1.20 DSCR
+            const marketValue = rentalRate / (6.0 / 100); // 6% Cap
+            const profit = marketValue - purchasePrice;
+            const impliedLtv = purchasePrice / marketValue;
+            const isFinancable = impliedLtv < 0.70;
+
+            const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+
+            document.getElementById('summary-rent').textContent = formatCurrency(rentalRate);
+            document.getElementById('summary-value').textContent = formatCurrency(marketValue);
+            document.getElementById('summary-profit').textContent = formatCurrency(profit);
+            
+            const financeEl = document.getElementById('summary-finance');
+            if(isFinancable) {
+                financeEl.textContent = "YES";
+                financeEl.className = "block font-bold text-emerald-600 text-lg";
+            } else {
+                financeEl.textContent = "NO";
+                financeEl.className = "block font-bold text-red-600 text-lg";
+            }
+            if (window.lucide) lucide.createIcons();
         }
 
         // --- Edit Logic ---
