@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.12.0 • Fix Tabs
+                v2.13.0 • Task Time
             </div>
         </div>
 
@@ -532,9 +532,15 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Task / Action</label>
                     <input type="text" id="task-title" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sign Purchase Agreement" required>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-                    <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                        <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                        <input type="time" id="task-time" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Related Deal</label>
@@ -756,17 +762,19 @@
                 return;
             }
 
-            container.innerHTML = relatedTasks.map(t => `
+            container.innerHTML = relatedTasks.map(t => {
+                const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${t.time}</span>` : '';
+                return `
                 <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
                     <div>
                         <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
-                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}${timeString}</div>
                     </div>
                     <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
                         ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
                     </button>
                 </div>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         }
 
@@ -922,6 +930,7 @@
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-title').value = task.title || '';
             document.getElementById('task-date').value = task.date || '';
+            document.getElementById('task-time').value = task.time || ''; // Populate time
             document.getElementById('task-deal-id').value = task.dealId || '';
             document.getElementById('task-notes').value = task.notes || '';
 
@@ -1042,8 +1051,8 @@
         function getCalendarEvents() {
             return tasks.map(t => ({
                 id: t.id,
-                title: t.title,
-                start: t.date,
+                title: t.title + (t.time ? ` @ ${t.time}` : ''), // Add time to calendar title
+                start: t.time ? `${t.date}T${t.time}` : t.date, // Use precise time if available
                 backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
                 borderColor: t.completed ? '#94a3b8' : '#3b82f6',
                 textColor: '#ffffff'
@@ -1395,6 +1404,7 @@
                         <td class="p-4">
                             <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
                                 ${formatDateForDisplay(task.date)}
+                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${task.time}</span>` : ''}
                                 ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
                             </div>
                         </td>
@@ -1605,6 +1615,7 @@
                 const data = {
                     title: document.getElementById('task-title').value,
                     date: document.getElementById('task-date').value,
+                    time: document.getElementById('task-time').value, // Add time
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
                 };
