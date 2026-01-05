@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ground Control | Restaurant GroundWorks</title>
+    <title>Ground Control | Ground Lease Group</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -39,7 +39,7 @@
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="font-extrabold text-2xl text-slate-900 flex items-center gap-2">
-                    Restaurant GroundWorks
+                    Ground Lease Group
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.6.0 • Dropdown Fix
+                v2.8.0 • Lenders Added
             </div>
         </div>
 
@@ -171,17 +171,27 @@
 
             <!-- VIEW: CONTACTS -->
             <div id="view-contacts" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
-                <div class="flex justify-between items-center mb-6 shrink-0">
+                <div class="flex justify-between items-center mb-6 shrink-0 gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
-                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click a contact to edit)</span></p>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials.</p>
                     </div>
+                    
+                    <div class="flex-1 max-w-md mx-auto">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="search" width="16"></i>
+                            </div>
+                            <input type="text" id="contact-search" placeholder="Search contacts..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" oninput="filterContacts(this.value)">
+                        </div>
+                    </div>
+
                     <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Contact
                     </button>
                 </div>
-                <div id="contacts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-4">
-                    <!-- Contacts injected here -->
+                <div id="contacts-grid" class="overflow-y-auto pb-4 space-y-6">
+                    <!-- Contact Groups injected here -->
                 </div>
             </div>
 
@@ -551,9 +561,21 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                    <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                        <select id="contact-category" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="Seller">Seller</option>
+                            <option value="Franchisor">Franchisor</option>
+                            <option value="Franchisee">Franchisee</option>
+                            <option value="Lender">Lender</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                         <label class="block text-sm font-medium text-slate-700 mb-1">Role/Title</label>
+                        <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -898,6 +920,9 @@
             document.getElementById('contact-role').value = contact.role || '';
             document.getElementById('contact-email').value = contact.email || '';
             document.getElementById('contact-phone').value = contact.phone || '';
+            
+            // Set Category
+            document.getElementById('contact-category').value = contact.category || 'Other';
             
             // Handle Multi-Select Checkboxes
             const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
@@ -1333,50 +1358,98 @@
                 return;
             }
 
-            grid.innerHTML = contacts.map(c => {
-                const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
-                
-                // Logic to display deal names
-                let dealDisplay = 'General Contact';
-                const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
-                
-                if (linkedDealIds.length > 0) {
-                    const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
-                    const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
-                    if (linkedDealIds.length > 1) {
-                        dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
-                    } else {
-                        dealDisplay = firstName;
-                    }
-                }
+            // FILTER LOGIC
+            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
+            const filteredContacts = contacts.filter(c => 
+                (c.name && c.name.toLowerCase().includes(searchVal)) ||
+                (c.email && c.email.toLowerCase().includes(searchVal)) ||
+                (c.role && c.role.toLowerCase().includes(searchVal))
+            );
 
-                return `
-                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
-                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                                ${initial}
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
-                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+            // GROUPING LOGIC
+            const groups = {
+                'Seller': [],
+                'Franchisor': [],
+                'Franchisee': [],
+                'Lender': [],
+                'Other': []
+            };
+
+            filteredContacts.forEach(c => {
+                const category = c.category || 'Other';
+                if (groups[category]) {
+                    groups[category].push(c);
+                } else {
+                    groups['Other'].push(c);
+                }
+            });
+
+            let html = '';
+
+            for (const [category, groupContacts] of Object.entries(groups)) {
+                if (groupContacts.length > 0) {
+                    html += `
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${groupContacts.map(c => {
+                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
+                                    
+                                    // Deal logic
+                                    let dealDisplay = 'General Contact';
+                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
+                                    if (linkedDealIds.length > 0) {
+                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
+                                        const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
+                                        if (linkedDealIds.length > 1) {
+                                            dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
+                                        } else {
+                                            dealDisplay = firstName;
+                                        }
+                                    }
+
+                                    return `
+                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
+                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                                ${initial}
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
+                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
+                                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
+                                                <span>${c.phone || 'No Phone'}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
-                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
-                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
-                                <span>${c.phone || 'No Phone'}</span>
-                            </div>
-                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }
+            }
+            
+            if (filteredContacts.length === 0) {
+                html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found matching your search.</div>';
+            }
+
+            grid.innerHTML = html;
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.filterContacts = (val) => {
+            renderContacts();
         }
 
         // --- Helpers ---
@@ -1515,8 +1588,9 @@
                     role: document.getElementById('contact-role').value,
                     email: document.getElementById('contact-email').value,
                     phone: document.getElementById('contact-phone').value,
-                    dealIds: selectedDealIds, // New Array Field
-                    dealId: null // Clear old legacy field to avoid confusion
+                    category: document.getElementById('contact-category').value, // Save Category
+                    dealIds: selectedDealIds, 
+                    dealId: null 
                 };
 
                 if (contactId) {
