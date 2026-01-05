@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.4.0 • Full Code
+                v2.5.0 • Per-Deal Params
             </div>
         </div>
 
@@ -593,6 +593,7 @@
         let currentUserId = null;
         let calendar = null;
         let currentDealId = null; // Track currently open deal
+        let currentlyLoadedDealForCalc = null; // Track loaded deal ID for calculator
 
         // --- Auth ---
         onAuthStateChanged(auth, (user) => {
@@ -777,15 +778,29 @@
                 return;
             }
 
-            // Retrieve dynamic inputs from calculator fields
-            const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 100;
-            const interestRate = parseFloat(document.getElementById('calc-rate').value) || 6.0;
-            const amortization = parseFloat(document.getElementById('calc-term').value) || 300;
-            const dscr = parseFloat(document.getElementById('calc-dscr').value) || 1.20;
-            const capRate = parseFloat(document.getElementById('calc-cap').value) || 6.0;
-            const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 70;
-            const useContractRent = document.getElementById('calc-use-contract').checked;
-            const contractRentValue = parseFloat(document.getElementById('calc-contract-rent').value) || 0;
+            // Defaults (Fallback)
+            const defaults = {
+                ltv: 100,
+                rate: 6.0,
+                term: 300,
+                dscr: 1.20,
+                cap: 6.0,
+                marketLtv: 70,
+                useContractRent: false,
+                contractRent: 0
+            };
+            
+            // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
+            const params = deal.calcParams || defaults;
+
+            const purchaseLtv = parseFloat(params.ltv) || defaults.ltv;
+            const interestRate = parseFloat(params.rate) || defaults.rate;
+            const amortization = parseFloat(params.term) || defaults.term;
+            const dscr = parseFloat(params.dscr) || defaults.dscr;
+            const capRate = parseFloat(params.cap) || defaults.cap;
+            const marketLtv = parseFloat(params.marketLtv) || defaults.marketLtv;
+            const useContractRent = params.useContractRent || defaults.useContractRent;
+            const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
 
             const loanAmount = purchasePrice * (purchaseLtv / 100);
             const r = (interestRate / 100) / 12;
@@ -803,12 +818,11 @@
             // Determine Rent Source
             let rentalRate = annualService * dscr; 
             let rentLabel = "Required Rent (NOI)";
-            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate, ${dscr} DSCR, ${capRate}% Cap)`;
+            let rentAssumptions = `Based on stored deal parameters`;
 
             if (useContractRent) {
                 rentalRate = contractRentValue;
                 rentLabel = "Contract Rent (Override)";
-                rentAssumptions = `Based on Contract Rent override and calculator inputs (${capRate}% Cap, ${marketLtv}% Market LTV)`;
             }
 
             const marketValue = rentalRate / (capRate / 100);
@@ -1013,22 +1027,56 @@
             if (!dealId) {
                 // Reset inputs if cleared
                 document.getElementById('calc-price').value = 500000;
+                currentlyLoadedDealForCalc = null;
                 calculateRent();
                 return;
             }
             const deal = deals.find(d => d.id === dealId);
-            if (deal && deal.value) {
-                // Remove formatting (commas) if present before setting
-                const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
-                if (!isNaN(numValue)) {
-                    document.getElementById('calc-price').value = numValue;
-                    calculateRent(); // Recalculate immediately
+            currentlyLoadedDealForCalc = dealId;
+
+            if (deal) {
+                // 1. Set Price from Deal Value
+                if (deal.value) {
+                    const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        document.getElementById('calc-price').value = numValue;
+                    }
                 }
+                
+                // 2. Load Saved Parameters OR Defaults
+                const params = deal.calcParams || {};
+                document.getElementById('calc-ltv').value = params.ltv || 100;
+                document.getElementById('calc-rate').value = params.rate || 6.0;
+                document.getElementById('calc-term').value = params.term || 300;
+                document.getElementById('calc-dscr').value = params.dscr || 1.20;
+                document.getElementById('calc-cap').value = params.cap || 6.0;
+                document.getElementById('calc-market-ltv').value = params.marketLtv || 70;
+                
+                // Checkbox state
+                const checkbox = document.getElementById('calc-use-contract');
+                checkbox.checked = params.useContractRent || false;
+                
+                const contractInput = document.getElementById('calc-contract-rent');
+                contractInput.value = params.contractRent || 0;
+                
+                // Manually trigger the enabled/disabled state logic
+                if(checkbox.checked) {
+                    contractInput.disabled = false;
+                    contractInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                } else {
+                    contractInput.disabled = true;
+                    contractInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                }
+
+                calculateRent(); // Recalculate immediately
+                
+                // Set the select dropdown to match
+                document.getElementById('calc-deal-select').value = dealId;
             }
         };
 
-        // Core Calculation Function
-        window.calculateRent = () => {
+        // Core Calculation Function (Updated with Save Logic)
+        window.calculateRent = async () => {
             // 1. Get Inputs
             const purchasePrice = parseFloat(document.getElementById('calc-price').value) || 0;
             const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 0;
@@ -1052,6 +1100,26 @@
             }
 
             const contractRentValue = parseFloat(contractRentInput.value) || 0;
+
+            // --- AUTO-SAVE LOGIC ---
+            if (currentlyLoadedDealForCalc) {
+                // Debounce save (optional but good practice, here direct for simplicity)
+                const paramsToSave = {
+                    ltv: purchaseLtv,
+                    rate: interestRate,
+                    term: amortization,
+                    dscr: dscr,
+                    cap: capRate,
+                    marketLtv: marketLtv,
+                    useContractRent: useContractRent,
+                    contractRent: contractRentValue
+                };
+                
+                // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
+                // We will just fire and forget the update for responsiveness
+                updateDoc(doc(db, "gc_deals", currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+            }
+
 
             // 2. Loan Calculations
             const loanAmount = purchasePrice * (purchaseLtv / 100);
