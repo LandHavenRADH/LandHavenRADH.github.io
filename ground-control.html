@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.1.0 • Deal Summary
+                v2.2.0 • Dynamic Summary
             </div>
         </div>
 
@@ -458,7 +458,7 @@
                         </div>
                     </div>
                     <div class="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
-                        <span>Based on standard assumptions (100% LTV, 6% Rate, 1.20 DSCR, 6% Cap)</span>
+                        <span id="summary-assumptions-text">Based on standard assumptions (100% LTV, 6% Rate, 1.20 DSCR, 6% Cap)</span>
                         <a href="#" onclick="closeModal('deal-detail-modal'); switchView('calculator'); loadDealToCalculator(currentDealId);" class="text-blue-600 hover:underline">Open in Calculator</a>
                     </div>
                 </div>
@@ -766,24 +766,38 @@
             }
             summaryContainer.classList.remove('hidden');
 
-            // Quick Calculation based on defaults
+            // Quick Calculation based on dynamic inputs
             const purchasePrice = parseFloat(deal.value.toString().replace(/,/g, '')) || 0;
             if(purchasePrice === 0) {
                 summaryContainer.classList.add('hidden');
                 return;
             }
 
-            // Defaults: 100% LTV, 6% Rate, 300mo, 1.20 DSCR, 6% Cap, 70% Market LTV
-            const loanAmount = purchasePrice; // 100% LTV
-            const r = (6.0 / 100) / 12;
-            const n = 300;
-            const pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+            // Retrieve dynamic inputs from calculator fields
+            const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 100;
+            const interestRate = parseFloat(document.getElementById('calc-rate').value) || 6.0;
+            const amortization = parseFloat(document.getElementById('calc-term').value) || 300;
+            const dscr = parseFloat(document.getElementById('calc-dscr').value) || 1.20;
+            const capRate = parseFloat(document.getElementById('calc-cap').value) || 6.0;
+            const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 70;
+
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            const r = (interestRate / 100) / 12;
+            const n = amortization;
+            
+            let pmt = 0;
+            if (r > 0 && n > 0 && loanAmount > 0) {
+                pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+            } else if (n > 0 && loanAmount > 0) {
+                pmt = loanAmount / n;
+            }
+
             const annualService = pmt * 12;
-            const rentalRate = annualService * 1.20; // 1.20 DSCR
-            const marketValue = rentalRate / (6.0 / 100); // 6% Cap
+            const rentalRate = annualService * dscr; 
+            const marketValue = rentalRate / (capRate / 100);
             const profit = marketValue - purchasePrice;
             const impliedLtv = purchasePrice / marketValue;
-            const isFinancable = impliedLtv < 0.70;
+            const isFinancable = impliedLtv < (marketLtv / 100);
 
             const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
 
@@ -791,6 +805,9 @@
             document.getElementById('summary-value').textContent = formatCurrency(marketValue);
             document.getElementById('summary-profit').textContent = formatCurrency(profit);
             
+            // Update assumptions text
+            document.getElementById('summary-assumptions-text').textContent = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate, ${dscr} DSCR, ${capRate}% Cap)`;
+
             const financeEl = document.getElementById('summary-finance');
             if(isFinancable) {
                 financeEl.textContent = "YES";
