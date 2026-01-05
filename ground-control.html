@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.5.0 • Per-Deal Params
+                v2.6.0 • Dropdown Fix
             </div>
         </div>
 
@@ -818,11 +818,12 @@
             // Determine Rent Source
             let rentalRate = annualService * dscr; 
             let rentLabel = "Required Rent (NOI)";
-            let rentAssumptions = `Based on stored deal parameters`;
+            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate, ${dscr} DSCR, ${capRate}% Cap)`;
 
             if (useContractRent) {
                 rentalRate = contractRentValue;
                 rentLabel = "Contract Rent (Override)";
+                rentAssumptions = `Based on Contract Rent override and calculator inputs (${capRate}% Cap, ${marketLtv}% Market LTV)`;
             }
 
             const marketValue = rentalRate / (capRate / 100);
@@ -1034,6 +1035,10 @@
             const deal = deals.find(d => d.id === dealId);
             currentlyLoadedDealForCalc = dealId;
 
+            // Set dropdown value explicitly so it matches the loaded deal
+            const selectElement = document.getElementById('calc-deal-select');
+            if (selectElement) selectElement.value = dealId;
+
             if (deal) {
                 // 1. Set Price from Deal Value
                 if (deal.value) {
@@ -1069,9 +1074,6 @@
                 }
 
                 calculateRent(); // Recalculate immediately
-                
-                // Set the select dropdown to match
-                document.getElementById('calc-deal-select').value = dealId;
             }
         };
 
@@ -1403,9 +1405,15 @@
             // Calculator Deal Select (New)
             const calcSelect = document.getElementById('calc-deal-select');
             if (calcSelect) {
+                // Ensure value is maintained if currently loaded deal is selected
+                const currentValue = calcSelect.value;
                 const calcOptions = `<option value="">-- Select a Deal --</option>` + 
-                                deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                                deals.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.name}</option>`).join('');
                 calcSelect.innerHTML = calcOptions;
+                // Re-select if possible (in case innerHTML wiped selection but DOM value persisted, or use state variable)
+                if (currentlyLoadedDealForCalc) {
+                   calcSelect.value = currentlyLoadedDealForCalc;
+                }
             }
         }
 
