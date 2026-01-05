@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.0.0 • Contract Rent
+                v2.0.2 • Full Code
             </div>
         </div>
 
@@ -255,7 +255,7 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                         <i data-lucide="dollar-sign" width="16"></i>
                                     </div>
-                                    <input type="number" id="calc-contract-rent" value="0" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <input type="number" id="calc-contract-rent" value="0" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" disabled>
                                 </div>
                              </div>
 
@@ -925,6 +925,21 @@
             const dscr = parseFloat(document.getElementById('calc-dscr').value) || 0;
             const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
             const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
+            
+            // Contract Rent Override Logic
+            const useContractRent = document.getElementById('calc-use-contract').checked;
+            const contractRentInput = document.getElementById('calc-contract-rent');
+            
+            // Enable/Disable input based on checkbox state
+            if (useContractRent) {
+                contractRentInput.disabled = false;
+                contractRentInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            } else {
+                contractRentInput.disabled = true;
+                contractRentInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            }
+
+            const contractRentValue = parseFloat(contractRentInput.value) || 0;
 
             // 2. Loan Calculations
             const loanAmount = purchasePrice * (purchaseLtv / 100);
@@ -941,7 +956,15 @@
             }
 
             const annualService = pmt * 12;
-            const rentalRate = annualService * dscr;
+            
+            // Determine which Rental Rate to use
+            let rentalRate = annualService * dscr; // Default (Required NOI)
+            let isUsingContractRent = false;
+
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+                isUsingContractRent = true;
+            }
 
             // 3. Market Calculations
             let marketValue = 0;
@@ -966,7 +989,15 @@
             document.getElementById('res-monthly-debt').textContent = `${formatCurrency(pmt)} / month`;
             
             document.getElementById('res-rental-rate').textContent = formatCurrency(rentalRate);
-            document.getElementById('res-dscr-label').textContent = `Based on ${dscr}x DSCR`;
+            
+            // Update Label based on source
+            if (isUsingContractRent) {
+                document.getElementById('res-dscr-label').textContent = "Using Contract Rent (Override)";
+                document.getElementById('res-dscr-label').className = "text-xs text-blue-600 font-bold mt-0.5";
+            } else {
+                document.getElementById('res-dscr-label').textContent = `Based on ${dscr}x DSCR`;
+                document.getElementById('res-dscr-label').className = "text-xs text-slate-500 mt-0.5";
+            }
             
             document.getElementById('res-market-value').textContent = formatCurrency(marketValue);
             document.getElementById('res-cap-label').textContent = `@ ${capRate}% Cap Rate`;
@@ -1002,7 +1033,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const inputs = document.querySelectorAll('.calc-input');
             inputs.forEach(input => {
+                // For checkbox and number inputs
                 input.addEventListener('input', calculateRent);
+                input.addEventListener('change', calculateRent); // Catch checkbox changes specifically
             });
             // Initial calc
             calculateRent();
