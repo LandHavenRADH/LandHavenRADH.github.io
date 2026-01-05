@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ground Control | Ground Lease Group</title>
     <script src="https://cdn.tailwindcss.com"></script>
-        // --- HELPER: Time Formatting Fix ---
-        function formatTimeForDisplay(timeString) {
-            if (!timeString) return '';
-            const [hours, minutes] = timeString.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            // Pad minutes with leading zero if necessary
-            const formattedMinutes = minutes.length < 2 ? `0${minutes}` : minutes;
-            return `${h12}:${formattedMinutes} ${ampm}`;
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
         /* Hide scrollbar for IE, Edge and Firefox */
         .no-scrollbar {
@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.13.0 • Task Time
+                v2.15.0 • Bug Fix
             </div>
         </div>
 
@@ -643,6 +643,18 @@
 
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
+        // --- HELPER: Time Formatting Fix ---
+        function formatTimeForDisplay(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const h = parseInt(hours);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            // Pad minutes with leading zero if necessary
+            const formattedMinutes = minutes.length < 2 ? `0${minutes}` : minutes;
+            return `${h12}:${formattedMinutes} ${ampm}`;
+        }
+
         // --- View Switching ---
         window.switchView = (viewName) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
@@ -1051,7 +1063,7 @@
         function getCalendarEvents() {
             return tasks.map(t => ({
                 id: t.id,
-                title: t.title + (t.time ? ` @ ${t.time}` : ''), // Add time to calendar title
+                title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), // Add time to calendar title
                 start: t.time ? `${t.date}T${t.time}` : t.date, // Use precise time if available
                 backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
                 borderColor: t.completed ? '#94a3b8' : '#3b82f6',
