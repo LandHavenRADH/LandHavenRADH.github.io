@@ -772,7 +772,17 @@
 
             tbody.innerHTML = sortedTasks.map(task => {
                 const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
-                const isOverdue = !task.completed && new Date(task.date) < new Date().setHours(0,0,0,0);
+                
+                // Calculate Overdue Status (Strictly BEFORE today)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time to midnight
+                
+                // Parse task date correctly to avoid timezone issues
+                const [year, month, day] = task.date.split('-').map(Number);
+                const taskDate = new Date(year, month - 1, day);
+                
+                const isOverdue = !task.completed && taskDate < today;
+
                 return `
                     <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
                         <td class="p-4 text-center">
