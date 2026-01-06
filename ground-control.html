@@ -9,6 +9,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- FullCalendar -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -91,9 +97,13 @@
                     <i data-lucide="calculator" size="20"></i>
                     <span class="font-medium">Rent Calculator</span>
                 </button>
+                <button onclick="switchView('fdd')" id="nav-fdd" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="file-text" size="20"></i>
+                    <span class="font-medium">FDD Processor</span>
+                </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.15.0 • Bug Fix
+                v2.16.0 • FDD Parser
             </div>
         </div>
 
@@ -381,6 +391,47 @@
                 </div>
             </div>
 
+            <!-- VIEW: FDD PROCESSOR -->
+            <div id="view-fdd" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden overflow-y-auto">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">FDD Contact Processor</h2>
+                        <p class="text-slate-500 text-sm">Extract contacts from "Signed but not open" lists in Franchise Disclosure Documents.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-3xl mx-auto">
+                    <div class="space-y-6">
+                        <!-- Step 1: Upload -->
+                        <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50" id="fdd-upload-zone">
+                            <i data-lucide="upload-cloud" class="w-12 h-12 text-slate-400 mx-auto mb-4"></i>
+                            <h3 class="text-lg font-medium text-slate-800 mb-2">Upload FDD PDF</h3>
+                            <p class="text-slate-500 mb-6 text-sm">Drag and drop your PDF here, or click to browse. <br>(Note: Large files may take a moment)</p>
+                            <input type="file" id="fdd-file-input" accept=".pdf" class="hidden">
+                            <button onclick="document.getElementById('fdd-file-input').click()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
+                                Select PDF
+                            </button>
+                            <p id="fdd-file-name" class="mt-4 text-sm font-medium text-emerald-600 hidden"></p>
+                        </div>
+
+                        <!-- Step 2: Extract & Process -->
+                        <div id="fdd-controls" class="hidden space-y-4 pt-4 border-t border-slate-100">
+                             <div class="bg-blue-50 text-blue-700 p-4 rounded-lg text-sm mb-4">
+                                <strong class="block mb-1"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> AI Processing Note</strong>
+                                To avoid token limits, the AI will scan the text. If the document is extremely large (>100 pages), consider extracting just the relevant pages first.
+                            </div>
+                            
+                            <button id="fdd-process-btn" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles" class="w-5 h-5"></i> Extract Contacts & Generate Excel
+                            </button>
+                            <div id="fdd-status" class="text-center text-sm text-slate-500 hidden">
+                                Initializing AI model...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -616,11 +667,13 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { firebaseConfig } from './config.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { firebaseConfig, GEMINI_API_KEY } from './config.js';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         // --- State ---
         let deals = [];
@@ -650,7 +703,6 @@
             const h = parseInt(hours);
             const ampm = h >= 12 ? 'PM' : 'AM';
             const h12 = h % 12 || 12;
-            // Pad minutes with leading zero if necessary
             const formattedMinutes = minutes.length < 2 ? `0${minutes}` : minutes;
             return `${h12}:${formattedMinutes} ${ampm}`;
         }
@@ -1325,373 +1377,148 @@
             // Initial calc
             calculateRent();
         });
-
-        // --- RENDER PIPELINE ---
-        const STAGES = [
-            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
-            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
-            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
-            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
-            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
-        ];
-
-        function renderPipeline() {
-            const container = document.getElementById('pipeline-container');
-            container.innerHTML = '';
-
-            STAGES.forEach(stage => {
-                const stageDeals = deals.filter(d => d.stage === stage.id);
-                const col = document.createElement('div');
-                col.className = 'w-80 flex flex-col h-full';
-                col.innerHTML = `
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
-                        <span class="flex-1">${stage.label}</span>
-                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
-                    </div>
-                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
-                        ${stageDeals.map(deal => {
-                            // Format value with commas
-                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
-                            
-                            return `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
-                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
-                                </div>
-                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
-                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
-                                </p>
-                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
-                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
-                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
-                                    </select>
-                                </div>
-                            </div>
-                        `}).join('')}
-                        ${stageDeals.length === 0 ? '<div class="text-center py-8 text-slate-400 italic text-sm">No deals</div>' : ''}
-                    </div>
-                `;
-                container.appendChild(col);
-            });
-            if (window.lucide) lucide.createIcons();
-        }
-
-        // --- RENDER TASKS ---
-        function renderTasks() {
-            const tbody = document.getElementById('tasks-table-body');
-            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
-            
-            if(sortedTasks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = sortedTasks.map(task => {
-                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
-                
-                // Calculate Overdue Status (Strictly BEFORE today)
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Reset time to midnight
-                
-                // Parse task date correctly to avoid timezone issues
-                const [year, month, day] = task.date.split('-').map(Number);
-                const taskDate = new Date(year, month - 1, day);
-                
-                const isOverdue = !task.completed && taskDate < today;
-
-                return `
-                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
-                        <td class="p-4 text-center">
-                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
-                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
-                            </button>
-                        </td>
-                        <td class="p-4">
-                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
-                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
-                        </td>
-                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
-                        <td class="p-4">
-                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${formatDateForDisplay(task.date)}
-                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
-                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
-                            </div>
-                        </td>
-                        <td class="p-4 text-right">
-                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            if (window.lucide) lucide.createIcons();
-        }
-
-        // --- RENDER CONTACTS ---
-        function renderContacts() {
-            const grid = document.getElementById('contacts-grid');
-            if(contacts.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
-                return;
-            }
-
-            // FILTER LOGIC
-            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
-            const filteredContacts = contacts.filter(c => 
-                (c.name && c.name.toLowerCase().includes(searchVal)) ||
-                (c.email && c.email.toLowerCase().includes(searchVal)) ||
-                (c.role && c.role.toLowerCase().includes(searchVal))
-            );
-
-            // GROUPING LOGIC
-            const groups = {
-                'Seller': [],
-                'Franchisor': [],
-                'Franchisee': [],
-                'Lender': [],
-                'Other': []
-            };
-
-            filteredContacts.forEach(c => {
-                const category = c.category || 'Other';
-                if (groups[category]) {
-                    groups[category].push(c);
-                } else {
-                    groups['Other'].push(c);
-                }
-            });
-
-            let html = '';
-
-            for (const [category, groupContacts] of Object.entries(groups)) {
-                if (groupContacts.length > 0) {
-                    html += `
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                ${groupContacts.map(c => {
-                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
-                                    
-                                    // Deal logic
-                                    let dealDisplay = 'General Contact';
-                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
-                                    if (linkedDealIds.length > 0) {
-                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
-                                        const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
-                                        if (linkedDealIds.length > 1) {
-                                            dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
-                                        } else {
-                                            dealDisplay = firstName;
-                                        }
-                                    }
-
-                                    return `
-                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
-                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                                        <div class="flex items-center gap-3 mb-3">
-                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                                                ${initial}
-                                            </div>
-                                            <div>
-                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
-                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
-                                            </div>
-                                        </div>
-                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
-                                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
-                                                <span>${c.phone || 'No Phone'}</span>
-                                            </div>
-                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
-                                            ${c.company ? `<div class="flex items-center gap-2"><i data-lucide="building" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${c.company}</span></div>` : ''}
-                                        </div>
-                                    </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            
-            if (filteredContacts.length === 0) {
-                html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found matching your search.</div>';
-            }
-
-            grid.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-        }
-
-        window.filterContacts = (val) => {
-            renderContacts();
-        }
-
-        // --- Helpers ---
-        function populateDealSelects() {
-            // Task Select (Still Single)
-            const taskOptions = `<option value="">-- General / Unassigned --</option>` + 
-                            deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-            const taskSelect = document.getElementById('task-deal-id');
-            if(taskSelect) taskSelect.innerHTML = taskOptions;
-
-            // Contact Select (Multi-Checkbox)
-            const contactContainer = document.getElementById('contact-deal-container');
-            if(contactContainer) {
-                if (deals.length === 0) {
-                    contactContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No deals available.</div>';
-                } else {
-                    contactContainer.innerHTML = deals.map(d => `
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                            <label for="contact-deal-${d.id}" class="text-sm text-slate-700 cursor-pointer select-none truncate">${d.name}</label>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            // Calculator Deal Select (New)
-            const calcSelect = document.getElementById('calc-deal-select');
-            if (calcSelect) {
-                // Ensure value is maintained if currently loaded deal is selected
-                const currentValue = calcSelect.value;
-                const calcOptions = `<option value="">-- Select a Deal --</option>` + 
-                                deals.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.name}</option>`).join('');
-                calcSelect.innerHTML = calcOptions;
-                // Re-select if possible (in case innerHTML wiped selection but DOM value persisted, or use state variable)
-                if (currentlyLoadedDealForCalc) {
-                   calcSelect.value = currentlyLoadedDealForCalc;
-                }
-            }
-        }
-
-        // --- CRUD Operations ---
-        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
-        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
         
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
-
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
-
-        // --- Form Submissions with Error Handling ---
-        
-        document.getElementById('deal-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('deal-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const dealId = document.getElementById('deal-id').value;
-                const data = {
-                    name: document.getElementById('deal-name').value,
-                    address: document.getElementById('deal-address').value,
-                    value: document.getElementById('deal-value').value,
-                    stage: document.getElementById('deal-stage').value,
-                };
-
-                if (dealId) {
-                    await updateDoc(doc(db, "gc_deals", dealId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_deals"), data);
-                }
-
-                e.target.reset();
-                closeModal('deal-modal');
-            } catch (error) {
-                console.error("Error adding/updating deal:", error);
-                alert("Failed to save deal. Error: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+        // --- FDD PROCESSOR ---
+        document.getElementById('fdd-file-input').addEventListener('change', (e) => {
+             const file = e.target.files[0];
+             if(file) {
+                 document.getElementById('fdd-file-name').textContent = file.name;
+                 document.getElementById('fdd-file-name').classList.remove('hidden');
+                 document.getElementById('fdd-controls').classList.remove('hidden');
+             }
         });
 
-        document.getElementById('task-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('task-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
+        document.getElementById('fdd-process-btn').addEventListener('click', async () => {
+            const file = document.getElementById('fdd-file-input').files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('fdd-status');
+            const processBtn = document.getElementById('fdd-process-btn');
+            
+            statusEl.classList.remove('hidden');
+            processBtn.disabled = true;
+            processBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                const taskId = document.getElementById('task-id').value;
-                const data = {
-                    title: document.getElementById('task-title').value,
-                    date: document.getElementById('task-date').value,
-                    time: document.getElementById('task-time').value, // Add time
-                    dealId: document.getElementById('task-deal-id').value,
-                    notes: document.getElementById('task-notes').value,
-                };
+                // 1. Upload to Firebase Storage
+                statusEl.textContent = "Uploading PDF...";
+                const storageRef = ref(storage, `fdd_docs/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const fileUrl = await getDownloadURL(storageRef);
 
-                if (taskId) {
-                    await updateDoc(doc(db, "gc_tasks", taskId), data);
-                } else {
-                    data.completed = false;
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_tasks"), data);
-                }
+                // 2. Extract Text (Client-side PDF.js)
+                statusEl.textContent = "Extracting text from PDF (this may take a while)...";
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
                 
-                e.target.reset();
-                closeModal('task-modal');
-            } catch (error) {
-                console.error("Error saving task:", error);
-                alert("Failed to save task: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('contact-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const contactId = document.getElementById('contact-id').value;
+                let fullText = "";
+                // Limit to first 100 pages to avoid crashing/timeouts for huge docs in this demo
+                // Ideally, we'd search for "Item 20" or "Signed but not open" in page headers first
+                const maxPages = Math.min(pdf.numPages, 150); 
                 
-                // Harvest Checked Deal IDs
-                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
-
-                const data = {
-                    name: document.getElementById('contact-name').value,
-                    role: document.getElementById('contact-role').value,
-                    email: document.getElementById('contact-email').value,
-                    phone: document.getElementById('contact-phone').value,
-                    company: document.getElementById('contact-company').value, // Save Company
-                    category: document.getElementById('contact-category').value, // Save Category
-                    dealIds: selectedDealIds, 
-                    dealId: null 
-                };
-
-                if (contactId) {
-                    await updateDoc(doc(db, "gc_contacts", contactId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_contacts"), data);
+                for (let i = 1; i <= maxPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + "\n";
                 }
 
-                e.target.reset();
-                closeModal('contact-modal');
+                // 3. Send to Gemini for Parsing
+                statusEl.textContent = "Analyzing with AI to find contacts...";
+                const prompt = `
+                    Analyze the following text from a Franchise Disclosure Document (FDD).
+                    Look specifically for the section listing "Signed Franchise Agreements" or "Franchisees who have signed but not yet opened an outlet".
+                    Extract the following information for each contact found in that section:
+                    - Name (Person or Entity)
+                    - Address
+                    - City
+                    - State
+                    - Zip
+                    - Phone Number
+                    
+                    Return the data strictly as a JSON array of objects. Do not include any markdown formatting or explanation. 
+                    If no such list is found, return an empty array [].
+                    
+                    Text Limit: Only the first 100-150 pages were scanned. If the list is typically at the end (Exhibit), it might be missing. Do your best with the provided text.
+                    
+                    Document Text Excerpt:
+                    ${fullText.substring(0, 30000)} ... [truncated] ... ${fullText.substring(fullText.length - 30000)}
+                `; 
+                // Note: Sending ~60k chars. Gemini 1.5 Flash has a large context window (1M tokens) so we can send A LOT.
+                // Let's try sending a large chunk. If it fails, we handle error.
+                
+                // We use a helper function to call Gemini (assuming GEMINI_API_KEY is available)
+                const jsonStr = await callGeminiForFDD(fullText); 
+                
+                let contacts = [];
+                try {
+                    // Clean up potential markdown code blocks
+                    const cleanedJson = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
+                    contacts = JSON.parse(cleanedJson);
+                } catch (e) {
+                    console.error("JSON Parse Error:", e);
+                    throw new Error("Failed to parse AI response.");
+                }
+
+                if (contacts.length === 0) {
+                    alert("No contacts found in the scanned pages. The list might be in an Exhibit at the end of the document which wasn't fully processed, or the format was unrecognizable.");
+                    return;
+                }
+
+                // 4. Generate Excel
+                statusEl.textContent = `Found ${contacts.length} contacts. Generating Excel...`;
+                const ws = XLSX.utils.json_to_sheet(contacts);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Signed Not Open");
+                XLSX.writeFile(wb, `${file.name.replace('.pdf', '')}_contacts.xlsx`);
+
+                statusEl.textContent = "Done! Download started.";
+
             } catch (error) {
-                console.error("Error saving contact:", error);
-                alert("Failed to save contact: " + error.message);
+                console.error("FDD Process Error:", error);
+                statusEl.textContent = "Error: " + error.message;
+                alert("An error occurred during processing. See console for details.");
             } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
+                processBtn.disabled = false;
+                processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         });
+
+        async function callGeminiForFDD(text) {
+             const model = 'gemini-1.5-flash-latest';
+             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+             
+             // Construct a smart prompt to find the specific table
+             // FDDs usually have this in "Item 20" or "Exhibit" lists
+             const prompt = `
+                I am providing the text content of a Franchise Disclosure Document (FDD). 
+                Your task is to identify the list of franchisees who have **Signed a Franchise Agreement but have not yet opened an outlet**. 
+                This is typically found in **Item 20** (Tables) or an **Exhibit** at the end of the document.
+
+                Please extract the data into a JSON Array with objects having these keys:
+                "Name", "Address", "City", "State", "Zip", "Phone".
+
+                If a field is missing, use an empty string.
+                Return ONLY the JSON array.
+
+                Document Text:
+                ${text.substring(0, 100000)} 
+             `; // Sending first 100k chars for safety, though Flash can handle more.
+
+             const payload = {
+                 contents: [{ parts: [{ text: prompt }] }]
+             };
+
+             const response = await fetch(apiUrl, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(payload)
+             });
+
+             if (!response.ok) throw new Error("Gemini API Error");
+             const result = await response.json();
+             return result.candidates[0].content.parts[0].text;
+        }
 
     </script>
 </body>
