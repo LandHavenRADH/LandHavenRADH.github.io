@@ -103,7 +103,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.16.0 • FDD Parser
+                v2.17.0 • Code Fix
             </div>
         </div>
 
@@ -707,6 +707,16 @@
             return `${h12}:${formattedMinutes} ${ampm}`;
         }
 
+        // --- HELPER: Date Formatting Fix ---
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return 'No Date';
+            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
+            const [year, month, day] = dateString.split('-').map(Number);
+            // Month is 0-indexed in JS Date constructor
+            const date = new Date(year, month - 1, day); 
+            return date.toLocaleDateString();
+        }
+
         // --- View Switching ---
         window.switchView = (viewName) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
@@ -1128,16 +1138,6 @@
                 calendar.removeAllEvents();
                 calendar.addEventSource(getCalendarEvents());
             }
-        }
-
-        // --- HELPER: Date Formatting Fix ---
-        function formatDateForDisplay(dateString) {
-            if (!dateString) return 'No Date';
-            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
-            const [year, month, day] = dateString.split('-').map(Number);
-            // Month is 0-indexed in JS Date constructor
-            const date = new Date(year, month - 1, day); 
-            return date.toLocaleDateString();
         }
 
         // --- RENT CALCULATOR LOGIC ---
