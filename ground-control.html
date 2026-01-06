@@ -103,7 +103,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.19.3 • Fix Duplicate Declarations
+                v2.19.4 • Final Fix
             </div>
         </div>
 
@@ -699,7 +699,7 @@
         // --- HELPER FUNCTIONS (DEFINED ONCE) ---
 
         // Helper: Time Formatting
-        function formatTimeForDisplay(timeString) {
+        window.formatTimeForDisplay = function(timeString) {
             if (!timeString) return '';
             const [hours, minutes] = timeString.split(':');
             const h = parseInt(hours);
@@ -710,7 +710,7 @@
         }
 
         // Helper: Date Formatting
-        function formatDateForDisplay(dateString) {
+        window.formatDateForDisplay = function(dateString) {
             if (!dateString) return 'No Date';
             const [year, month, day] = dateString.split('-').map(Number);
             const date = new Date(year, month - 1, day); 
@@ -1140,6 +1140,10 @@
             }
         }
 
+        // --- HELPER: Date Formatting Fix ---
+        // Ensuring these are defined only once
+        // formatDateForDisplay already defined on window object above
+        
         // --- RENT CALCULATOR LOGIC ---
         
         // Populate Calculator Dropdown
