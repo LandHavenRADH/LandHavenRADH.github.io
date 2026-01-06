@@ -103,7 +103,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.19.2 • Syntax Fix
+                v2.19.3 • Fix Duplicate Declarations
             </div>
         </div>
 
@@ -696,8 +696,10 @@
 
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
-        // --- HELPER: Time Formatting Fix ---
-        window.formatTimeForDisplay = function(timeString) {
+        // --- HELPER FUNCTIONS (DEFINED ONCE) ---
+
+        // Helper: Time Formatting
+        function formatTimeForDisplay(timeString) {
             if (!timeString) return '';
             const [hours, minutes] = timeString.split(':');
             const h = parseInt(hours);
@@ -707,8 +709,8 @@
             return `${h12}:${formattedMinutes} ${ampm}`;
         }
 
-        // --- HELPER: Date Formatting Fix ---
-        window.formatDateForDisplay = function(dateString) {
+        // Helper: Date Formatting
+        function formatDateForDisplay(dateString) {
             if (!dateString) return 'No Date';
             const [year, month, day] = dateString.split('-').map(Number);
             const date = new Date(year, month - 1, day); 
