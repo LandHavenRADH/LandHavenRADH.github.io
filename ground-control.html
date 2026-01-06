@@ -103,7 +103,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.18.0 • Full Corrected
+                v2.18.1 • Fix Tabs
             </div>
         </div>
 
@@ -710,9 +710,7 @@
         // --- HELPER: Date Formatting Fix ---
         function formatDateForDisplay(dateString) {
             if (!dateString) return 'No Date';
-            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
             const [year, month, day] = dateString.split('-').map(Number);
-            // Month is 0-indexed in JS Date constructor
             const date = new Date(year, month - 1, day); 
             return date.toLocaleDateString();
         }
@@ -1425,28 +1423,6 @@
 
                 // 3. Send to Gemini for Parsing
                 statusEl.textContent = "Analyzing with AI to find contacts...";
-                const prompt = `
-                    Analyze the following text from a Franchise Disclosure Document (FDD).
-                    Look specifically for the section listing "Signed Franchise Agreements" or "Franchisees who have signed but not yet opened an outlet".
-                    Extract the following information for each contact found in that section:
-                    - Name (Person or Entity)
-                    - Address
-                    - City
-                    - State
-                    - Zip
-                    - Phone Number
-                    
-                    Return the data strictly as a JSON array of objects. Do not include any markdown formatting or explanation. 
-                    If no such list is found, return an empty array [].
-                    
-                    Text Limit: Only the first 100-150 pages were scanned. If the list is typically at the end (Exhibit), it might be missing. Do your best with the provided text.
-                    
-                    Document Text Excerpt:
-                    ${fullText.substring(0, 30000)} ... [truncated] ... ${fullText.substring(fullText.length - 30000)}
-                `; 
-                // Note: Sending ~60k chars. Gemini 1.5 Flash has a large context window (1M tokens) so we can send A LOT.
-                // Let's try sending a large chunk. If it fails, we handle error.
-                
                 // We use a helper function to call Gemini (assuming GEMINI_API_KEY is available)
                 const jsonStr = await callGeminiForFDD(fullText); 
                 
