@@ -103,7 +103,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.19.5 • Complete Fix
+                v2.19.6 • Cleaned
             </div>
         </div>
 
@@ -696,7 +696,8 @@
 
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
-        // --- HELPER FUNCTIONS (DEFINED ONCE) ---
+        // --- HELPER FUNCTIONS ---
+        // Defined here inside the module scope, but attached to window if needed by HTML handlers
 
         // Helper: Time Formatting
         window.formatTimeForDisplay = function(timeString) {
@@ -837,12 +838,12 @@
             }
 
             container.innerHTML = relatedTasks.map(t => {
-                const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(t.time)}</span>` : '';
+                const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${window.formatTimeForDisplay(t.time)}</span>` : '';
                 return `
                 <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
                     <div>
                         <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
-                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}${timeString}</div>
+                        <div class="text-xs text-slate-500">${window.formatDateForDisplay(t.date)}${timeString}</div>
                     </div>
                     <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
                         ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
@@ -1125,7 +1126,7 @@
         function getCalendarEvents() {
             return tasks.map(t => ({
                 id: t.id,
-                title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), // Add time to calendar title
+                title: t.title + (t.time ? ` @ ${window.formatTimeForDisplay(t.time)}` : ''), // Add time to calendar title
                 start: t.time ? `${t.date}T${t.time}` : t.date, // Use precise time if available
                 backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
                 borderColor: t.completed ? '#94a3b8' : '#3b82f6',
