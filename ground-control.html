@@ -56,7 +56,7 @@
                         Ground Control
                     </span>
                     <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors text-sm">
-                        Refresh Session
+                        Logout
                     </button>
                 </div>
             </div>
@@ -618,30 +618,12 @@
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Environment Config ---
-        // SAFEGUARD: Check if environment variables exist before parsing
-        let firebaseConfig;
-        try {
-            // Check if __firebase_config is defined in the window/global scope
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } else {
-                throw new Error("Firebase config not found in environment");
-            }
-        } catch (e) {
-            console.warn("Running in offline/demo mode: " + e.message);
-            // Fallback or null to prevent crash
-            firebaseConfig = null;
-        }
-
+        const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Initialize services only if config exists
-        let app, auth, db;
-        if (firebaseConfig) {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
         // --- State ---
         let deals = [];
@@ -654,7 +636,6 @@
 
         // --- Auth (Environment Optimized) ---
         const initAuth = async () => {
-            if (!auth) return; // Guard clause
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
@@ -663,20 +644,19 @@
         };
         initAuth();
 
-        if (auth) {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    initApp();
-                } else {
-                    // Handle logged out state if needed (e.g. disable UI)
-                    console.log("User logged out");
-                }
-            });
-        }
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                initApp();
+            } else {
+                // Handle logged out state if needed (e.g. disable UI)
+                console.log("User logged out");
+            }
+        });
 
-        document.getElementById('logout-button').addEventListener('click', () => {
+        document.getElementById('logout-button').addEventListener('click', async () => {
              // In this environment, we might just want to refresh or show a status
+             await signOut(auth);
              window.location.reload();
         });
 
@@ -1022,10 +1002,6 @@
 
         // --- Initialization ---
         function initApp() {
-            if (!db) {
-                console.warn("Firestore not available - offline mode");
-                return;
-            }
             // Listeners with Error Handling
             try {
                 // Safely init Lucide
