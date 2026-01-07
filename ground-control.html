@@ -618,12 +618,32 @@
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Environment Config ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let firebaseConfig = {};
+        let appId = 'default-app-id';
+        let app, auth, db;
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // SAFELY Attempt to load config
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+            if (typeof __app_id !== 'undefined') {
+                appId = __app_id;
+            }
+        } catch (e) {
+            console.error("Firebase Configuration Error:", e);
+        }
+
+        // Initialize Firebase only if valid config exists
+        if (Object.keys(firebaseConfig).length > 0) {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (e) {
+                console.error("Firebase Init Failed:", e);
+            }
+        }
 
         // --- State ---
         let deals = [];
@@ -636,27 +656,42 @@
 
         // --- Auth (Environment Optimized) ---
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            if (!auth) return; // Skip if auth is missing
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Auth Failed:", e);
             }
         };
-        initAuth();
+        
+        // Call auth immediately if available
+        if (auth) initAuth();
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUserId = user.uid;
-                initApp();
-            } else {
-                // Handle logged out state if needed (e.g. disable UI)
-                console.log("User logged out");
-            }
-        });
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    initApp();
+                } else {
+                    console.log("User logged out");
+                }
+            });
+        } else {
+            // No Auth = No DB, but we still want icons/UI to "load" (even if empty)
+            console.warn("Running in UI-only mode (No Database Connected)");
+            // Trigger rendering anyway so UI doesn't look broken
+            setTimeout(() => {
+                if(window.lucide) lucide.createIcons();
+                renderPipeline(); 
+            }, 100);
+        }
 
         document.getElementById('logout-button').addEventListener('click', async () => {
-             // In this environment, we might just want to refresh or show a status
-             await signOut(auth);
+             if (auth) await signOut(auth);
              window.location.reload();
         });
 
@@ -1002,15 +1037,20 @@
 
         // --- Initialization ---
         function initApp() {
+            // Ensure icons are loaded when app inits
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+
+            // Only attempt DB connection if DB is initialized
+            if (!db) {
+                console.warn("Database not initialized. App running in offline mode.");
+                renderPipeline(); // Render empty pipeline
+                return;
+            }
+
             // Listeners with Error Handling
             try {
-                // Safely init Lucide
-                if (window.lucide) {
-                    lucide.createIcons();
-                } else {
-                    console.warn("Lucide icons not loaded yet.");
-                }
-                
                 // DATA PATHS: Updated to use 'artifacts/{appId}/public/data/...'
                 const dealsRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_deals');
                 const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_tasks');
@@ -1220,7 +1260,7 @@
             const contractRentValue = parseFloat(contractRentInput.value) || 0;
 
             // --- AUTO-SAVE LOGIC ---
-            if (currentlyLoadedDealForCalc) {
+            if (currentlyLoadedDealForCalc && db) {
                 // Debounce save (optional but good practice, here direct for simplicity)
                 const paramsToSave = {
                     ltv: purchaseLtv,
@@ -1235,8 +1275,12 @@
                 };
                 
                 // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
-                const dealRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', currentlyLoadedDealForCalc);
-                updateDoc(dealRef, { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+                try {
+                    const dealRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', currentlyLoadedDealForCalc);
+                    updateDoc(dealRef, { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+                } catch(e) {
+                    console.warn("Saving not available offline");
+                }
             }
 
 
@@ -1346,6 +1390,11 @@
             });
             // Initial calc
             calculateRent();
+            
+            // Ensure icons render on load
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         });
 
         // --- RENDER PIPELINE ---
