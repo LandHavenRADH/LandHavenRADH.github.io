@@ -42,13 +42,13 @@
                     Ground Lease Group
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                    <a href="#" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm opacity-50 cursor-not-allowed" title="Not available in preview">
                         Property DB
                     </a>
-                    <a href="client-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                    <a href="#" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm opacity-50 cursor-not-allowed" title="Not available in preview">
                         Client DB
                     </a>
-                    <a href="broker-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                    <a href="#" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm opacity-50 cursor-not-allowed" title="Not available in preview">
                         Broker DB
                     </a>
                     <!-- Current Page Indicator -->
@@ -56,7 +56,7 @@
                         Ground Control
                     </span>
                     <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors text-sm">
-                        Logout
+                        Refresh Session
                     </button>
                 </div>
             </div>
@@ -613,10 +613,13 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { firebaseConfig } from './config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Environment Config ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -631,17 +634,30 @@
         let currentDealId = null; // Track currently open deal
         let currentlyLoadedDealForCalc = null; // Track loaded deal ID for calculator
 
-        // --- Auth ---
+        // --- Auth (Environment Optimized) ---
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        initAuth();
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
                 initApp();
             } else {
-                window.location.href = 'login.html';
+                // Handle logged out state if needed (e.g. disable UI)
+                console.log("User logged out");
             }
         });
 
-        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+        document.getElementById('logout-button').addEventListener('click', () => {
+             // In this environment, we might just want to refresh or show a status
+             window.location.reload();
+        });
 
         // --- HELPER: Time Formatting Fix ---
         function formatTimeForDisplay(timeString) {
@@ -993,8 +1009,13 @@
                 } else {
                     console.warn("Lucide icons not loaded yet.");
                 }
+                
+                // DATA PATHS: Updated to use 'artifacts/{appId}/public/data/...'
+                const dealsRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_deals');
+                const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_tasks');
+                const contactsRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_contacts');
 
-                onSnapshot(collection(db, "gc_deals"), (snapshot) => {
+                onSnapshot(dealsRef, (snapshot) => {
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderPipeline();
                     populateDealSelects();
@@ -1004,10 +1025,9 @@
                     }
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
-                    alert("Error syncing deals: " + error.message + "\nCheck your Firestore permissions.");
                 });
 
-                onSnapshot(collection(db, "gc_tasks"), (snapshot) => {
+                onSnapshot(tasksRef, (snapshot) => {
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderTasks();
                     updateCalendarEvents();
@@ -1017,7 +1037,7 @@
                     }
                 }, (error) => console.error("Tasks Sync Error:", error));
 
-                onSnapshot(collection(db, "gc_contacts"), (snapshot) => {
+                onSnapshot(contactsRef, (snapshot) => {
                     contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderContacts();
                     // If detailed view is open, refresh it
@@ -1050,7 +1070,8 @@
                     // Update date on drop
                     const newDate = info.event.start.toISOString().split('T')[0];
                     try {
-                        await updateDoc(doc(db, "gc_tasks", info.event.id), { date: newDate });
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', info.event.id);
+                        await updateDoc(taskRef, { date: newDate });
                     } catch (error) {
                         console.error("Error moving task:", error);
                         info.revert(); // Revert visual change on error
@@ -1213,8 +1234,8 @@
                 };
                 
                 // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
-                // We will just fire and forget the update for responsiveness
-                updateDoc(doc(db, "gc_deals", currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+                const dealRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', currentlyLoadedDealForCalc);
+                updateDoc(dealRef, { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
             }
 
 
@@ -1442,7 +1463,8 @@
             const filteredContacts = contacts.filter(c => 
                 (c.name && c.name.toLowerCase().includes(searchVal)) ||
                 (c.email && c.email.toLowerCase().includes(searchVal)) ||
-                (c.role && c.role.toLowerCase().includes(searchVal))
+                (c.role && c.role.toLowerCase().includes(searchVal)) ||
+                (c.company && c.company.toLowerCase().includes(searchVal))
             );
 
             // GROUPING LOGIC
@@ -1571,13 +1593,32 @@
         }
 
         // --- CRUD Operations ---
-        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
-        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
+        window.deleteDeal = async (id) => { 
+            if(confirm('Delete deal?')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id);
+                await deleteDoc(docRef); 
+            }
+        };
+        window.moveStage = async (id, stage) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id);
+            await updateDoc(docRef, { stage });
+        };
         
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
+        window.toggleTask = async (id, status) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id);
+            await updateDoc(docRef, { completed: status });
+        };
+        window.deleteTask = async (id) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id);
+            await deleteDoc(docRef);
+        };
 
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
+        window.deleteContact = async (id) => { 
+            if(confirm('Delete contact?')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id);
+                await deleteDoc(docRef); 
+            }
+        };
 
         // --- Form Submissions with Error Handling ---
         
@@ -1597,11 +1638,14 @@
                     stage: document.getElementById('deal-stage').value,
                 };
 
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_deals');
+
                 if (dealId) {
-                    await updateDoc(doc(db, "gc_deals", dealId), data);
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', dealId);
+                    await updateDoc(docRef, data);
                 } else {
                     data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_deals"), data);
+                    await addDoc(collectionRef, data);
                 }
 
                 e.target.reset();
@@ -1631,13 +1675,16 @@
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
                 };
+                
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_tasks');
 
                 if (taskId) {
-                    await updateDoc(doc(db, "gc_tasks", taskId), data);
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', taskId);
+                    await updateDoc(docRef, data);
                 } else {
                     data.completed = false;
                     data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_tasks"), data);
+                    await addDoc(collectionRef, data);
                 }
                 
                 e.target.reset();
@@ -1675,11 +1722,14 @@
                     dealId: null 
                 };
 
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'gc_contacts');
+
                 if (contactId) {
-                    await updateDoc(doc(db, "gc_contacts", contactId), data);
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', contactId);
+                    await updateDoc(docRef, data);
                 } else {
                     data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_contacts"), data);
+                    await addDoc(collectionRef, data);
                 }
 
                 e.target.reset();
