@@ -9,12 +9,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- FullCalendar -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-    <!-- PDF.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-    <!-- SheetJS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -97,13 +91,9 @@
                     <i data-lucide="calculator" size="20"></i>
                     <span class="font-medium">Rent Calculator</span>
                 </button>
-                <button onclick="switchView('fdd')" id="nav-fdd" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
-                    <i data-lucide="file-text" size="20"></i>
-                    <span class="font-medium">FDD Processor</span>
-                </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.19.8 • Functions Fixed
+                v2.15.0 • Bug Fix
             </div>
         </div>
 
@@ -626,13 +616,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-        import { firebaseConfig, GEMINI_API_KEY } from './config.js';
+        import { firebaseConfig } from './config.js';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
         // --- State ---
         let deals = [];
@@ -655,24 +643,16 @@
 
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
-        // --- HELPER FUNCTIONS ---
-        // Helper: Time Formatting
-        window.formatTimeForDisplay = function(timeString) {
+        // --- HELPER: Time Formatting Fix ---
+        function formatTimeForDisplay(timeString) {
             if (!timeString) return '';
             const [hours, minutes] = timeString.split(':');
             const h = parseInt(hours);
             const ampm = h >= 12 ? 'PM' : 'AM';
             const h12 = h % 12 || 12;
+            // Pad minutes with leading zero if necessary
             const formattedMinutes = minutes.length < 2 ? `0${minutes}` : minutes;
             return `${h12}:${formattedMinutes} ${ampm}`;
-        }
-
-        // Helper: Date Formatting
-        window.formatDateForDisplay = function(dateString) {
-            if (!dateString) return 'No Date';
-            const [year, month, day] = dateString.split('-').map(Number);
-            const date = new Date(year, month - 1, day); 
-            return date.toLocaleDateString();
         }
 
         // --- View Switching ---
@@ -785,19 +765,578 @@
             editDeal(currentDealId);
         }
 
-        // --- RENDER FUNCTIONS (Defined at module level to be accessible) ---
-
-        // Render Pipeline
-        window.renderPipeline = function() {
-            const container = document.getElementById('pipeline-container');
-            const STAGES = [
-                { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
-                { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
-                { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
-                { id: 'closing', label: 'Closing', color: 'border-purple-500' },
-                { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
-            ];
+        function renderRelatedTasks(dealId) {
+            const container = document.getElementById('detail-tasks-list');
+            const relatedTasks = tasks.filter(t => t.dealId === dealId);
             
+            if (relatedTasks.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No tasks linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedTasks.map(t => {
+                const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(t.time)}</span>` : '';
+                return `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
+                    <div>
+                        <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
+                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}${timeString}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
+                        ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
+                    </button>
+                </div>
+            `}).join('');
+            lucide.createIcons();
+        }
+
+        function renderRelatedContacts(dealId) {
+            const container = document.getElementById('detail-contacts-list');
+            // Filter contacts that have this dealId in their array OR matches legacy string
+            const relatedContacts = contacts.filter(c => {
+                if (c.dealIds && Array.isArray(c.dealIds)) return c.dealIds.includes(dealId);
+                return c.dealId === dealId;
+            });
+            
+            if (relatedContacts.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No contacts linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedContacts.map(c => `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition cursor-pointer" onclick="editContact('${c.id}')">
+                    <div class="font-medium text-sm text-slate-800">${c.name}</div>
+                    <div class="text-xs text-slate-500 uppercase font-semibold">${c.role || 'No Role'}</div>
+                    ${c.company ? `<div class="text-xs text-slate-400 font-medium">${c.company}</div>` : ''}
+                    ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // --- New Function: Render Deal Summary Logic ---
+        function renderDealSummary(deal) {
+            const summaryContainer = document.getElementById('deal-calc-summary');
+            if(!deal.value) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+            summaryContainer.classList.remove('hidden');
+
+            // Quick Calculation based on dynamic inputs
+            const purchasePrice = parseFloat(deal.value.toString().replace(/,/g, '')) || 0;
+            if(purchasePrice === 0) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+
+            // Defaults (Fallback)
+            const defaults = {
+                ltv: 100,
+                rate: 6.0,
+                term: 300,
+                dscr: 1.20,
+                cap: 6.0,
+                marketLtv: 70,
+                useContractRent: false,
+                contractRent: 0,
+                interestOnly: false
+            };
+            
+            // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
+            const params = deal.calcParams || defaults;
+
+            const purchaseLtv = parseFloat(params.ltv) || defaults.ltv;
+            const interestRate = parseFloat(params.rate) || defaults.rate;
+            const amortization = parseFloat(params.term) || defaults.term;
+            const dscr = parseFloat(params.dscr) || defaults.dscr;
+            const capRate = parseFloat(params.cap) || defaults.cap;
+            const marketLtv = parseFloat(params.marketLtv) || defaults.marketLtv;
+            const useContractRent = params.useContractRent || defaults.useContractRent;
+            const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
+            const interestOnly = params.interestOnly || defaults.interestOnly;
+
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            
+            let annualService = 0;
+            let pmt = 0;
+
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization Calculation
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
+            }
+
+            // Determine Rent Source
+            let rentalRate = annualService * dscr; 
+            let rentLabel = "Required Rent (NOI)";
+            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate${interestOnly ? ', Interest Only' : ''}, ${dscr} DSCR, ${capRate}% Cap)`;
+
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+                rentLabel = "Contract Rent (Override)";
+                rentAssumptions = `Based on Contract Rent override and calculator inputs (${capRate}% Cap, ${marketLtv}% Market LTV)`;
+            }
+
+            const marketValue = rentalRate / (capRate / 100);
+            const profit = marketValue - purchasePrice;
+            const roi = purchasePrice > 0 ? (profit / purchasePrice) * 100 : 0;
+            const impliedLtv = purchasePrice / marketValue;
+            const isFinancable = impliedLtv < (marketLtv / 100);
+
+            const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+
+            document.getElementById('summary-rent-label').textContent = rentLabel;
+            document.getElementById('summary-rent').textContent = formatCurrency(rentalRate);
+            document.getElementById('summary-value').textContent = formatCurrency(marketValue);
+            document.getElementById('summary-profit').textContent = formatCurrency(profit);
+            document.getElementById('summary-roi').textContent = Math.round(roi) + '%';
+            
+            // Update assumptions text
+            document.getElementById('summary-assumptions-text').textContent = rentAssumptions;
+
+            const financeEl = document.getElementById('summary-finance');
+            if(isFinancable) {
+                financeEl.textContent = "YES";
+                financeEl.className = "block font-bold text-emerald-600 text-lg";
+            } else {
+                financeEl.textContent = "NO";
+                financeEl.className = "block font-bold text-red-600 text-lg";
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // --- Edit Logic ---
+        
+        window.editDeal = (id) => {
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+
+            document.getElementById('deal-id').value = deal.id;
+            document.getElementById('deal-name').value = deal.name || '';
+            document.getElementById('deal-address').value = deal.address || '';
+            document.getElementById('deal-value').value = deal.value || '';
+            document.getElementById('deal-stage').value = deal.stage || 'prospect';
+            
+            document.getElementById('deal-modal-title').textContent = 'Edit Deal';
+            document.getElementById('deal-submit-btn').textContent = 'Update Deal';
+            
+            document.getElementById('deal-modal').classList.remove('hidden');
+        };
+
+        window.editTask = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            populateDealSelects();
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title').value = task.title || '';
+            document.getElementById('task-date').value = task.date || '';
+            document.getElementById('task-time').value = task.time || ''; // Populate time
+            document.getElementById('task-deal-id').value = task.dealId || '';
+            document.getElementById('task-notes').value = task.notes || '';
+
+            document.getElementById('task-modal-title').textContent = 'Edit Task';
+            document.getElementById('task-submit-btn').textContent = 'Update Task';
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.editContact = (id) => {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            populateDealSelects();
+            document.getElementById('contact-id').value = contact.id;
+            document.getElementById('contact-name').value = contact.name || '';
+            document.getElementById('contact-role').value = contact.role || '';
+            document.getElementById('contact-company').value = contact.company || ''; // Populate company
+            document.getElementById('contact-email').value = contact.email || '';
+            document.getElementById('contact-phone').value = contact.phone || '';
+            
+            // Set Category
+            document.getElementById('contact-category').value = contact.category || 'Other';
+            
+            // Handle Multi-Select Checkboxes
+            const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
+            checkboxes.forEach(cb => cb.checked = false); // Reset first
+
+            // Prioritize new array format, fallback to legacy string
+            const linkedDealIds = contact.dealIds || (contact.dealId ? [contact.dealId] : []);
+            
+            linkedDealIds.forEach(dealId => {
+                const checkbox = document.getElementById(`contact-deal-${dealId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+            document.getElementById('contact-submit-btn').textContent = 'Update Contact';
+            document.getElementById('contact-modal').classList.remove('hidden');
+        }
+
+        // --- Initialization ---
+        function initApp() {
+            // Listeners with Error Handling
+            try {
+                // Safely init Lucide
+                if (window.lucide) {
+                    lucide.createIcons();
+                } else {
+                    console.warn("Lucide icons not loaded yet.");
+                }
+
+                onSnapshot(collection(db, "gc_deals"), (snapshot) => {
+                    deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderPipeline();
+                    populateDealSelects();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        openDealDetail(currentDealId);
+                    }
+                }, (error) => {
+                    console.error("Deal Sync Error:", error);
+                    alert("Error syncing deals: " + error.message + "\nCheck your Firestore permissions.");
+                });
+
+                onSnapshot(collection(db, "gc_tasks"), (snapshot) => {
+                    tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderTasks();
+                    updateCalendarEvents();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedTasks(currentDealId);
+                    }
+                }, (error) => console.error("Tasks Sync Error:", error));
+
+                onSnapshot(collection(db, "gc_contacts"), (snapshot) => {
+                    contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderContacts();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedContacts(currentDealId);
+                    }
+                }, (error) => console.error("Contacts Sync Error:", error));
+            } catch (e) {
+                console.error("Init Error:", e);
+            }
+        }
+
+        // --- CALENDAR LOGIC ---
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                height: '100%',
+                editable: true, // Allow drag and drop
+                events: getCalendarEvents(),
+                eventClick: function(info) {
+                    editTask(info.event.id);
+                },
+                eventDrop: async function(info) {
+                    // Update date on drop
+                    const newDate = info.event.start.toISOString().split('T')[0];
+                    try {
+                        await updateDoc(doc(db, "gc_tasks", info.event.id), { date: newDate });
+                    } catch (error) {
+                        console.error("Error moving task:", error);
+                        info.revert(); // Revert visual change on error
+                    }
+                }
+            });
+            calendar.render();
+        }
+
+        function getCalendarEvents() {
+            return tasks.map(t => ({
+                id: t.id,
+                title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), // Add time to calendar title
+                start: t.time ? `${t.date}T${t.time}` : t.date, // Use precise time if available
+                backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
+                borderColor: t.completed ? '#94a3b8' : '#3b82f6',
+                textColor: '#ffffff'
+            }));
+        }
+
+        function updateCalendarEvents() {
+            if (calendar) {
+                calendar.removeAllEvents();
+                calendar.addEventSource(getCalendarEvents());
+            }
+        }
+
+        // --- HELPER: Date Formatting Fix ---
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return 'No Date';
+            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
+            const [year, month, day] = dateString.split('-').map(Number);
+            // Month is 0-indexed in JS Date constructor
+            const date = new Date(year, month - 1, day); 
+            return date.toLocaleDateString();
+        }
+
+        // --- RENT CALCULATOR LOGIC ---
+        
+        // Populate Calculator Dropdown
+        window.loadDealToCalculator = (dealId) => {
+            if (!dealId) {
+                // Reset inputs if cleared
+                document.getElementById('calc-price').value = 500000;
+                currentlyLoadedDealForCalc = null;
+                calculateRent();
+                return;
+            }
+            const deal = deals.find(d => d.id === dealId);
+            currentlyLoadedDealForCalc = dealId;
+
+            // Set dropdown value explicitly so it matches the loaded deal
+            const selectElement = document.getElementById('calc-deal-select');
+            if (selectElement) selectElement.value = dealId;
+
+            if (deal) {
+                // 1. Set Price from Deal Value
+                if (deal.value) {
+                    const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        document.getElementById('calc-price').value = numValue;
+                    }
+                }
+                
+                // 2. Load Saved Parameters OR Defaults
+                const params = deal.calcParams || {};
+                document.getElementById('calc-ltv').value = params.ltv || 100;
+                document.getElementById('calc-rate').value = params.rate || 6.0;
+                document.getElementById('calc-term').value = params.term || 300;
+                document.getElementById('calc-dscr').value = params.dscr || 1.20;
+                document.getElementById('calc-cap').value = params.cap || 6.0;
+                document.getElementById('calc-market-ltv').value = params.marketLtv || 70;
+                
+                // Interest Only Checkbox
+                const ioCheckbox = document.getElementById('calc-interest-only');
+                ioCheckbox.checked = params.interestOnly || false;
+                
+                // Manually trigger the Interest Only logic for disabling amortization
+                const amortizationInput = document.getElementById('calc-term');
+                if (ioCheckbox.checked) {
+                    amortizationInput.disabled = true;
+                    amortizationInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                } else {
+                    amortizationInput.disabled = false;
+                    amortizationInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                }
+
+                // Contract Rent Checkbox state
+                const checkbox = document.getElementById('calc-use-contract');
+                checkbox.checked = params.useContractRent || false;
+                
+                const contractInput = document.getElementById('calc-contract-rent');
+                contractInput.value = params.contractRent || 0;
+                
+                // Manually trigger the enabled/disabled state logic for Contract Rent
+                if(checkbox.checked) {
+                    contractInput.disabled = false;
+                    contractInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                } else {
+                    contractInput.disabled = true;
+                    contractInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                }
+
+                calculateRent(); // Recalculate immediately
+            }
+        };
+
+        // Core Calculation Function (Updated with Save Logic)
+        window.calculateRent = async () => {
+            // 1. Get Inputs
+            const purchasePrice = parseFloat(document.getElementById('calc-price').value) || 0;
+            const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 0;
+            const interestRate = parseFloat(document.getElementById('calc-rate').value) || 0;
+            const amortization = parseFloat(document.getElementById('calc-term').value) || 0;
+            const dscr = parseFloat(document.getElementById('calc-dscr').value) || 0;
+            const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
+            const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
+            
+            const interestOnly = document.getElementById('calc-interest-only').checked;
+            const amortizationInput = document.getElementById('calc-term');
+
+            // Interest Only Logic: Disable/Enable Amortization Input
+            if (interestOnly) {
+                amortizationInput.disabled = true;
+                amortizationInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            } else {
+                amortizationInput.disabled = false;
+                amortizationInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            }
+
+
+            // Contract Rent Override Logic
+            const useContractRent = document.getElementById('calc-use-contract').checked;
+            const contractRentInput = document.getElementById('calc-contract-rent');
+            
+            // Enable/Disable input based on checkbox state
+            if (useContractRent) {
+                contractRentInput.disabled = false;
+                contractRentInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            } else {
+                contractRentInput.disabled = true;
+                contractRentInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            }
+
+            const contractRentValue = parseFloat(contractRentInput.value) || 0;
+
+            // --- AUTO-SAVE LOGIC ---
+            if (currentlyLoadedDealForCalc) {
+                // Debounce save (optional but good practice, here direct for simplicity)
+                const paramsToSave = {
+                    ltv: purchaseLtv,
+                    rate: interestRate,
+                    term: amortization,
+                    dscr: dscr,
+                    cap: capRate,
+                    marketLtv: marketLtv,
+                    useContractRent: useContractRent,
+                    contractRent: contractRentValue,
+                    interestOnly: interestOnly
+                };
+                
+                // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
+                // We will just fire and forget the update for responsiveness
+                updateDoc(doc(db, "gc_deals", currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+            }
+
+
+            // 2. Loan Calculations
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            
+            let annualService = 0;
+            let pmt = 0;
+
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                // Annual Interest = Principal * Rate
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization (PMT Formula)
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
+            }
+            
+            // Determine which Rental Rate to use
+            let rentalRate = annualService * dscr; // Default (Required NOI)
+            let isUsingContractRent = false;
+
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+                isUsingContractRent = true;
+            }
+
+            // 3. Market Calculations
+            let marketValue = 0;
+            if (capRate > 0) {
+                marketValue = rentalRate / (capRate / 100);
+            }
+
+            let impliedLtv = 0;
+            if (marketValue > 0) {
+                impliedLtv = purchasePrice / marketValue;
+            }
+
+            const isFinancable = impliedLtv < (marketLtv / 100);
+            const profit = marketValue - purchasePrice;
+            const roi = purchasePrice > 0 ? (profit / purchasePrice) * 100 : 0;
+
+            // 4. Update UI
+            const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+            
+            document.getElementById('res-loan-amount').textContent = formatCurrency(loanAmount);
+            document.getElementById('res-annual-debt').textContent = formatCurrency(annualService);
+            document.getElementById('res-monthly-debt').textContent = `${formatCurrency(pmt)} / month`;
+            
+            document.getElementById('res-rental-rate').textContent = formatCurrency(rentalRate);
+            
+            // Update Label based on source
+            if (isUsingContractRent) {
+                document.getElementById('res-dscr-label').textContent = "Using Contract Rent (Override)";
+                document.getElementById('res-dscr-label').className = "text-xs text-blue-600 font-bold mt-0.5";
+            } else {
+                document.getElementById('res-dscr-label').textContent = `Based on ${dscr}x DSCR`;
+                document.getElementById('res-dscr-label').className = "text-xs text-slate-500 mt-0.5";
+            }
+            
+            document.getElementById('res-market-value').textContent = formatCurrency(marketValue);
+            document.getElementById('res-cap-label').textContent = `@ ${capRate}% Cap Rate`;
+            
+            document.getElementById('res-implied-ltv').textContent = (impliedLtv * 100).toFixed(2) + '%';
+            document.getElementById('res-implied-ltv').className = `text-base font-bold ${isFinancable ? 'text-emerald-600' : 'text-red-600'}`;
+            document.getElementById('res-ltv-subtext').textContent = `Target: < ${marketLtv}%`;
+
+            // Finance Badge
+            const badge = document.getElementById('res-finance-badge');
+            if (isFinancable) {
+                badge.className = "flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg border bg-emerald-100 text-emerald-700 border-emerald-200";
+                badge.innerHTML = `<i data-lucide="check-circle-2" width="20"></i> YES`;
+            } else {
+                badge.className = "flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg border bg-red-50 text-red-700 border-red-200";
+                badge.innerHTML = `<i data-lucide="x-circle" width="20"></i> NO`;
+            }
+            if (window.lucide) lucide.createIcons();
+
+            // Explanation
+            document.getElementById('res-max-loan').textContent = formatCurrency(marketValue * (marketLtv/100));
+            document.getElementById('res-price-check').textContent = formatCurrency(purchasePrice);
+            document.getElementById('res-explanation').textContent = isFinancable 
+                ? "Since the lender's max loan on the new Market Value exceeds your Purchase Price, you can likely finance the entire purchase."
+                : "The lender's max loan on the Market Value is less than the Purchase Price. Down payment required.";
+
+            // ROI
+            document.getElementById('res-profit').textContent = formatCurrency(profit);
+            document.getElementById('res-roi').textContent = Math.round(roi) + '%';
+        };
+
+        // Attach listeners to all calculator inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('.calc-input');
+            inputs.forEach(input => {
+                // For checkbox and number inputs
+                input.addEventListener('input', calculateRent);
+                input.addEventListener('change', calculateRent); // Catch checkbox changes specifically
+            });
+            // Initial calc
+            calculateRent();
+        });
+
+        // --- RENDER PIPELINE ---
+        const STAGES = [
+            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
+            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
+            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
+            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
+            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
+        ];
+
+        function renderPipeline() {
+            const container = document.getElementById('pipeline-container');
             container.innerHTML = '';
 
             STAGES.forEach(stage => {
@@ -839,8 +1378,8 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // Render Tasks
-        window.renderTasks = function() {
+        // --- RENDER TASKS ---
+        function renderTasks() {
             const tbody = document.getElementById('tasks-table-body');
             const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
             
@@ -876,8 +1415,8 @@
                         <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
                         <td class="p-4">
                             <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${window.formatDateForDisplay(task.date)}
-                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${window.formatTimeForDisplay(task.time)}</span>` : ''}
+                                ${formatDateForDisplay(task.date)}
+                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
                                 ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
                             </div>
                         </td>
@@ -890,8 +1429,8 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // Render Contacts
-        window.renderContacts = function() {
+        // --- RENDER CONTACTS ---
+        function renderContacts() {
             const grid = document.getElementById('contacts-grid');
             if(contacts.length === 0) {
                 grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
