@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ground Control | Restaurant GroundWorks</title>
+    <title>Ground Control | Ground Lease Group</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -39,7 +39,7 @@
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="font-extrabold text-2xl text-slate-900 flex items-center gap-2">
-                    Restaurant GroundWorks
+                    Ground Lease Group
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
@@ -93,7 +93,7 @@
                 </button>
             </nav>
             <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.0.2 • Full Code
+                v2.15.0 • Bug Fix
             </div>
         </div>
 
@@ -171,17 +171,27 @@
 
             <!-- VIEW: CONTACTS -->
             <div id="view-contacts" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
-                <div class="flex justify-between items-center mb-6 shrink-0">
+                <div class="flex justify-between items-center mb-6 shrink-0 gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
-                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click a contact to edit)</span></p>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials.</p>
                     </div>
+                    
+                    <div class="flex-1 max-w-md mx-auto">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="search" width="16"></i>
+                            </div>
+                            <input type="text" id="contact-search" placeholder="Search contacts..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" oninput="filterContacts(this.value)">
+                        </div>
+                    </div>
+
                     <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Contact
                     </button>
                 </div>
-                <div id="contacts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-4">
-                    <!-- Contacts injected here -->
+                <div id="contacts-grid" class="overflow-y-auto pb-4 space-y-6">
+                    <!-- Contact Groups injected here -->
                 </div>
             </div>
 
@@ -234,7 +244,11 @@
                              <div class="grid grid-cols-2 gap-4">
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Amortization (Mo)</label>
-                                     <input type="number" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="number" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                     <label class="flex items-center gap-2 mt-2 cursor-pointer">
+                                        <input type="checkbox" id="calc-interest-only" class="calc-input rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3 h-3">
+                                        <span class="text-xs text-slate-500 font-medium">Interest Only</span>
+                                     </label>
                                  </div>
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">DSCR Target</label>
@@ -433,8 +447,41 @@
 
             <!-- Content -->
             <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                
+                <!-- Rent Calculator Summary (New) -->
+                <div id="deal-calc-summary" class="bg-white p-4 rounded-lg border border-blue-100 shadow-sm mb-6 hidden">
+                    <h4 class="font-bold text-slate-700 flex items-center gap-2 mb-3">
+                        <i data-lucide="trending-up" class="text-blue-600" width="18"></i> Financial Snapshot
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                        <div>
+                            <span class="block text-slate-500 text-xs" id="summary-rent-label">Required Rent (NOI)</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-rent">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">Projected Value</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-value">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">Potential Profit</span>
+                            <span class="block font-bold text-emerald-600 text-lg" id="summary-profit">$0</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">ROI (On Price)</span>
+                            <span class="block font-bold text-blue-600 text-lg" id="summary-roi">0%</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500 text-xs">100% Finance?</span>
+                            <span class="block font-bold text-slate-800 text-lg" id="summary-finance">--</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
+                        <span id="summary-assumptions-text">Based on standard assumptions</span>
+                        <a href="#" onclick="closeModal('deal-detail-modal'); switchView('calculator'); loadDealToCalculator(currentDealId);" class="text-blue-600 hover:underline">Open in Calculator</a>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
                     <!-- Left Column: Tasks -->
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
@@ -485,9 +532,15 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Task / Action</label>
                     <input type="text" id="task-title" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sign Purchase Agreement" required>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-                    <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                        <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                        <input type="time" id="task-time" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Related Deal</label>
@@ -518,9 +571,25 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                        <select id="contact-category" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="Seller">Seller</option>
+                            <option value="Franchisor">Franchisor</option>
+                            <option value="Franchisee">Franchisee</option>
+                            <option value="Lender">Lender</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                         <label class="block text-sm font-medium text-slate-700 mb-1">Role/Title</label>
+                        <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                    </div>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                    <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Company</label>
+                    <input type="text" id="contact-company" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Acme Corp">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -560,6 +629,7 @@
         let currentUserId = null;
         let calendar = null;
         let currentDealId = null; // Track currently open deal
+        let currentlyLoadedDealForCalc = null; // Track loaded deal ID for calculator
 
         // --- Auth ---
         onAuthStateChanged(auth, (user) => {
@@ -572,6 +642,18 @@
         });
 
         document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // --- HELPER: Time Formatting Fix ---
+        function formatTimeForDisplay(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const h = parseInt(hours);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            // Pad minutes with leading zero if necessary
+            const formattedMinutes = minutes.length < 2 ? `0${minutes}` : minutes;
+            return `${h12}:${formattedMinutes} ${ampm}`;
+        }
 
         // --- View Switching ---
         window.switchView = (viewName) => {
@@ -673,6 +755,7 @@
 
             renderRelatedTasks(id);
             renderRelatedContacts(id);
+            renderDealSummary(deal); // New Summary Logic
 
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
@@ -691,17 +774,19 @@
                 return;
             }
 
-            container.innerHTML = relatedTasks.map(t => `
+            container.innerHTML = relatedTasks.map(t => {
+                const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(t.time)}</span>` : '';
+                return `
                 <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
                     <div>
                         <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
-                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}${timeString}</div>
                     </div>
                     <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
                         ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
                     </button>
                 </div>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         }
 
@@ -722,9 +807,113 @@
                 <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition cursor-pointer" onclick="editContact('${c.id}')">
                     <div class="font-medium text-sm text-slate-800">${c.name}</div>
                     <div class="text-xs text-slate-500 uppercase font-semibold">${c.role || 'No Role'}</div>
+                    ${c.company ? `<div class="text-xs text-slate-400 font-medium">${c.company}</div>` : ''}
                     ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
                 </div>
             `).join('');
+        }
+
+        // --- New Function: Render Deal Summary Logic ---
+        function renderDealSummary(deal) {
+            const summaryContainer = document.getElementById('deal-calc-summary');
+            if(!deal.value) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+            summaryContainer.classList.remove('hidden');
+
+            // Quick Calculation based on dynamic inputs
+            const purchasePrice = parseFloat(deal.value.toString().replace(/,/g, '')) || 0;
+            if(purchasePrice === 0) {
+                summaryContainer.classList.add('hidden');
+                return;
+            }
+
+            // Defaults (Fallback)
+            const defaults = {
+                ltv: 100,
+                rate: 6.0,
+                term: 300,
+                dscr: 1.20,
+                cap: 6.0,
+                marketLtv: 70,
+                useContractRent: false,
+                contractRent: 0,
+                interestOnly: false
+            };
+            
+            // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
+            const params = deal.calcParams || defaults;
+
+            const purchaseLtv = parseFloat(params.ltv) || defaults.ltv;
+            const interestRate = parseFloat(params.rate) || defaults.rate;
+            const amortization = parseFloat(params.term) || defaults.term;
+            const dscr = parseFloat(params.dscr) || defaults.dscr;
+            const capRate = parseFloat(params.cap) || defaults.cap;
+            const marketLtv = parseFloat(params.marketLtv) || defaults.marketLtv;
+            const useContractRent = params.useContractRent || defaults.useContractRent;
+            const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
+            const interestOnly = params.interestOnly || defaults.interestOnly;
+
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            
+            let annualService = 0;
+            let pmt = 0;
+
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization Calculation
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
+            }
+
+            // Determine Rent Source
+            let rentalRate = annualService * dscr; 
+            let rentLabel = "Required Rent (NOI)";
+            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate${interestOnly ? ', Interest Only' : ''}, ${dscr} DSCR, ${capRate}% Cap)`;
+
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+                rentLabel = "Contract Rent (Override)";
+                rentAssumptions = `Based on Contract Rent override and calculator inputs (${capRate}% Cap, ${marketLtv}% Market LTV)`;
+            }
+
+            const marketValue = rentalRate / (capRate / 100);
+            const profit = marketValue - purchasePrice;
+            const roi = purchasePrice > 0 ? (profit / purchasePrice) * 100 : 0;
+            const impliedLtv = purchasePrice / marketValue;
+            const isFinancable = impliedLtv < (marketLtv / 100);
+
+            const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+
+            document.getElementById('summary-rent-label').textContent = rentLabel;
+            document.getElementById('summary-rent').textContent = formatCurrency(rentalRate);
+            document.getElementById('summary-value').textContent = formatCurrency(marketValue);
+            document.getElementById('summary-profit').textContent = formatCurrency(profit);
+            document.getElementById('summary-roi').textContent = Math.round(roi) + '%';
+            
+            // Update assumptions text
+            document.getElementById('summary-assumptions-text').textContent = rentAssumptions;
+
+            const financeEl = document.getElementById('summary-finance');
+            if(isFinancable) {
+                financeEl.textContent = "YES";
+                financeEl.className = "block font-bold text-emerald-600 text-lg";
+            } else {
+                financeEl.textContent = "NO";
+                financeEl.className = "block font-bold text-red-600 text-lg";
+            }
+            if (window.lucide) lucide.createIcons();
         }
 
         // --- Edit Logic ---
@@ -753,6 +942,7 @@
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-title').value = task.title || '';
             document.getElementById('task-date').value = task.date || '';
+            document.getElementById('task-time').value = task.time || ''; // Populate time
             document.getElementById('task-deal-id').value = task.dealId || '';
             document.getElementById('task-notes').value = task.notes || '';
 
@@ -769,8 +959,12 @@
             document.getElementById('contact-id').value = contact.id;
             document.getElementById('contact-name').value = contact.name || '';
             document.getElementById('contact-role').value = contact.role || '';
+            document.getElementById('contact-company').value = contact.company || ''; // Populate company
             document.getElementById('contact-email').value = contact.email || '';
             document.getElementById('contact-phone').value = contact.phone || '';
+            
+            // Set Category
+            document.getElementById('contact-category').value = contact.category || 'Other';
             
             // Handle Multi-Select Checkboxes
             const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
@@ -869,8 +1063,8 @@
         function getCalendarEvents() {
             return tasks.map(t => ({
                 id: t.id,
-                title: t.title,
-                start: t.date,
+                title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), // Add time to calendar title
+                start: t.time ? `${t.date}T${t.time}` : t.date, // Use precise time if available
                 backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
                 borderColor: t.completed ? '#94a3b8' : '#3b82f6',
                 textColor: '#ffffff'
@@ -901,22 +1095,71 @@
             if (!dealId) {
                 // Reset inputs if cleared
                 document.getElementById('calc-price').value = 500000;
+                currentlyLoadedDealForCalc = null;
                 calculateRent();
                 return;
             }
             const deal = deals.find(d => d.id === dealId);
-            if (deal && deal.value) {
-                // Remove formatting (commas) if present before setting
-                const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
-                if (!isNaN(numValue)) {
-                    document.getElementById('calc-price').value = numValue;
-                    calculateRent(); // Recalculate immediately
+            currentlyLoadedDealForCalc = dealId;
+
+            // Set dropdown value explicitly so it matches the loaded deal
+            const selectElement = document.getElementById('calc-deal-select');
+            if (selectElement) selectElement.value = dealId;
+
+            if (deal) {
+                // 1. Set Price from Deal Value
+                if (deal.value) {
+                    const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
+                    if (!isNaN(numValue)) {
+                        document.getElementById('calc-price').value = numValue;
+                    }
                 }
+                
+                // 2. Load Saved Parameters OR Defaults
+                const params = deal.calcParams || {};
+                document.getElementById('calc-ltv').value = params.ltv || 100;
+                document.getElementById('calc-rate').value = params.rate || 6.0;
+                document.getElementById('calc-term').value = params.term || 300;
+                document.getElementById('calc-dscr').value = params.dscr || 1.20;
+                document.getElementById('calc-cap').value = params.cap || 6.0;
+                document.getElementById('calc-market-ltv').value = params.marketLtv || 70;
+                
+                // Interest Only Checkbox
+                const ioCheckbox = document.getElementById('calc-interest-only');
+                ioCheckbox.checked = params.interestOnly || false;
+                
+                // Manually trigger the Interest Only logic for disabling amortization
+                const amortizationInput = document.getElementById('calc-term');
+                if (ioCheckbox.checked) {
+                    amortizationInput.disabled = true;
+                    amortizationInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                } else {
+                    amortizationInput.disabled = false;
+                    amortizationInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                }
+
+                // Contract Rent Checkbox state
+                const checkbox = document.getElementById('calc-use-contract');
+                checkbox.checked = params.useContractRent || false;
+                
+                const contractInput = document.getElementById('calc-contract-rent');
+                contractInput.value = params.contractRent || 0;
+                
+                // Manually trigger the enabled/disabled state logic for Contract Rent
+                if(checkbox.checked) {
+                    contractInput.disabled = false;
+                    contractInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                } else {
+                    contractInput.disabled = true;
+                    contractInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+                }
+
+                calculateRent(); // Recalculate immediately
             }
         };
 
-        // Core Calculation Function
-        window.calculateRent = () => {
+        // Core Calculation Function (Updated with Save Logic)
+        window.calculateRent = async () => {
             // 1. Get Inputs
             const purchasePrice = parseFloat(document.getElementById('calc-price').value) || 0;
             const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 0;
@@ -926,6 +1169,19 @@
             const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
             const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
             
+            const interestOnly = document.getElementById('calc-interest-only').checked;
+            const amortizationInput = document.getElementById('calc-term');
+
+            // Interest Only Logic: Disable/Enable Amortization Input
+            if (interestOnly) {
+                amortizationInput.disabled = true;
+                amortizationInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            } else {
+                amortizationInput.disabled = false;
+                amortizationInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            }
+
+
             // Contract Rent Override Logic
             const useContractRent = document.getElementById('calc-use-contract').checked;
             const contractRentInput = document.getElementById('calc-contract-rent');
@@ -941,21 +1197,50 @@
 
             const contractRentValue = parseFloat(contractRentInput.value) || 0;
 
+            // --- AUTO-SAVE LOGIC ---
+            if (currentlyLoadedDealForCalc) {
+                // Debounce save (optional but good practice, here direct for simplicity)
+                const paramsToSave = {
+                    ltv: purchaseLtv,
+                    rate: interestRate,
+                    term: amortization,
+                    dscr: dscr,
+                    cap: capRate,
+                    marketLtv: marketLtv,
+                    useContractRent: useContractRent,
+                    contractRent: contractRentValue,
+                    interestOnly: interestOnly
+                };
+                
+                // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
+                // We will just fire and forget the update for responsiveness
+                updateDoc(doc(db, "gc_deals", currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+            }
+
+
             // 2. Loan Calculations
             const loanAmount = purchasePrice * (purchaseLtv / 100);
             
-            // PMT Formula
-            const r = (interestRate / 100) / 12;
-            const n = amortization;
-            
+            let annualService = 0;
             let pmt = 0;
-            if (r > 0 && n > 0 && loanAmount > 0) {
-                pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-            } else if (n > 0 && loanAmount > 0) {
-                pmt = loanAmount / n;
-            }
 
-            const annualService = pmt * 12;
+            if (interestOnly) {
+                // Simple Interest Only Calculation
+                // Annual Interest = Principal * Rate
+                annualService = loanAmount * (interestRate / 100);
+                pmt = annualService / 12;
+            } else {
+                // Standard Amortization (PMT Formula)
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
+                annualService = pmt * 12;
+            }
             
             // Determine which Rental Rate to use
             let rentalRate = annualService * dscr; // Default (Required NOI)
@@ -1131,6 +1416,7 @@
                         <td class="p-4">
                             <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
                                 ${formatDateForDisplay(task.date)}
+                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
                                 ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
                             </div>
                         </td>
@@ -1151,50 +1437,99 @@
                 return;
             }
 
-            grid.innerHTML = contacts.map(c => {
-                const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
-                
-                // Logic to display deal names
-                let dealDisplay = 'General Contact';
-                const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
-                
-                if (linkedDealIds.length > 0) {
-                    const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
-                    const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
-                    if (linkedDealIds.length > 1) {
-                        dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
-                    } else {
-                        dealDisplay = firstName;
-                    }
-                }
+            // FILTER LOGIC
+            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
+            const filteredContacts = contacts.filter(c => 
+                (c.name && c.name.toLowerCase().includes(searchVal)) ||
+                (c.email && c.email.toLowerCase().includes(searchVal)) ||
+                (c.role && c.role.toLowerCase().includes(searchVal))
+            );
 
-                return `
-                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
-                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                                ${initial}
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
-                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+            // GROUPING LOGIC
+            const groups = {
+                'Seller': [],
+                'Franchisor': [],
+                'Franchisee': [],
+                'Lender': [],
+                'Other': []
+            };
+
+            filteredContacts.forEach(c => {
+                const category = c.category || 'Other';
+                if (groups[category]) {
+                    groups[category].push(c);
+                } else {
+                    groups['Other'].push(c);
+                }
+            });
+
+            let html = '';
+
+            for (const [category, groupContacts] of Object.entries(groups)) {
+                if (groupContacts.length > 0) {
+                    html += `
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${groupContacts.map(c => {
+                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
+                                    
+                                    // Deal logic
+                                    let dealDisplay = 'General Contact';
+                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
+                                    if (linkedDealIds.length > 0) {
+                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
+                                        const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
+                                        if (linkedDealIds.length > 1) {
+                                            dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
+                                        } else {
+                                            dealDisplay = firstName;
+                                        }
+                                    }
+
+                                    return `
+                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
+                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                                ${initial}
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
+                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
+                                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
+                                                <span>${c.phone || 'No Phone'}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
+                                            ${c.company ? `<div class="flex items-center gap-2"><i data-lucide="building" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${c.company}</span></div>` : ''}
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
-                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
-                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
-                                <span>${c.phone || 'No Phone'}</span>
-                            </div>
-                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }
+            }
+            
+            if (filteredContacts.length === 0) {
+                html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found matching your search.</div>';
+            }
+
+            grid.innerHTML = html;
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.filterContacts = (val) => {
+            renderContacts();
         }
 
         // --- Helpers ---
@@ -1223,9 +1558,15 @@
             // Calculator Deal Select (New)
             const calcSelect = document.getElementById('calc-deal-select');
             if (calcSelect) {
+                // Ensure value is maintained if currently loaded deal is selected
+                const currentValue = calcSelect.value;
                 const calcOptions = `<option value="">-- Select a Deal --</option>` + 
-                                deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                                deals.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.name}</option>`).join('');
                 calcSelect.innerHTML = calcOptions;
+                // Re-select if possible (in case innerHTML wiped selection but DOM value persisted, or use state variable)
+                if (currentlyLoadedDealForCalc) {
+                   calcSelect.value = currentlyLoadedDealForCalc;
+                }
             }
         }
 
@@ -1286,6 +1627,7 @@
                 const data = {
                     title: document.getElementById('task-title').value,
                     date: document.getElementById('task-date').value,
+                    time: document.getElementById('task-time').value, // Add time
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
                 };
@@ -1327,8 +1669,10 @@
                     role: document.getElementById('contact-role').value,
                     email: document.getElementById('contact-email').value,
                     phone: document.getElementById('contact-phone').value,
-                    dealIds: selectedDealIds, // New Array Field
-                    dealId: null // Clear old legacy field to avoid confusion
+                    company: document.getElementById('contact-company').value, // Save Company
+                    category: document.getElementById('contact-category').value, // Save Category
+                    dealIds: selectedDealIds, 
+                    dealId: null 
                 };
 
                 if (contactId) {
