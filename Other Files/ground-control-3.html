@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ground Control | Restaurant GroundWorks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .drag-card:hover { transform: translateY(-2px); }
+        
+        /* Calendar Styles override */
+        .fc-event { cursor: pointer; border: none; }
+        .fc-daygrid-event { font-size: 0.85rem; padding: 2px 4px; border-radius: 4px; }
+        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700; color: #1e293b; }
+        .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; }
+        .fc-button-primary:hover { background-color: #334155 !important; border-color: #334155 !important; }
+        .fc-button-active { background-color: #059669 !important; border-color: #059669 !important; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- Global Header (Matches other pages) -->
+    <header class="bg-white/80 backdrop-blur-lg z-40 shadow-sm border-b border-slate-200 shrink-0">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="font-extrabold text-2xl text-slate-900 flex items-center gap-2">
+                    Restaurant GroundWorks
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="property-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Property DB
+                    </a>
+                    <a href="client-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Client DB
+                    </a>
+                    <a href="broker-database.html" class="bg-slate-200 text-slate-800 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors text-sm">
+                        Broker DB
+                    </a>
+                    <!-- Current Page Indicator -->
+                    <span class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg shadow-inner text-sm">
+                        Ground Control
+                    </span>
+                    <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Layout -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 bg-slate-900 text-white flex flex-col shrink-0 z-10 shadow-xl">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="building" class="text-emerald-400"></i>
+                    Ground<span class="text-emerald-400">Control</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-2">Retail Lease Management</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="switchView('pipeline')" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
+                    <i data-lucide="map-pin" size="20"></i>
+                    <span class="font-medium">Deal Pipeline</span>
+                </button>
+                <button onclick="switchView('tasks')" id="nav-tasks" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="calendar" size="20"></i>
+                    <span class="font-medium">Tasks & Dates</span>
+                </button>
+                <button onclick="switchView('contacts')" id="nav-contacts" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="users" size="20"></i>
+                    <span class="font-medium">Contact Book</span>
+                </button>
+                <button onclick="switchView('calculator')" id="nav-calculator" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                    <i data-lucide="calculator" size="20"></i>
+                    <span class="font-medium">Rent Calculator</span>
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+                v2.0.2 • Full Code
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 relative bg-slate-100 overflow-hidden">
+            
+            <!-- VIEW: PIPELINE -->
+            <div id="view-pipeline" class="view-section absolute inset-0 p-8 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
+                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease. <span class="text-emerald-600 text-xs">(Click a deal to view details)</span></p>
+                    </div>
+                    <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <i data-lucide="plus" size="18"></i> New Deal
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+                    <div class="flex gap-6 min-w-max h-full" id="pipeline-container">
+                        <!-- Stages will be injected here -->
+                        <div class="flex items-center justify-center h-full w-full text-slate-400">Loading Pipeline...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: TASKS -->
+            <div id="view-tasks" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Critical Dates & Tasks</h2>
+                        <p class="text-slate-500 text-sm">Manage deadlines and to-dos.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <!-- View Toggle Buttons -->
+                        <div class="bg-white rounded-lg border border-slate-200 p-1 flex mr-2">
+                            <button onclick="switchTaskDisplay('list')" id="btn-task-list" class="px-3 py-1.5 rounded text-sm font-medium bg-emerald-100 text-emerald-700 flex items-center gap-2 transition-colors">
+                                <i data-lucide="list" width="16"></i> List
+                            </button>
+                            <button onclick="switchTaskDisplay('calendar')" id="btn-task-calendar" class="px-3 py-1.5 rounded text-sm font-medium text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                                <i data-lucide="calendar" width="16"></i> Calendar
+                            </button>
+                        </div>
+                        <button onclick="openModal('task-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                            <i data-lucide="plus" size="18"></i> New Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- List View Container -->
+                <div id="task-list-container" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col h-full">
+                    <div class="overflow-y-auto flex-1 p-0">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-4 w-12 text-center">Done</th>
+                                    <th class="p-4">Task / Action</th>
+                                    <th class="p-4">Related Deal</th>
+                                    <th class="p-4">Due Date</th>
+                                    <th class="p-4 w-12"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-table-body" class="divide-y divide-slate-100">
+                                <!-- Tasks injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Calendar View Container -->
+                <div id="task-calendar-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 h-full overflow-hidden">
+                    <div id="calendar" class="h-full"></div>
+                </div>
+            </div>
+
+            <!-- VIEW: CONTACTS -->
+            <div id="view-contacts" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Contacts Directory</h2>
+                        <p class="text-slate-500 text-sm">Franchisees, Attorneys, and Officials. <span class="text-emerald-600 text-xs">(Click a contact to edit)</span></p>
+                    </div>
+                    <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <i data-lucide="plus" size="18"></i> Add Contact
+                    </button>
+                </div>
+                <div id="contacts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-4">
+                    <!-- Contacts injected here -->
+                </div>
+            </div>
+
+            <!-- VIEW: CALCULATOR -->
+            <div id="view-calculator" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden overflow-y-auto">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Investment Financing Calculator</h2>
+                        <p class="text-slate-500 text-sm">Calculate required rental rates and market valuation.</p>
+                    </div>
+                    <div class="flex gap-2 items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200">
+                         <span class="text-sm text-slate-600 font-medium">Load Deal:</span>
+                         <select id="calc-deal-select" class="p-2 border rounded-lg text-sm min-w-[200px] outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50" onchange="loadDealToCalculator(this.value)">
+                            <option value="">-- Select a Deal --</option>
+                         </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                   <!-- Inputs -->
+                   <div class="lg:col-span-5 space-y-6">
+                      <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+                         <h2 class="text-lg font-bold text-slate-800 mb-5 pb-2 border-b border-slate-100 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="text-blue-600" width="20"></i> Input Parameters
+                         </h2>
+                         
+                         <div class="space-y-4">
+                             <!-- Purchase Price -->
+                             <div>
+                                 <label class="text-sm font-semibold text-slate-700 block mb-1.5">Purchase Price (USD)</label>
+                                 <div class="relative">
+                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                         <i data-lucide="dollar-sign" width="16"></i>
+                                     </div>
+                                     <input type="number" id="calc-price" value="500000" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all">
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-2 gap-4">
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">Purchase LTV %</label>
+                                     <input type="number" id="calc-ltv" value="100" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">Interest Rate %</label>
+                                     <input type="number" id="calc-rate" value="6.0" step="0.1" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-2 gap-4">
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">Amortization (Mo)</label>
+                                     <input type="number" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">DSCR Target</label>
+                                     <input type="number" id="calc-dscr" value="1.20" step="0.05" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                             </div>
+
+                             <!-- Contract Rent Override Section -->
+                             <div class="pt-4 border-t border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-sm font-semibold text-slate-700">Contract Rent (Override)</label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="calc-use-contract" class="calc-input rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                        <span class="text-xs text-slate-500">Use Contract Rent?</span>
+                                    </label>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="dollar-sign" width="16"></i>
+                                    </div>
+                                    <input type="number" id="calc-contract-rent" value="0" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" disabled>
+                                </div>
+                             </div>
+
+                             <div class="grid grid-cols-2 gap-4">
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">Market Cap Rate %</label>
+                                     <input type="number" id="calc-cap" value="6.0" step="0.1" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                                 <div>
+                                     <label class="text-sm font-semibold text-slate-700 block mb-1.5">Market LTV Limit %</label>
+                                     <input type="number" id="calc-market-ltv" value="70" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                 </div>
+                             </div>
+
+                             <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                                <div class="text-sm text-blue-800 font-medium mb-1">Loan Summary</div>
+                                <div class="flex justify-between items-center">
+                                  <span class="text-blue-600 text-sm">Principal Amount</span>
+                                  <span class="text-blue-900 font-bold" id="res-loan-amount">$0</span>
+                                </div>
+                              </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <!-- Results -->
+                   <div class="lg:col-span-7 space-y-6">
+                      <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-6 h-full flex flex-col">
+                         <h2 class="text-lg font-bold text-slate-800 mb-5 pb-2 border-b border-slate-100 flex items-center gap-2">
+                            <i data-lucide="dollar-sign" class="text-emerald-600" width="20"></i> Financial Analysis
+                         </h2>
+
+                         <div class="space-y-1 flex-grow">
+                            <!-- Rows -->
+                            <div class="flex justify-between items-start py-3 border-b border-slate-100">
+                                <span class="text-sm text-slate-600 font-medium pt-0.5">Annual Debt Service</span>
+                                <div class="text-right">
+                                    <div class="text-base font-bold text-slate-900" id="res-annual-debt">$0</div>
+                                    <div class="text-xs text-slate-500 mt-0.5" id="res-monthly-debt">$0 / month</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-start py-3 border-b border-slate-100 bg-slate-50 -mx-4 px-4">
+                                <span class="text-sm text-slate-600 font-medium pt-0.5">Required Net Rental Rate (NOI)</span>
+                                <div class="text-right">
+                                    <div class="text-base font-bold text-slate-900" id="res-rental-rate">$0</div>
+                                    <div class="text-xs text-slate-500 mt-0.5" id="res-dscr-label">Based on 1.20x DSCR</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-start py-3 border-b border-slate-100">
+                                <span class="text-sm text-slate-600 font-medium pt-0.5">Projected Market Value</span>
+                                <div class="text-right">
+                                    <div class="text-base font-bold text-slate-900" id="res-market-value">$0</div>
+                                    <div class="text-xs text-slate-500 mt-0.5" id="res-cap-label">@ 6.0% Cap Rate</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-start py-3 border-b border-slate-100">
+                                <span class="text-sm text-slate-600 font-medium pt-0.5">Implied LTV (Price / Market Value)</span>
+                                <div class="text-right">
+                                    <div class="text-base font-bold" id="res-implied-ltv">0%</div>
+                                    <div class="text-xs text-slate-500 mt-0.5" id="res-ltv-subtext">Target: < 70%</div>
+                                </div>
+                            </div>
+
+                            <div class="my-6 pt-6 border-t border-slate-200">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">100% Financing Viable?</h3>
+                                        <p class="text-sm text-slate-500 mt-1">Is Implied LTV &lt; Market LTV?</p>
+                                    </div>
+                                    <div id="res-finance-badge" class="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg border bg-slate-100 text-slate-500 border-slate-200">
+                                        Checking...
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-4 bg-slate-50 rounded-lg text-sm text-slate-600">
+                                    <div class="flex justify-between mb-1">
+                                        <span>Lender Max Loan Amount:</span>
+                                        <span class="font-semibold" id="res-max-loan">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Purchase Price:</span>
+                                        <span class="font-semibold" id="res-price-check">$0</span>
+                                    </div>
+                                    <div class="mt-2 text-xs text-slate-400 border-t border-slate-200 pt-2" id="res-explanation">
+                                        Analysis text will appear here.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <h3 class="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wider">Investor Return</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                                        <div class="text-sm text-emerald-800 font-medium mb-1">Potential Profit</div>
+                                        <div class="text-2xl font-bold text-emerald-700" id="res-profit">$0</div>
+                                    </div>
+                                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <div class="text-sm text-blue-800 font-medium mb-1">ROI (On Price)</div>
+                                        <div class="text-2xl font-bold text-blue-700" id="res-roi">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                         </div>
+                      </div>
+                   </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- Deal Modal (New/Edit) -->
+    <div id="deal-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800" id="deal-modal-title">Add New Deal</h3>
+                <button onclick="closeModal('deal-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="deal-form" class="p-6 space-y-4">
+                <input type="hidden" id="deal-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Deal Name / Tenant</label>
+                    <input type="text" id="deal-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Starbucks - Greenwood" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Property Address</label>
+                    <input type="text" id="deal-address" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="123 Main St" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Est. Value ($)</label>
+                        <input type="text" id="deal-value" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1,200,000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Stage</label>
+                        <select id="deal-stage" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                            <option value="prospect">Prospecting</option>
+                            <option value="loi">LOI / Offer</option>
+                            <option value="dd">Due Diligence</option>
+                            <option value="closing">Closing</option>
+                            <option value="leased">Active Lease</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" id="deal-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Deal Detail Modal (Shows Related Items) -->
+    <div id="deal-detail-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-6 border-b bg-slate-50 shrink-0">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-800" id="detail-deal-name">Deal Name</h3>
+                    <p class="text-slate-500 text-sm flex items-center gap-2 mt-1">
+                        <i data-lucide="map-pin" width="14"></i> <span id="detail-deal-address">Address</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="editCurrentDeal()" class="text-slate-500 hover:text-emerald-600 font-medium text-sm flex items-center gap-1">
+                        <i data-lucide="edit-2" width="14"></i> Edit Deal
+                    </button>
+                    <button onclick="closeModal('deal-detail-modal')" class="text-slate-400 hover:text-red-500 ml-4">
+                        <i data-lucide="x" width="24"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Left Column: Tasks -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="calendar" class="text-emerald-600" width="18"></i> Related Tasks
+                            </h4>
+                            <button onclick="openModal('task-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Task</button>
+                        </div>
+                        <div id="detail-tasks-list" class="space-y-2">
+                            <!-- Tasks injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Contacts -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="users" class="text-emerald-600" width="18"></i> Related Contacts
+                            </h4>
+                            <button onclick="openModal('contact-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Contact</button>
+                        </div>
+                        <div id="detail-contacts-list" class="space-y-2">
+                            <!-- Contacts injected here -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="p-4 border-t bg-white flex justify-between items-center text-sm text-slate-500">
+                <span id="detail-deal-value" class="font-mono font-medium text-emerald-600"></span>
+                <span id="detail-deal-stage" class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold uppercase"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal (New/Edit) -->
+    <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800" id="task-modal-title">New Task</h3>
+                <button onclick="closeModal('task-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="task-form" class="p-6 space-y-4">
+                <input type="hidden" id="task-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Task / Action</label>
+                    <input type="text" id="task-title" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Sign Purchase Agreement" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                    <input type="date" id="task-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Related Deal</label>
+                    <select id="task-deal-id" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                        <option value="">-- General Task --</option>
+                        <!-- Deals injected here -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                    <textarea id="task-notes" rows="3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+                </div>
+                <button type="submit" id="task-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Task</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Modal (New/Edit) -->
+    <div id="contact-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800" id="contact-modal-title">Add Contact</h3>
+                <button onclick="closeModal('contact-modal')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="contact-form" class="p-6 space-y-4">
+                <input type="hidden" id="contact-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                    <input type="text" id="contact-role" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Zoning Attorney">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <input type="email" id="contact-email" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                        <input type="tel" id="contact-phone" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Associated Deals</label>
+                    <div id="contact-deal-container" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white h-32 overflow-y-auto space-y-1">
+                        <!-- Checkboxes injected via JS -->
+                    </div>
+                </div>
+                <button type="submit" id="contact-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Save Contact</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { firebaseConfig } from './config.js';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- State ---
+        let deals = [];
+        let tasks = [];
+        let contacts = [];
+        let currentUserId = null;
+        let calendar = null;
+        let currentDealId = null; // Track currently open deal
+
+        // --- Auth ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                initApp();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // --- View Switching ---
+        window.switchView = (viewName) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            
+            // Update Sidebar
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-300', 'hover:bg-slate-800');
+            });
+            const activeBtn = document.getElementById(`nav-${viewName}`);
+            activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800');
+            activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
+
+            // Force calendar render if switching to tasks view
+            if (viewName === 'tasks' && calendar) {
+                setTimeout(() => calendar.render(), 100);
+            }
+        };
+
+        // --- Task View Switching (List vs Calendar) ---
+        window.switchTaskDisplay = (mode) => {
+            const listContainer = document.getElementById('task-list-container');
+            const calendarContainer = document.getElementById('task-calendar-container');
+            const btnList = document.getElementById('btn-task-list');
+            const btnCalendar = document.getElementById('btn-task-calendar');
+
+            if (mode === 'list') {
+                listContainer.classList.remove('hidden');
+                calendarContainer.classList.add('hidden');
+                
+                btnList.classList.add('bg-emerald-100', 'text-emerald-700');
+                btnList.classList.remove('text-slate-500', 'hover:bg-slate-50');
+                
+                btnCalendar.classList.add('text-slate-500', 'hover:bg-slate-50');
+                btnCalendar.classList.remove('bg-emerald-100', 'text-emerald-700');
+            } else {
+                listContainer.classList.add('hidden');
+                calendarContainer.classList.remove('hidden');
+                
+                btnCalendar.classList.add('bg-emerald-100', 'text-emerald-700');
+                btnCalendar.classList.remove('text-slate-500', 'hover:bg-slate-50');
+                
+                btnList.classList.add('text-slate-500', 'hover:bg-slate-50');
+                btnList.classList.remove('bg-emerald-100', 'text-emerald-700');
+
+                // Initialize or Render Calendar
+                if (!calendar) {
+                    initCalendar();
+                } else {
+                    calendar.render();
+                }
+            }
+        };
+
+        // --- Modal Logic ---
+        window.openModal = (id, dealId = null) => {
+            if (id === 'deal-modal') {
+                document.getElementById('deal-form').reset();
+                document.getElementById('deal-id').value = ''; 
+                document.getElementById('deal-modal-title').textContent = 'Add New Deal';
+                document.getElementById('deal-submit-btn').textContent = 'Create Deal';
+            } else if (id === 'task-modal') {
+                document.getElementById('task-form').reset();
+                document.getElementById('task-id').value = ''; 
+                document.getElementById('task-modal-title').textContent = 'New Task';
+                document.getElementById('task-submit-btn').textContent = 'Save Task';
+                populateDealSelects();
+                if(dealId) document.getElementById('task-deal-id').value = dealId;
+            } else if (id === 'contact-modal') {
+                document.getElementById('contact-form').reset();
+                document.getElementById('contact-id').value = ''; 
+                document.getElementById('contact-modal-title').textContent = 'Add Contact';
+                document.getElementById('contact-submit-btn').textContent = 'Save Contact';
+                populateDealSelects();
+                // Check specific deal if passed
+                if(dealId) {
+                    const checkbox = document.getElementById(`contact-deal-${dealId}`);
+                    if (checkbox) checkbox.checked = true;
+                }
+            }
+            document.getElementById(id).classList.remove('hidden');
+        };
+
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        // --- Deal Detail Logic ---
+        window.openDealDetail = (id) => {
+            currentDealId = id;
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+
+            document.getElementById('detail-deal-name').textContent = deal.name;
+            document.getElementById('detail-deal-address').textContent = deal.address;
+            document.getElementById('detail-deal-value').textContent = deal.value ? `$${deal.value}` : '$0';
+            const stageLabel = STAGES.find(s => s.id === deal.stage)?.label || deal.stage;
+            document.getElementById('detail-deal-stage').textContent = stageLabel;
+
+            renderRelatedTasks(id);
+            renderRelatedContacts(id);
+
+            document.getElementById('deal-detail-modal').classList.remove('hidden');
+        }
+
+        window.editCurrentDeal = () => {
+            closeModal('deal-detail-modal');
+            editDeal(currentDealId);
+        }
+
+        function renderRelatedTasks(dealId) {
+            const container = document.getElementById('detail-tasks-list');
+            const relatedTasks = tasks.filter(t => t.dealId === dealId);
+            
+            if (relatedTasks.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No tasks linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedTasks.map(t => `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="editTask('${t.id}')">
+                    <div>
+                        <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
+                        <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
+                        ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderRelatedContacts(dealId) {
+            const container = document.getElementById('detail-contacts-list');
+            // Filter contacts that have this dealId in their array OR matches legacy string
+            const relatedContacts = contacts.filter(c => {
+                if (c.dealIds && Array.isArray(c.dealIds)) return c.dealIds.includes(dealId);
+                return c.dealId === dealId;
+            });
+            
+            if (relatedContacts.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-2">No contacts linked to this deal.</div>';
+                return;
+            }
+
+            container.innerHTML = relatedContacts.map(c => `
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition cursor-pointer" onclick="editContact('${c.id}')">
+                    <div class="font-medium text-sm text-slate-800">${c.name}</div>
+                    <div class="text-xs text-slate-500 uppercase font-semibold">${c.role || 'No Role'}</div>
+                    ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // --- Edit Logic ---
+        
+        window.editDeal = (id) => {
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+
+            document.getElementById('deal-id').value = deal.id;
+            document.getElementById('deal-name').value = deal.name || '';
+            document.getElementById('deal-address').value = deal.address || '';
+            document.getElementById('deal-value').value = deal.value || '';
+            document.getElementById('deal-stage').value = deal.stage || 'prospect';
+            
+            document.getElementById('deal-modal-title').textContent = 'Edit Deal';
+            document.getElementById('deal-submit-btn').textContent = 'Update Deal';
+            
+            document.getElementById('deal-modal').classList.remove('hidden');
+        };
+
+        window.editTask = (id) => {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            populateDealSelects();
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-title').value = task.title || '';
+            document.getElementById('task-date').value = task.date || '';
+            document.getElementById('task-deal-id').value = task.dealId || '';
+            document.getElementById('task-notes').value = task.notes || '';
+
+            document.getElementById('task-modal-title').textContent = 'Edit Task';
+            document.getElementById('task-submit-btn').textContent = 'Update Task';
+            document.getElementById('task-modal').classList.remove('hidden');
+        }
+
+        window.editContact = (id) => {
+            const contact = contacts.find(c => c.id === id);
+            if (!contact) return;
+
+            populateDealSelects();
+            document.getElementById('contact-id').value = contact.id;
+            document.getElementById('contact-name').value = contact.name || '';
+            document.getElementById('contact-role').value = contact.role || '';
+            document.getElementById('contact-email').value = contact.email || '';
+            document.getElementById('contact-phone').value = contact.phone || '';
+            
+            // Handle Multi-Select Checkboxes
+            const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
+            checkboxes.forEach(cb => cb.checked = false); // Reset first
+
+            // Prioritize new array format, fallback to legacy string
+            const linkedDealIds = contact.dealIds || (contact.dealId ? [contact.dealId] : []);
+            
+            linkedDealIds.forEach(dealId => {
+                const checkbox = document.getElementById(`contact-deal-${dealId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+
+            document.getElementById('contact-modal-title').textContent = 'Edit Contact';
+            document.getElementById('contact-submit-btn').textContent = 'Update Contact';
+            document.getElementById('contact-modal').classList.remove('hidden');
+        }
+
+        // --- Initialization ---
+        function initApp() {
+            // Listeners with Error Handling
+            try {
+                // Safely init Lucide
+                if (window.lucide) {
+                    lucide.createIcons();
+                } else {
+                    console.warn("Lucide icons not loaded yet.");
+                }
+
+                onSnapshot(collection(db, "gc_deals"), (snapshot) => {
+                    deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderPipeline();
+                    populateDealSelects();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        openDealDetail(currentDealId);
+                    }
+                }, (error) => {
+                    console.error("Deal Sync Error:", error);
+                    alert("Error syncing deals: " + error.message + "\nCheck your Firestore permissions.");
+                });
+
+                onSnapshot(collection(db, "gc_tasks"), (snapshot) => {
+                    tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderTasks();
+                    updateCalendarEvents();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedTasks(currentDealId);
+                    }
+                }, (error) => console.error("Tasks Sync Error:", error));
+
+                onSnapshot(collection(db, "gc_contacts"), (snapshot) => {
+                    contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderContacts();
+                    // If detailed view is open, refresh it
+                    if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                        renderRelatedContacts(currentDealId);
+                    }
+                }, (error) => console.error("Contacts Sync Error:", error));
+            } catch (e) {
+                console.error("Init Error:", e);
+            }
+        }
+
+        // --- CALENDAR LOGIC ---
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                height: '100%',
+                editable: true, // Allow drag and drop
+                events: getCalendarEvents(),
+                eventClick: function(info) {
+                    editTask(info.event.id);
+                },
+                eventDrop: async function(info) {
+                    // Update date on drop
+                    const newDate = info.event.start.toISOString().split('T')[0];
+                    try {
+                        await updateDoc(doc(db, "gc_tasks", info.event.id), { date: newDate });
+                    } catch (error) {
+                        console.error("Error moving task:", error);
+                        info.revert(); // Revert visual change on error
+                    }
+                }
+            });
+            calendar.render();
+        }
+
+        function getCalendarEvents() {
+            return tasks.map(t => ({
+                id: t.id,
+                title: t.title,
+                start: t.date,
+                backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', // Gray if done, Blue if active
+                borderColor: t.completed ? '#94a3b8' : '#3b82f6',
+                textColor: '#ffffff'
+            }));
+        }
+
+        function updateCalendarEvents() {
+            if (calendar) {
+                calendar.removeAllEvents();
+                calendar.addEventSource(getCalendarEvents());
+            }
+        }
+
+        // --- HELPER: Date Formatting Fix ---
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return 'No Date';
+            // Parse YYYY-MM-DD explicitly as local components to avoid UTC offset issues
+            const [year, month, day] = dateString.split('-').map(Number);
+            // Month is 0-indexed in JS Date constructor
+            const date = new Date(year, month - 1, day); 
+            return date.toLocaleDateString();
+        }
+
+        // --- RENT CALCULATOR LOGIC ---
+        
+        // Populate Calculator Dropdown
+        window.loadDealToCalculator = (dealId) => {
+            if (!dealId) {
+                // Reset inputs if cleared
+                document.getElementById('calc-price').value = 500000;
+                calculateRent();
+                return;
+            }
+            const deal = deals.find(d => d.id === dealId);
+            if (deal && deal.value) {
+                // Remove formatting (commas) if present before setting
+                const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
+                if (!isNaN(numValue)) {
+                    document.getElementById('calc-price').value = numValue;
+                    calculateRent(); // Recalculate immediately
+                }
+            }
+        };
+
+        // Core Calculation Function
+        window.calculateRent = () => {
+            // 1. Get Inputs
+            const purchasePrice = parseFloat(document.getElementById('calc-price').value) || 0;
+            const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 0;
+            const interestRate = parseFloat(document.getElementById('calc-rate').value) || 0;
+            const amortization = parseFloat(document.getElementById('calc-term').value) || 0;
+            const dscr = parseFloat(document.getElementById('calc-dscr').value) || 0;
+            const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
+            const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
+            
+            // Contract Rent Override Logic
+            const useContractRent = document.getElementById('calc-use-contract').checked;
+            const contractRentInput = document.getElementById('calc-contract-rent');
+            
+            // Enable/Disable input based on checkbox state
+            if (useContractRent) {
+                contractRentInput.disabled = false;
+                contractRentInput.classList.remove('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            } else {
+                contractRentInput.disabled = true;
+                contractRentInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
+            }
+
+            const contractRentValue = parseFloat(contractRentInput.value) || 0;
+
+            // 2. Loan Calculations
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            
+            // PMT Formula
+            const r = (interestRate / 100) / 12;
+            const n = amortization;
+            
+            let pmt = 0;
+            if (r > 0 && n > 0 && loanAmount > 0) {
+                pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+            } else if (n > 0 && loanAmount > 0) {
+                pmt = loanAmount / n;
+            }
+
+            const annualService = pmt * 12;
+            
+            // Determine which Rental Rate to use
+            let rentalRate = annualService * dscr; // Default (Required NOI)
+            let isUsingContractRent = false;
+
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+                isUsingContractRent = true;
+            }
+
+            // 3. Market Calculations
+            let marketValue = 0;
+            if (capRate > 0) {
+                marketValue = rentalRate / (capRate / 100);
+            }
+
+            let impliedLtv = 0;
+            if (marketValue > 0) {
+                impliedLtv = purchasePrice / marketValue;
+            }
+
+            const isFinancable = impliedLtv < (marketLtv / 100);
+            const profit = marketValue - purchasePrice;
+            const roi = purchasePrice > 0 ? (profit / purchasePrice) * 100 : 0;
+
+            // 4. Update UI
+            const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
+            
+            document.getElementById('res-loan-amount').textContent = formatCurrency(loanAmount);
+            document.getElementById('res-annual-debt').textContent = formatCurrency(annualService);
+            document.getElementById('res-monthly-debt').textContent = `${formatCurrency(pmt)} / month`;
+            
+            document.getElementById('res-rental-rate').textContent = formatCurrency(rentalRate);
+            
+            // Update Label based on source
+            if (isUsingContractRent) {
+                document.getElementById('res-dscr-label').textContent = "Using Contract Rent (Override)";
+                document.getElementById('res-dscr-label').className = "text-xs text-blue-600 font-bold mt-0.5";
+            } else {
+                document.getElementById('res-dscr-label').textContent = `Based on ${dscr}x DSCR`;
+                document.getElementById('res-dscr-label').className = "text-xs text-slate-500 mt-0.5";
+            }
+            
+            document.getElementById('res-market-value').textContent = formatCurrency(marketValue);
+            document.getElementById('res-cap-label').textContent = `@ ${capRate}% Cap Rate`;
+            
+            document.getElementById('res-implied-ltv').textContent = (impliedLtv * 100).toFixed(2) + '%';
+            document.getElementById('res-implied-ltv').className = `text-base font-bold ${isFinancable ? 'text-emerald-600' : 'text-red-600'}`;
+            document.getElementById('res-ltv-subtext').textContent = `Target: < ${marketLtv}%`;
+
+            // Finance Badge
+            const badge = document.getElementById('res-finance-badge');
+            if (isFinancable) {
+                badge.className = "flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg border bg-emerald-100 text-emerald-700 border-emerald-200";
+                badge.innerHTML = `<i data-lucide="check-circle-2" width="20"></i> YES`;
+            } else {
+                badge.className = "flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-lg border bg-red-50 text-red-700 border-red-200";
+                badge.innerHTML = `<i data-lucide="x-circle" width="20"></i> NO`;
+            }
+            if (window.lucide) lucide.createIcons();
+
+            // Explanation
+            document.getElementById('res-max-loan').textContent = formatCurrency(marketValue * (marketLtv/100));
+            document.getElementById('res-price-check').textContent = formatCurrency(purchasePrice);
+            document.getElementById('res-explanation').textContent = isFinancable 
+                ? "Since the lender's max loan on the new Market Value exceeds your Purchase Price, you can likely finance the entire purchase."
+                : "The lender's max loan on the Market Value is less than the Purchase Price. Down payment required.";
+
+            // ROI
+            document.getElementById('res-profit').textContent = formatCurrency(profit);
+            document.getElementById('res-roi').textContent = Math.round(roi) + '%';
+        };
+
+        // Attach listeners to all calculator inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('.calc-input');
+            inputs.forEach(input => {
+                // For checkbox and number inputs
+                input.addEventListener('input', calculateRent);
+                input.addEventListener('change', calculateRent); // Catch checkbox changes specifically
+            });
+            // Initial calc
+            calculateRent();
+        });
+
+        // --- RENDER PIPELINE ---
+        const STAGES = [
+            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
+            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
+            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
+            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
+            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
+        ];
+
+        function renderPipeline() {
+            const container = document.getElementById('pipeline-container');
+            container.innerHTML = '';
+
+            STAGES.forEach(stage => {
+                const stageDeals = deals.filter(d => d.stage === stage.id);
+                const col = document.createElement('div');
+                col.className = 'w-80 flex flex-col h-full';
+                col.innerHTML = `
+                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
+                        <span class="flex-1">${stage.label}</span>
+                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
+                    </div>
+                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
+                        ${stageDeals.map(deal => {
+                            // Format value with commas
+                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
+                            
+                            return `
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
+                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
+                                </div>
+                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
+                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
+                                </p>
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
+                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
+                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `}).join('')}
+                        ${stageDeals.length === 0 ? '<div class="text-center py-8 text-slate-400 italic text-sm">No deals</div>' : ''}
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // --- RENDER TASKS ---
+        function renderTasks() {
+            const tbody = document.getElementById('tasks-table-body');
+            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
+            
+            if(sortedTasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sortedTasks.map(task => {
+                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
+                
+                // Calculate Overdue Status (Strictly BEFORE today)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Reset time to midnight
+                
+                // Parse task date correctly to avoid timezone issues
+                const [year, month, day] = task.date.split('-').map(Number);
+                const taskDate = new Date(year, month - 1, day);
+                
+                const isOverdue = !task.completed && taskDate < today;
+
+                return `
+                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
+                        <td class="p-4 text-center">
+                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
+                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
+                            </button>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
+                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
+                        </td>
+                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
+                                ${formatDateForDisplay(task.date)}
+                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // --- RENDER CONTACTS ---
+        function renderContacts() {
+            const grid = document.getElementById('contacts-grid');
+            if(contacts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
+                return;
+            }
+
+            grid.innerHTML = contacts.map(c => {
+                const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
+                
+                // Logic to display deal names
+                let dealDisplay = 'General Contact';
+                const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
+                
+                if (linkedDealIds.length > 0) {
+                    const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
+                    const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
+                    if (linkedDealIds.length > 1) {
+                        dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
+                    } else {
+                        dealDisplay = firstName;
+                    }
+                }
+
+                return `
+                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
+                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                ${initial}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
+                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 mt-4 text-sm text-slate-600">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
+                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
+                                <span>${c.phone || 'No Phone'}</span>
+                            </div>
+                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // --- Helpers ---
+        function populateDealSelects() {
+            // Task Select (Still Single)
+            const taskOptions = `<option value="">-- General / Unassigned --</option>` + 
+                            deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            const taskSelect = document.getElementById('task-deal-id');
+            if(taskSelect) taskSelect.innerHTML = taskOptions;
+
+            // Contact Select (Multi-Checkbox)
+            const contactContainer = document.getElementById('contact-deal-container');
+            if(contactContainer) {
+                if (deals.length === 0) {
+                    contactContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No deals available.</div>';
+                } else {
+                    contactContainer.innerHTML = deals.map(d => `
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="contact-deal-${d.id}" class="text-sm text-slate-700 cursor-pointer select-none truncate">${d.name}</label>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // Calculator Deal Select (New)
+            const calcSelect = document.getElementById('calc-deal-select');
+            if (calcSelect) {
+                const calcOptions = `<option value="">-- Select a Deal --</option>` + 
+                                deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+                calcSelect.innerHTML = calcOptions;
+            }
+        }
+
+        // --- CRUD Operations ---
+        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
+        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
+        
+        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
+        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
+
+        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
+
+        // --- Form Submissions with Error Handling ---
+        
+        document.getElementById('deal-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('deal-submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                const dealId = document.getElementById('deal-id').value;
+                const data = {
+                    name: document.getElementById('deal-name').value,
+                    address: document.getElementById('deal-address').value,
+                    value: document.getElementById('deal-value').value,
+                    stage: document.getElementById('deal-stage').value,
+                };
+
+                if (dealId) {
+                    await updateDoc(doc(db, "gc_deals", dealId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "gc_deals"), data);
+                }
+
+                e.target.reset();
+                closeModal('deal-modal');
+            } catch (error) {
+                console.error("Error adding/updating deal:", error);
+                alert("Failed to save deal. Error: " + error.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('task-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('task-submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                const taskId = document.getElementById('task-id').value;
+                const data = {
+                    title: document.getElementById('task-title').value,
+                    date: document.getElementById('task-date').value,
+                    dealId: document.getElementById('task-deal-id').value,
+                    notes: document.getElementById('task-notes').value,
+                };
+
+                if (taskId) {
+                    await updateDoc(doc(db, "gc_tasks", taskId), data);
+                } else {
+                    data.completed = false;
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "gc_tasks"), data);
+                }
+                
+                e.target.reset();
+                closeModal('task-modal');
+            } catch (error) {
+                console.error("Error saving task:", error);
+                alert("Failed to save task: " + error.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('contact-submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+
+            try {
+                const contactId = document.getElementById('contact-id').value;
+                
+                // Harvest Checked Deal IDs
+                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
+
+                const data = {
+                    name: document.getElementById('contact-name').value,
+                    role: document.getElementById('contact-role').value,
+                    email: document.getElementById('contact-email').value,
+                    phone: document.getElementById('contact-phone').value,
+                    dealIds: selectedDealIds, // New Array Field
+                    dealId: null // Clear old legacy field to avoid confusion
+                };
+
+                if (contactId) {
+                    await updateDoc(doc(db, "gc_contacts", contactId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, "gc_contacts"), data);
+                }
+
+                e.target.reset();
+                closeModal('contact-modal');
+            } catch (error) {
+                console.error("Error saving contact:", error);
+                alert("Failed to save contact: " + error.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>
