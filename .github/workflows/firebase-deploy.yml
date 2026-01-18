@@ -15,12 +15,11 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          # This must match the V2 path exactly
           workload_identity_provider: 'projects/391704584139/locations/global/workloadIdentityPools/github-pool-v2/providers/github-provider-v2'
           service_account: 'github-action-1029889626@restaurant-groundworks-db.iam.gserviceaccount.com'
 
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
       - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          projectId: restaurant-groundworks-db
+        run: firebase deploy --only hosting --project restaurant-groundworks-db
