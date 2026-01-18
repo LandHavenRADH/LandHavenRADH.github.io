@@ -73,9 +73,9 @@
                 </h1>
                 <p class="text-xs text-slate-400 mt-2">Retail Lease Management</p>
             </div>
-            <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg z-50 border border-slate-200">
+            <button onclick="window.toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg z-50 border border-slate-200">
     <i data-lucide="menu"></i>
-            </button>
+</button>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button onclick="switchView('pipeline'); toggleSidebar()" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
@@ -615,6 +615,23 @@
     </div>
 
     <script type="module">
+// --- SAFE ZONE: THIS MUST BE AT THE VERY TOP OF YOUR SCRIPT TAG ---
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) {
+        alert("Sidebar element not found in the HTML!");
+        return;
+    }
+    
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.style.transform = "translateX(0)"; // Force move
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.style.transform = "translateX(-100%)"; // Force hide
+    }
+};
+// --- END SAFE ZONE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
