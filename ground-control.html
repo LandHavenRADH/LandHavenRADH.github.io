@@ -1681,6 +1681,23 @@
             }
         });
 
-    </script>
+ // 1. Handle the Logout Button Click
+document.getElementById('logout-button').addEventListener('click', () => {
+    auth.signOut().then(() => {
+        // Redirecting here ensures the user sees the login page immediately
+        window.location.href = 'index.html';
+    }).catch((error) => {
+        console.error("Logout Error:", error);
+    });
+});
+
+// 2. Add a Security Guard (Observer)
+// This kicks the user out if they try to access this page without being logged in
+auth.onAuthStateChanged((user) => {
+    if (!user) {
+        window.location.href = 'index.html';
+    }
+});   
+	</script>
 </body>
 </html>
