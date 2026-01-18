@@ -44,23 +44,22 @@
 
     <!-- Global Header (Matches other pages) -->
    <header class="bg-white/80 backdrop-blur-lg z-40 shadow-sm border-b border-slate-200 shrink-0">
-    <div class="container mx-auto px-4 md:px-6 py-4">
-        <div class="flex items-center justify-between">
-            <div class="font-extrabold text-xl md:text-2xl text-slate-900 flex items-center gap-2">
+    <div class="container mx-auto px-4 py-3"> <div class="flex items-center justify-between gap-2">
+            <div class="font-extrabold text-lg md:text-2xl text-slate-900 truncate">
                 Ground Lease Group
             </div>
             
-            <div class="flex items-center space-x-2 md:space-x-4">
-                <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                    <i data-lucide="menu"></i>
+            <div class="flex items-center gap-2"> <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200">
+                    <i data-lucide="menu" size="20"></i>
                 </button>
-                <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-3 md:px-4 rounded-lg hover:bg-amber-600 transition-colors text-xs md:text-sm">
+                
+                <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-amber-600 transition-colors text-xs md:text-sm whitespace-nowrap">
                     Logout
                 </button>
             </div>
         </div>
-     </div>
-    </header>
+    </div>
+</header>
 
     <!-- App Layout -->
     <div class="flex flex-col md:flex-row flex-1 overflow-hidden relative">
@@ -1714,9 +1713,9 @@ auth.onAuthStateChanged((user) => {
     }
 });  
 
+// Function to show/hide the sidebar on mobile
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    // This checks if the sidebar is currently hidden (-translate-x-full)
     if (sidebar.classList.contains('-translate-x-full')) {
         sidebar.classList.remove('-translate-x-full');
     } else {
