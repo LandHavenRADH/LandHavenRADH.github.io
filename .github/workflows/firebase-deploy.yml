@@ -18,13 +18,12 @@ jobs:
         with:
           workload_identity_provider: 'projects/391704584139/locations/global/workloadIdentityPools/github-pool-v2/providers/github-provider-v2'
           service_account: 'github-action-1029889626@restaurant-groundworks-db.iam.gserviceaccount.com'
-          create_credentials_file: true # This creates the secret token file
+          token_format: 'access_token' # This generates a temporary login token
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Deploy to Firebase
-        # This line tells Firebase to use the token from the step above
-        run: firebase deploy --only hosting --project restaurant-groundworks-db
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        # We use the token generated in the 'auth' step above
+        run: |
+          firebase deploy --only hosting --project restaurant-groundworks-db --token "${{ steps.auth.outputs.access_token }}"
