@@ -73,8 +73,8 @@
                 </h1>
                 <p class="text-xs text-slate-400 mt-2">Retail Lease Management</p>
             </div>
-            <button onclick="toggleSidebar()" class="md:hidden p-1 text-slate-400 hover:text-white">
-                <i data-lucide="x"></i>
+            <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg z-50 border border-slate-200">
+    <i data-lucide="menu"></i>
             </button>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -1717,13 +1717,19 @@ auth.onAuthStateChanged((user) => {
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     
-    // Check if the sidebar is currently tucked away
+    if (!sidebar) {
+        console.error("Error: Could not find the element with id='sidebar'");
+        alert("Technical Error: Sidebar ID not found.");
+        return;
+    }
+
+    // This toggles the 'sliding' class
     if (sidebar.classList.contains('-translate-x-full')) {
-        // Slide it INTO view
         sidebar.classList.remove('-translate-x-full');
+        console.log("Sidebar opened");
     } else {
-        // Slide it OUT of view
         sidebar.classList.add('-translate-x-full');
+        console.log("Sidebar closed");
     }
 }
 	</script>
