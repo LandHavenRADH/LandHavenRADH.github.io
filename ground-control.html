@@ -1716,9 +1716,13 @@ auth.onAuthStateChanged((user) => {
 // Function to show/hide the sidebar on mobile
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    
+    // Check if the sidebar is currently tucked away
     if (sidebar.classList.contains('-translate-x-full')) {
+        // Slide it INTO view
         sidebar.classList.remove('-translate-x-full');
     } else {
+        // Slide it OUT of view
         sidebar.classList.add('-translate-x-full');
     }
 }
