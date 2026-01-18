@@ -1716,12 +1716,13 @@ auth.onAuthStateChanged((user) => {
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    // This checks if the sidebar is currently hidden (-translate-x-full)
     if (sidebar.classList.contains('-translate-x-full')) {
         sidebar.classList.remove('-translate-x-full');
     } else {
         sidebar.classList.add('-translate-x-full');
     }
-} 
+}
 	</script>
 </body>
 </html>
