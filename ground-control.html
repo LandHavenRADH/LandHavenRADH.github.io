@@ -10,7 +10,7 @@
 
     <link rel="apple-touch-icon" href="icon.png">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ground Control | Ground Lease Group</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -44,57 +44,64 @@
 
     <!-- Global Header (Matches other pages) -->
    <header class="bg-white/80 backdrop-blur-lg z-40 shadow-sm border-b border-slate-200 shrink-0">
-        <div class="container mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="font-extrabold text-2xl text-slate-900 flex items-center gap-2">
-                    Ground Lease Group
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition-colors text-sm">
-                        Logout
-                    </button>
-                </div>
+    <div class="container mx-auto px-4 md:px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="font-extrabold text-xl md:text-2xl text-slate-900 flex items-center gap-2">
+                Ground Lease Group
+            </div>
+            
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <button onclick="toggleSidebar()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i data-lucide="menu"></i>
+                </button>
+                <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-3 md:px-4 rounded-lg hover:bg-amber-600 transition-colors text-xs md:text-sm">
+                    Logout
+                </button>
             </div>
         </div>
+     </div>
     </header>
 
     <!-- App Layout -->
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
-        <div class="w-64 bg-slate-900 text-white flex flex-col shrink-0 z-10 shadow-xl">
-            <div class="p-6 border-b border-slate-700">
+    <div class="flex flex-col md:flex-row flex-1 overflow-hidden relative">
+    
+    <div id="sidebar" class="fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-slate-900 text-white flex flex-col shrink-0 z-50 shadow-xl md:shadow-none">
+        <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+            <div>
                 <h1 class="text-xl font-bold flex items-center gap-2">
                     <i data-lucide="building" class="text-emerald-400"></i>
                     Ground<span class="text-emerald-400">Control</span>
                 </h1>
                 <p class="text-xs text-slate-400 mt-2">Retail Lease Management</p>
             </div>
-            <nav class="flex-1 p-4 space-y-2">
-                <button onclick="switchView('pipeline')" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
-                    <i data-lucide="map-pin" size="20"></i>
-                    <span class="font-medium">Deal Pipeline</span>
-                </button>
-                <button onclick="switchView('tasks')" id="nav-tasks" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
-                    <i data-lucide="calendar" size="20"></i>
-                    <span class="font-medium">Tasks & Dates</span>
-                </button>
-                <button onclick="switchView('contacts')" id="nav-contacts" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
-                    <i data-lucide="users" size="20"></i>
-                    <span class="font-medium">Contact Book</span>
-                </button>
-                <button onclick="switchView('calculator')" id="nav-calculator" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
-                    <i data-lucide="calculator" size="20"></i>
-                    <span class="font-medium">Rent Calculator</span>
-                </button>
-            </nav>
-            <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-                v2.15.0 • Bug Fix
-            </div>
+            <button onclick="toggleSidebar()" class="md:hidden p-1 text-slate-400 hover:text-white">
+                <i data-lucide="x"></i>
+            </button>
         </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="switchView('pipeline'); toggleSidebar()" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
+                <i data-lucide="map-pin" size="20"></i>
+                <span class="font-medium">Deal Pipeline</span>
+            </button>
+            <button onclick="switchView('tasks'); toggleSidebar()" id="nav-tasks" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                <i data-lucide="calendar" size="20"></i>
+                <span class="font-medium">Tasks & Dates</span>
+            </button>
+            <button onclick="switchView('contacts'); toggleSidebar()" id="nav-contacts" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                <i data-lucide="users" size="20"></i>
+                <span class="font-medium">Contact Book</span>
+            </button>
+            <button onclick="switchView('calculator'); toggleSidebar()" id="nav-calculator" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                <i data-lucide="calculator" size="20"></i>
+                <span class="font-medium">Rent Calculator</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+            v2.15.0 • Mobile Optimized
+        </div>
+    </div>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 relative bg-slate-100 overflow-hidden">
+    <main class="flex-1 relative bg-slate-100 overflow-hidden">
             
             <!-- VIEW: PIPELINE -->
             <div id="view-pipeline" class="view-section absolute inset-0 p-8 flex flex-col h-full">
@@ -1705,7 +1712,16 @@ auth.onAuthStateChanged((user) => {
     if (!user) {
         window.location.href = 'index.html';
     }
-});   
+});  
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+    }
+} 
 	</script>
 </body>
 </html>
