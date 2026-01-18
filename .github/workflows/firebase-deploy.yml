@@ -15,7 +15,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          # Note the "-v2" added to the end of the names below
+          # This must match the V2 path exactly
           workload_identity_provider: 'projects/391704584139/locations/global/workloadIdentityPools/github-pool-v2/providers/github-provider-v2'
           service_account: 'github-action-1029889626@restaurant-groundworks-db.iam.gserviceaccount.com'
 
