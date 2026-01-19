@@ -889,7 +889,10 @@ window.toggleSidebar = function() {
                 marketLtv: 70,
                 useContractRent: false,
                 contractRent: 0,
-                interestOnly: false
+                interestOnly: false,
+                taxes: 0,
+                insurance: 0,
+                landlordWork: 0
             };
             
             // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
@@ -904,6 +907,10 @@ window.toggleSidebar = function() {
             const useContractRent = params.useContractRent || defaults.useContractRent;
             const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
             const interestOnly = params.interestOnly || defaults.interestOnly;
+            
+            const taxes = parseFloat(params.taxes) || 0;
+            const insurance = parseFloat(params.insurance) || 0;
+            const landlordWork = parseFloat(params.landlordWork) || 0;
 
             const loanAmount = purchasePrice * (purchaseLtv / 100);
             
@@ -928,7 +935,8 @@ window.toggleSidebar = function() {
             }
 
             // Determine Rent Source
-            let rentalRate = annualService * dscr; 
+            // Logic: Required Rent = (Debt * DSCR) + Taxes + Insurance + (LandlordWork * 10%)
+            let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10); 
             let rentLabel = "Required Rent (NOI)";
             let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate${interestOnly ? ', Interest Only' : ''}, ${dscr} DSCR, ${capRate}% Cap)`;
 
@@ -939,8 +947,15 @@ window.toggleSidebar = function() {
             }
 
             const marketValue = rentalRate / (capRate / 100);
-            const profit = marketValue - purchasePrice;
-            const roi = purchasePrice > 0 ? (profit / purchasePrice) * 100 : 0;
+            
+            // Calculate Total Holding Costs (Taxes + Insurance + Year 1 Debt)
+            const totalHoldingCosts = taxes + insurance + annualService;
+            
+            // Total Project Cost = Purchase Price + Holding Costs + Landlord Work
+            const totalProjectCost = purchasePrice + totalHoldingCosts + landlordWork;
+            
+            const profit = marketValue - totalProjectCost;
+            const roi = totalProjectCost > 0 ? (profit / totalProjectCost) * 100 : 0;
             const impliedLtv = purchasePrice / marketValue;
             const isFinancable = impliedLtv < (marketLtv / 100);
 
