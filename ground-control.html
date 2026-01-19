@@ -102,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.19.0 • Mobile Optimized
+            v2.20.0 • Mobile Optimized
         </div>
     </div>
 
@@ -1017,7 +1017,13 @@ window.toggleSidebar = function() {
 
             // Rent Calculation
             let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10);
-            if (useContractRent) {
+            
+            // IF 'Active Lease', prefer Contract Rent if available, regardless of calculator checkbox
+            // This is a "business logic" preference for the Pipeline View
+            if (deal.stage === 'leased' && contractRentValue > 0) {
+                rentalRate = contractRentValue;
+            } else if (useContractRent) {
+                // If checkbox was explicitly checked in Calculator
                 rentalRate = contractRentValue;
             }
 
@@ -1222,21 +1228,20 @@ window.toggleSidebar = function() {
                 // --- Aggregation Logic ---
                 if (deal.stage === 'sold') {
                     // Realized Profit = Sale Price - Total Costs
-                    // Only count profit if we have valid Sale Price and Purchase Price
-                    if (fin.salePrice > 0 && fin.purchasePrice > 0) {
-                        const profit = fin.salePrice - fin.totalCosts;
-                        totalRealizedProfit += profit;
-                        
-                        // Chart Data (Use Sale Date)
-                        const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
-                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
-                        annualData[year].realized += profit;
-                    }
+                    // Relaxed condition: Only need valid sale price to calculate "revenue", profit depends on costs
+                    // We treat 0 cost as possible if not entered (pure profit) to ensure visibility
+                    const profit = fin.salePrice - fin.totalCosts;
+                    totalRealizedProfit += profit;
+                    
+                    // Chart Data (Use Sale Date)
+                    const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
+                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                    annualData[year].realized += profit;
 
                 } else {
                     // Active / Pipeline
                     // Potential Profit = Market Value - Total Costs
-                    if (fin.marketValue > 0 && fin.purchasePrice > 0) {
+                    if (fin.marketValue > 0) {
                         const profit = fin.marketValue - fin.totalCosts;
                         totalEstMarketValue += fin.marketValue;
                         totalEstProfit += profit;
@@ -1271,6 +1276,12 @@ window.toggleSidebar = function() {
         }
 
         function renderFinancialChart(dataObj) {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js library not loaded');
+                document.getElementById('financialChart').parentNode.innerHTML = '<div class="text-center text-red-400 p-8">Chart library failed to load. Check internet connection.</div>';
+                return;
+            }
+
             const ctx = document.getElementById('financialChart');
             if(!ctx) return;
 
