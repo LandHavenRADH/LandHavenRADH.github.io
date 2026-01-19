@@ -102,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.20.0 • Mobile Optimized
+            v2.21.0 • Mobile Optimized
         </div>
     </div>
 
@@ -1231,22 +1231,35 @@ window.toggleSidebar = function() {
                     // Relaxed condition: Only need valid sale price to calculate "revenue", profit depends on costs
                     // We treat 0 cost as possible if not entered (pure profit) to ensure visibility
                     const profit = fin.salePrice - fin.totalCosts;
-                    totalRealizedProfit += profit;
                     
-                    // Chart Data (Use Sale Date)
-                    const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
-                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
-                    annualData[year].realized += profit;
+                    if (fin.salePrice > 0) { // Only count if there's a sale price
+                         totalRealizedProfit += profit;
+                         
+                         // Chart Data (Use Sale Date)
+                        const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
+                        // Fix for invalid dates
+                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
+                        
+                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
+                        annualData[safeYear].realized += profit;
+                    }
 
                 } else {
                     // Active / Pipeline
                     // Potential Profit = Market Value - Total Costs
+                    
                     if (fin.marketValue > 0) {
-                        const profit = fin.marketValue - fin.totalCosts;
                         totalEstMarketValue += fin.marketValue;
-                        totalEstProfit += profit;
+                        // For Profit summation, we ideally want accurate costs. If purchase price is 0, profit looks huge.
+                        // But dashboard "Total Potential" usually implies "Total Upside".
+                        // Let's be strict on Profit summation to avoid skewed data, but loose on Value summation.
+                        
+                        const profit = fin.marketValue - fin.totalCosts;
+                        if(fin.purchasePrice > 0) { 
+                             totalEstProfit += profit;
+                        }
 
-                        // Chart Data (Use Commencement Date, else Created At, else Current Year)
+                        // Chart Data
                         let year;
                         if(deal.commencementDate) {
                             year = new Date(deal.commencementDate).getFullYear();
@@ -1256,8 +1269,13 @@ window.toggleSidebar = function() {
                             year = new Date().getFullYear();
                         }
                         
-                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
-                        annualData[year].potential += profit;
+                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
+                        
+                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
+                        // Only add to potential chart if valid purchase price exists to avoid skewing visual
+                        if(fin.purchasePrice > 0) {
+                            annualData[safeYear].potential += profit;
+                        }
                     }
                 }
             });
@@ -1817,22 +1835,8 @@ window.toggleSidebar = function() {
                     </div>
                     <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
                         ${stageDeals.map(deal => {
-                            // Calculate display value based on stage
-                            let displayValue = '$0';
-                            let label = 'Est. Value';
-                            
-                            // Use centralized financial logic
-                            const fin = calculateDealFinancials(deal);
-                            
-                            if (deal.stage === 'leased') {
-                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.rentalRate);
-                                label = 'Annual Rent';
-                            } else if (deal.stage === 'sold') {
-                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.salePrice);
-                                label = 'Sale Price';
-                            } else {
-                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.purchasePrice);
-                            }
+                            // Format value with commas
+                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
                             
                             return `
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
@@ -1844,10 +1848,7 @@ window.toggleSidebar = function() {
                                     <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
                                 </p>
                                 <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <div class="flex flex-col">
-                                        <span class="text-[10px] text-slate-400 uppercase font-bold">${label}</span>
-                                        <span class="text-xs font-mono font-medium text-emerald-600">${displayValue}</span>
-                                    </div>
+                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
                                     <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
                                         ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
                                     </select>
