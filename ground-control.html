@@ -102,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.17.0 • Mobile Optimized
+            v2.18.0 • Mobile Optimized
         </div>
     </div>
 
@@ -516,7 +516,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Est. Value ($)</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Est. Value / Purchase ($)</label>
                         <input type="text" id="deal-value" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1,200,000">
                     </div>
                     <div>
@@ -532,6 +532,15 @@
                     </div>
                 </div>
                 
+                <!-- Added Sale Price Input -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Price ($) <span class="text-xs text-slate-400 font-normal">(If Sold)</span></label>
+                        <input type="text" inputmode="decimal" id="deal-sale-price" data-type="currency" class="calc-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+                    </div>
+                    <div><!-- Spacer --></div>
+                </div>
+
                 <!-- Date Fields for Visuals -->
                 <div class="grid grid-cols-2 gap-4 border-t pt-4 border-slate-100">
                     <div>
@@ -969,6 +978,70 @@ window.toggleSidebar = function() {
             `).join('');
         }
 
+        // --- Helper: Centralized Financial Logic ---
+        function calculateDealFinancials(deal) {
+            const params = deal.calcParams || {};
+            const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+            const salePrice = parseFloat(deal.salePrice?.toString().replace(/[^0-9.-]/g, '')) || 0;
+
+            // Defaults
+            const purchaseLtv = params.ltv !== undefined ? parseFloat(params.ltv) : 100;
+            const interestRate = params.rate !== undefined ? parseFloat(params.rate) : 6.0;
+            const amortization = params.term !== undefined ? parseFloat(params.term) : 300;
+            const dscr = params.dscr !== undefined ? parseFloat(params.dscr) : 1.20;
+            const capRate = params.cap !== undefined ? parseFloat(params.cap) : 6.0;
+            const taxes = params.taxes !== undefined ? parseFloat(params.taxes) : 0;
+            const insurance = params.insurance !== undefined ? parseFloat(params.insurance) : 0;
+            const landlordWork = params.landlordWork !== undefined ? parseFloat(params.landlordWork) : 0;
+            const interestOnly = params.interestOnly || false;
+            const useContractRent = params.useContractRent || false;
+            const contractRentValue = params.contractRent !== undefined ? parseFloat(params.contractRent) : 0;
+
+            // Debt Service
+            const loanAmount = purchasePrice * (purchaseLtv / 100);
+            let annualService = 0;
+            
+            if (interestOnly) {
+                annualService = loanAmount * (interestRate / 100);
+            } else {
+                const r = (interestRate / 100) / 12;
+                const n = amortization;
+                if (r > 0 && n > 0 && loanAmount > 0) {
+                    const pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                    annualService = pmt * 12;
+                } else if (n > 0 && loanAmount > 0) {
+                    annualService = (loanAmount / n) * 12;
+                }
+            }
+
+            // Rent Calculation
+            let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10);
+            if (useContractRent) {
+                rentalRate = contractRentValue;
+            }
+
+            // Market Value
+            let marketValue = 0;
+            if (capRate > 0) {
+                marketValue = rentalRate / (capRate / 100);
+            }
+
+            // Total Cost Basis
+            const totalCosts = purchasePrice + taxes + insurance + annualService + landlordWork;
+
+            return {
+                purchasePrice,
+                salePrice,
+                rentalRate,
+                marketValue,
+                totalCosts,
+                annualService,
+                taxes,
+                insurance,
+                landlordWork
+            };
+        }
+
         // --- New Function: Render Deal Summary Logic ---
         function renderDealSummary(deal) {
             const summaryContainer = document.getElementById('deal-calc-summary');
@@ -978,103 +1051,31 @@ window.toggleSidebar = function() {
             }
             summaryContainer.classList.remove('hidden');
 
-            // Quick Calculation based on dynamic inputs
-            const purchasePrice = parseFloat(deal.value.toString().replace(/,/g, '')) || 0;
-            if(purchasePrice === 0) {
-                summaryContainer.classList.add('hidden');
-                return;
-            }
+            const fin = calculateDealFinancials(deal);
+            const { purchasePrice, marketValue, totalCosts, rentalRate } = fin;
 
-            // Defaults (Fallback)
-            const defaults = {
-                ltv: 100,
-                rate: 6.0,
-                term: 300,
-                dscr: 1.20,
-                cap: 6.0,
-                marketLtv: 70,
-                useContractRent: false,
-                contractRent: 0,
-                interestOnly: false,
-                taxes: 0,
-                insurance: 0,
-                landlordWork: 0
-            };
+            // Note: Dashboard logic uses Total Costs for ROI base.
+            const profit = marketValue - totalCosts;
+            const roi = totalCosts > 0 ? (profit / totalCosts) * 100 : 0;
             
-            // USE DEAL-SPECIFIC PARAMS IF THEY EXIST
-            const params = deal.calcParams || defaults;
-
-            const purchaseLtv = parseFloat(params.ltv) || defaults.ltv;
-            const interestRate = parseFloat(params.rate) || defaults.rate;
-            const amortization = parseFloat(params.term) || defaults.term;
-            const dscr = parseFloat(params.dscr) || defaults.dscr;
-            const capRate = parseFloat(params.cap) || defaults.cap;
-            const marketLtv = parseFloat(params.marketLtv) || defaults.marketLtv;
-            const useContractRent = params.useContractRent || defaults.useContractRent;
-            const contractRentValue = parseFloat(params.contractRent) || defaults.contractRent;
-            const interestOnly = params.interestOnly || defaults.interestOnly;
-            
-            const taxes = parseFloat(params.taxes) || 0;
-            const insurance = parseFloat(params.insurance) || 0;
-            const landlordWork = parseFloat(params.landlordWork) || 0;
-
-            const loanAmount = purchasePrice * (purchaseLtv / 100);
-            
-            let annualService = 0;
-            let pmt = 0;
-
-            if (interestOnly) {
-                // Simple Interest Only Calculation
-                annualService = loanAmount * (interestRate / 100);
-                pmt = annualService / 12;
-            } else {
-                // Standard Amortization Calculation
-                const r = (interestRate / 100) / 12;
-                const n = amortization;
-                
-                if (r > 0 && n > 0 && loanAmount > 0) {
-                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-                } else if (n > 0 && loanAmount > 0) {
-                    pmt = loanAmount / n;
-                }
-                annualService = pmt * 12;
-            }
-
-            // Determine Rent Source
-            // Logic: Required Rent = (Debt * DSCR) + Taxes + Insurance + (LandlordWork * 10%)
-            let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10); 
-            let rentLabel = "Required Rent (NOI)";
-            let rentAssumptions = `Based on calculator inputs (${purchaseLtv}% LTV, ${interestRate}% Rate${interestOnly ? ', Interest Only' : ''}, ${dscr} DSCR, ${capRate}% Cap)`;
-
-            if (useContractRent) {
-                rentalRate = contractRentValue;
-                rentLabel = "Contract Rent (Override)";
-                rentAssumptions = `Based on Contract Rent override and calculator inputs (${capRate}% Cap, ${marketLtv}% Market LTV)`;
-            }
-
-            const marketValue = rentalRate / (capRate / 100);
-            
-            // Calculate Total Holding Costs (Taxes + Insurance + Year 1 Debt)
-            const totalHoldingCosts = taxes + insurance + annualService;
-            
-            // Total Project Cost = Purchase Price + Holding Costs + Landlord Work
-            const totalProjectCost = purchasePrice + totalHoldingCosts + landlordWork;
-            
-            const profit = marketValue - totalProjectCost;
-            const roi = totalProjectCost > 0 ? (profit / totalProjectCost) * 100 : 0;
-            const impliedLtv = purchasePrice / marketValue;
+            // Logic check: Is it financable?
+            // Params access again for display logic only
+            const marketLtv = deal.calcParams?.marketLtv || 70;
+            const impliedLtv = marketValue > 0 ? purchasePrice / marketValue : 0;
             const isFinancable = impliedLtv < (marketLtv / 100);
 
             const formatCurrency = (num) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num);
 
-            document.getElementById('summary-rent-label').textContent = rentLabel;
+            // Label Update based on source
+            const useContract = deal.calcParams?.useContractRent || false;
+            document.getElementById('summary-rent-label').textContent = useContract ? "Contract Rent (Override)" : "Required Rent (NOI)";
+            
             document.getElementById('summary-rent').textContent = formatCurrency(rentalRate);
             document.getElementById('summary-value').textContent = formatCurrency(marketValue);
             document.getElementById('summary-profit').textContent = formatCurrency(profit);
             document.getElementById('summary-roi').textContent = Math.round(roi) + '%';
             
-            // Update assumptions text
-            document.getElementById('summary-assumptions-text').textContent = rentAssumptions;
+            document.getElementById('summary-assumptions-text').textContent = "Includes holding costs & capex in basis";
 
             const financeEl = document.getElementById('summary-finance');
             if(isFinancable) {
@@ -1099,6 +1100,11 @@ window.toggleSidebar = function() {
             document.getElementById('deal-value').value = deal.value || '';
             document.getElementById('deal-stage').value = deal.stage || 'prospect';
             
+            // Set Sale Price
+            const salePriceEl = document.getElementById('deal-sale-price');
+            salePriceEl.value = deal.salePrice || '';
+            formatField(salePriceEl, 'currency'); // Format immediately
+
             // Load dates
             document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
             document.getElementById('deal-sale-date').value = deal.saleDate || '';
@@ -1160,20 +1166,18 @@ window.toggleSidebar = function() {
 
         // --- DASHBOARD RENDER LOGIC ---
         function renderDashboard() {
-            // 1. Metrics
+            // 1. Metrics Counts
             document.getElementById('dash-total-props').textContent = deals.length;
             document.getElementById('dash-active-leases').textContent = deals.filter(d => d.stage === 'leased').length;
             document.getElementById('dash-sold-props').textContent = deals.filter(d => d.stage === 'sold').length;
             document.getElementById('dash-pending-tasks').textContent = tasks.filter(t => !t.completed).length;
             
-            // Only sum value of active/pipeline properties, excluding sold? Or Total including sold?
-            // "Total Pipeline Vol" usually implies active deals. Let's filter out sold.
-            const totalValue = deals
-                .filter(d => d.stage !== 'sold')
-                .reduce((acc, d) => {
-                    const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
-                    return acc + val;
-                }, 0);
+            // 1b. Total Volume (Exclude Sold from Pipeline Volume calculation usually, or include? Context implies Pipeline Volume = Active)
+            const activeDeals = deals.filter(d => d.stage !== 'sold');
+            const totalValue = activeDeals.reduce((acc, d) => {
+                const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                return acc + val;
+            }, 0);
             
             document.getElementById('dash-total-value').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue);
 
@@ -1207,55 +1211,13 @@ window.toggleSidebar = function() {
             const annualData = {};
 
             deals.forEach(deal => {
-                // Same logic as calculator but non-visual
-                const params = deal.calcParams || {};
-                const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                const fin = calculateDealFinancials(deal);
                 
-                // Defaults
-                const purchaseLtv = params.ltv || 100;
-                const interestRate = params.rate || 6.0;
-                const amortization = params.term || 300;
-                const dscr = params.dscr || 1.20;
-                const capRate = params.cap || 6.0;
-                const taxes = params.taxes || 0;
-                const insurance = params.insurance || 0;
-                const landlordWork = params.landlordWork || 0;
-                const interestOnly = params.interestOnly || false;
-                const useContractRent = params.useContractRent || false;
-                const contractRentValue = params.contractRent || 0;
-
-                // Debt Service
-                const loanAmount = purchasePrice * (purchaseLtv / 100);
-                let annualService = 0;
-                
-                if (interestOnly) {
-                    annualService = loanAmount * (interestRate / 100);
-                } else {
-                    const r = (interestRate / 100) / 12;
-                    const n = amortization;
-                    let pmt = 0;
-                    if (r > 0 && n > 0 && loanAmount > 0) {
-                        pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-                    } else if (n > 0 && loanAmount > 0) {
-                        pmt = loanAmount / n;
-                    }
-                    annualService = pmt * 12;
-                }
-
-                // Rent & Value
-                let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10);
-                if (useContractRent) rentalRate = contractRentValue;
-
-                let marketValue = 0;
-                if (capRate > 0) marketValue = rentalRate / (capRate / 100);
-
-                const totalCosts = purchasePrice + taxes + insurance + annualService + landlordWork; 
-                const profit = marketValue - totalCosts;
-
                 // --- Aggregation Logic ---
                 if (deal.stage === 'sold') {
-                    // Realized Profit
-                    if (profit !== 0) totalRealizedProfit += profit;
+                    // Realized Profit = Sale Price - Total Costs
+                    const profit = fin.salePrice - fin.totalCosts;
+                    totalRealizedProfit += profit;
                     
                     // Chart Data (Use Sale Date)
                     const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
@@ -1264,7 +1226,10 @@ window.toggleSidebar = function() {
 
                 } else {
                     // Active / Pipeline
-                    if (marketValue > 0) totalEstMarketValue += marketValue;
+                    // Potential Profit = Market Value - Total Costs
+                    const profit = fin.marketValue - fin.totalCosts;
+                    
+                    if (fin.marketValue > 0) totalEstMarketValue += fin.marketValue;
                     if (profit !== 0) totalEstProfit += profit;
 
                     // Chart Data (Use Commencement Date, else Created At, else Current Year)
@@ -1339,7 +1304,8 @@ window.toggleSidebar = function() {
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + value.toLocaleString();
+                                    if(value >= 1000 || value <= -1000) return '$' + (value/1000) + 'k';
+                                    return '$' + value;
                                 }
                             }
                         }
@@ -1503,7 +1469,8 @@ window.toggleSidebar = function() {
 
                 el.addEventListener('blur', () => {
                     formatField(el, type);
-                    calculateRent(); // Trigger calculation update
+                    // Only calc rent if we are in the calculator view context or dealing with calc fields
+                    if(el.id.startsWith('calc-')) calculateRent(); 
                 });
 
                 el.addEventListener('keypress', (e) => {
@@ -1828,8 +1795,22 @@ window.toggleSidebar = function() {
                     </div>
                     <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
                         ${stageDeals.map(deal => {
-                            // Format value with commas
-                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
+                            // Calculate display value based on stage
+                            let displayValue = '$0';
+                            let label = 'Est. Value';
+                            
+                            // Use centralized financial logic
+                            const fin = calculateDealFinancials(deal);
+                            
+                            if (deal.stage === 'leased') {
+                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.rentalRate);
+                                label = 'Annual Rent';
+                            } else if (deal.stage === 'sold') {
+                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.salePrice);
+                                label = 'Sale Price';
+                            } else {
+                                displayValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(fin.purchasePrice);
+                            }
                             
                             return `
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
@@ -1841,7 +1822,10 @@ window.toggleSidebar = function() {
                                     <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
                                 </p>
                                 <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] text-slate-400 uppercase font-bold">${label}</span>
+                                        <span class="text-xs font-mono font-medium text-emerald-600">${displayValue}</span>
+                                    </div>
                                     <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
                                         ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
                                     </select>
@@ -2073,6 +2057,7 @@ window.toggleSidebar = function() {
                     address: document.getElementById('deal-address').value,
                     value: document.getElementById('deal-value').value,
                     stage: document.getElementById('deal-stage').value,
+                    salePrice: document.getElementById('deal-sale-price').value,
                     commencementDate: document.getElementById('deal-commencement-date').value,
                     saleDate: document.getElementById('deal-sale-date').value
                 };
