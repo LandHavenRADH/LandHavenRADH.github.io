@@ -102,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.21.0 • Mobile Optimized
+            v2.24.0 • Mobile Optimized
         </div>
     </div>
 
@@ -979,24 +979,34 @@ window.toggleSidebar = function() {
         }
 
         // --- Helper: Centralized Financial Logic ---
+        function safeFloat(val, defaultVal = 0) {
+            // Strip out '$' and ',' then parse
+            if (val === null || val === undefined) return defaultVal;
+            const str = val.toString().replace(/[^0-9.-]/g, '');
+            if (str === '') return defaultVal;
+            const num = parseFloat(str);
+            return isNaN(num) ? defaultVal : num;
+        }
+
         function calculateDealFinancials(deal) {
             const params = deal.calcParams || {};
-            // Robust parsing: Handle formatted strings (with commas/$) or raw numbers
-            const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
-            const salePrice = parseFloat(deal.salePrice?.toString().replace(/[^0-9.-]/g, '')) || 0;
+            
+            // Robust parsing
+            const purchasePrice = safeFloat(deal.value, 0);
+            const salePrice = safeFloat(deal.salePrice, 0);
 
-            // Defaults
-            const purchaseLtv = params.ltv !== undefined ? parseFloat(params.ltv) : 100;
-            const interestRate = params.rate !== undefined ? parseFloat(params.rate) : 6.0;
-            const amortization = params.term !== undefined ? parseFloat(params.term) : 300;
-            const dscr = params.dscr !== undefined ? parseFloat(params.dscr) : 1.20;
-            const capRate = params.cap !== undefined ? parseFloat(params.cap) : 6.0;
-            const taxes = params.taxes !== undefined ? parseFloat(params.taxes) : 0;
-            const insurance = params.insurance !== undefined ? parseFloat(params.insurance) : 0;
-            const landlordWork = params.landlordWork !== undefined ? parseFloat(params.landlordWork) : 0;
+            // Defaults with safe parsing
+            const purchaseLtv = safeFloat(params.ltv, 100);
+            const interestRate = safeFloat(params.rate, 6.0);
+            const amortization = safeFloat(params.term, 300);
+            const dscr = safeFloat(params.dscr, 1.20);
+            const capRate = safeFloat(params.cap, 6.0);
+            const taxes = safeFloat(params.taxes, 0);
+            const insurance = safeFloat(params.insurance, 0);
+            const landlordWork = safeFloat(params.landlordWork, 0);
             const interestOnly = params.interestOnly || false;
             const useContractRent = params.useContractRent || false;
-            const contractRentValue = params.contractRent !== undefined ? parseFloat(params.contractRent) : 0;
+            const contractRentValue = safeFloat(params.contractRent, 0);
 
             // Debt Service
             const loanAmount = purchasePrice * (purchaseLtv / 100);
@@ -1019,7 +1029,6 @@ window.toggleSidebar = function() {
             let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10);
             
             // IF 'Active Lease', prefer Contract Rent if available, regardless of calculator checkbox
-            // This is a "business logic" preference for the Pipeline View
             if (deal.stage === 'leased' && contractRentValue > 0) {
                 rentalRate = contractRentValue;
             } else if (useContractRent) {
@@ -1068,7 +1077,7 @@ window.toggleSidebar = function() {
             
             // Logic check: Is it financable?
             // Params access again for display logic only
-            const marketLtv = deal.calcParams?.marketLtv || 70;
+            const marketLtv = safeFloat(deal.calcParams?.marketLtv, 70);
             const impliedLtv = marketValue > 0 ? purchasePrice / marketValue : 0;
             const isFinancable = impliedLtv < (marketLtv / 100);
 
@@ -1187,7 +1196,7 @@ window.toggleSidebar = function() {
             // 1b. Total Volume (Exclude Sold from Pipeline Volume calculation usually, or include? Context implies Pipeline Volume = Active)
             const activeDeals = deals.filter(d => d.stage !== 'sold');
             const totalValue = activeDeals.reduce((acc, d) => {
-                const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                const val = safeFloat(d.value, 0);
                 return acc + val;
             }, 0);
             
@@ -1228,54 +1237,44 @@ window.toggleSidebar = function() {
                 // --- Aggregation Logic ---
                 if (deal.stage === 'sold') {
                     // Realized Profit = Sale Price - Total Costs
-                    // Relaxed condition: Only need valid sale price to calculate "revenue", profit depends on costs
-                    // We treat 0 cost as possible if not entered (pure profit) to ensure visibility
+                    // Relaxed condition: Use if SalePrice exists, regardless of cost inputs
                     const profit = fin.salePrice - fin.totalCosts;
                     
-                    if (fin.salePrice > 0) { // Only count if there's a sale price
-                         totalRealizedProfit += profit;
-                         
-                         // Chart Data (Use Sale Date)
-                        const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
-                        // Fix for invalid dates
-                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
+                    // We only aggregate if SalePrice > 0 to avoid counting "0 price" sales as huge losses
+                    if (fin.salePrice > 0) {
+                        totalRealizedProfit += profit;
                         
-                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
-                        annualData[safeYear].realized += profit;
+                        // Chart Data (Use Sale Date, fallback to current year)
+                        let year = new Date().getFullYear();
+                        if (deal.saleDate) {
+                             const d = new Date(deal.saleDate);
+                             if (!isNaN(d.getTime())) year = d.getFullYear();
+                        }
+                        
+                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                        annualData[year].realized += profit;
                     }
 
                 } else {
                     // Active / Pipeline
-                    // Potential Profit = Market Value - Total Costs
-                    
+                    // Relaxed condition: Always count Market Value if > 0
                     if (fin.marketValue > 0) {
                         totalEstMarketValue += fin.marketValue;
-                        // For Profit summation, we ideally want accurate costs. If purchase price is 0, profit looks huge.
-                        // But dashboard "Total Potential" usually implies "Total Upside".
-                        // Let's be strict on Profit summation to avoid skewed data, but loose on Value summation.
                         
                         const profit = fin.marketValue - fin.totalCosts;
-                        if(fin.purchasePrice > 0) { 
-                             totalEstProfit += profit;
-                        }
+                        totalEstProfit += profit;
 
-                        // Chart Data
-                        let year;
+                        // Chart Data (Use Commencement Date, else Created At, else Current Year)
+                        let year = new Date().getFullYear();
                         if(deal.commencementDate) {
-                            year = new Date(deal.commencementDate).getFullYear();
+                            const d = new Date(deal.commencementDate);
+                            if (!isNaN(d.getTime())) year = d.getFullYear();
                         } else if (deal.createdAt && deal.createdAt.toDate) {
                             year = deal.createdAt.toDate().getFullYear();
-                        } else {
-                            year = new Date().getFullYear();
                         }
                         
-                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
-                        
-                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
-                        // Only add to potential chart if valid purchase price exists to avoid skewing visual
-                        if(fin.purchasePrice > 0) {
-                            annualData[safeYear].potential += profit;
-                        }
+                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                        annualData[year].potential += profit;
                     }
                 }
             });
@@ -1486,8 +1485,7 @@ window.toggleSidebar = function() {
         function getRawValue(id) {
             const el = document.getElementById(id);
             if (!el) return 0;
-            const val = el.value.replace(/[^0-9.-]/g, '');
-            return parseFloat(val) || 0;
+            return safeFloat(el.value);
         }
 
         // Setup input formatting listeners
@@ -1553,12 +1551,10 @@ window.toggleSidebar = function() {
             if (deal) {
                 // 1. Set Price from Deal Value
                 if (deal.value) {
-                    const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
-                    if (!isNaN(numValue)) {
-                        const priceEl = document.getElementById('calc-price');
-                        priceEl.value = numValue;
-                        formatField(priceEl, 'currency');
-                    }
+                    const numValue = safeFloat(deal.value);
+                    const priceEl = document.getElementById('calc-price');
+                    priceEl.value = numValue;
+                    formatField(priceEl, 'currency');
                 }
                 
                 // 2. Load Saved Parameters OR Defaults
@@ -1797,433 +1793,3 @@ window.toggleSidebar = function() {
             document.getElementById('res-profit').textContent = formatCurrency(profit);
             document.getElementById('res-roi').textContent = Math.round(roi) + '%';
         };
-
-        // Attach listeners to all calculator inputs
-        document.addEventListener('DOMContentLoaded', () => {
-            const inputs = document.querySelectorAll('.calc-input');
-            inputs.forEach(input => {
-                // For checkbox and number inputs
-                input.addEventListener('input', calculateRent);
-                input.addEventListener('change', calculateRent); // Catch checkbox changes specifically
-            });
-            // Initial calc
-            calculateRent();
-        });
-
-        // --- RENDER PIPELINE ---
-        const STAGES = [
-            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
-            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
-            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
-            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
-            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' },
-            { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
-        ];
-
-        function renderPipeline() {
-            const container = document.getElementById('pipeline-container');
-            container.innerHTML = '';
-
-            STAGES.forEach(stage => {
-                const stageDeals = deals.filter(d => d.stage === stage.id);
-                const col = document.createElement('div');
-                col.className = 'w-80 flex flex-col h-full';
-                col.innerHTML = `
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
-                        <span class="flex-1">${stage.label}</span>
-                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
-                    </div>
-                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
-                        ${stageDeals.map(deal => {
-                            // Format value with commas
-                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
-                            
-                            return `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
-                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
-                                </div>
-                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
-                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
-                                </p>
-                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
-                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
-                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
-                                    </select>
-                                </div>
-                            </div>
-                        `}).join('')}
-                        ${stageDeals.length === 0 ? '<div class="text-center py-8 text-slate-400 italic text-sm">No deals</div>' : ''}
-                    </div>
-                `;
-                container.appendChild(col);
-            });
-            if (window.lucide) lucide.createIcons();
-        }
-
-        // --- RENDER TASKS ---
-        function renderTasks() {
-            const tbody = document.getElementById('tasks-table-body');
-            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
-            
-            if(sortedTasks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = sortedTasks.map(task => {
-                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
-                
-                // Calculate Overdue Status (Strictly BEFORE today)
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // Reset time to midnight
-                
-                // Parse task date correctly to avoid timezone issues
-                const [year, month, day] = task.date.split('-').map(Number);
-                const taskDate = new Date(year, month - 1, day);
-                
-                const isOverdue = !task.completed && taskDate < today;
-
-                return `
-                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
-                        <td class="p-4 text-center">
-                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
-                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
-                            </button>
-                        </td>
-                        <td class="p-4">
-                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
-                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
-                        </td>
-                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
-                        <td class="p-4">
-                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${formatDateForDisplay(task.date)}
-                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
-                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
-                            </div>
-                        </td>
-                        <td class="p-4 text-right">
-                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            if (window.lucide) lucide.createIcons();
-        }
-
-        // --- RENDER CONTACTS ---
-        function renderContacts() {
-            const grid = document.getElementById('contacts-grid');
-            if(contacts.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
-                return;
-            }
-
-            // FILTER LOGIC
-            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
-            const filteredContacts = contacts.filter(c => 
-                (c.name && c.name.toLowerCase().includes(searchVal)) ||
-                (c.email && c.email.toLowerCase().includes(searchVal)) ||
-                (c.role && c.role.toLowerCase().includes(searchVal))
-            );
-
-            // GROUPING LOGIC
-            const groups = {
-                'Seller': [],
-                'Franchisor': [],
-                'Franchisee': [],
-                'Lender': [],
-                'Other': []
-            };
-
-            filteredContacts.forEach(c => {
-                const category = c.category || 'Other';
-                if (groups[category]) {
-                    groups[category].push(c);
-                } else {
-                    groups['Other'].push(c);
-                }
-            });
-
-            let html = '';
-
-            for (const [category, groupContacts] of Object.entries(groups)) {
-                if (groupContacts.length > 0) {
-                    html += `
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                ${groupContacts.map(c => {
-                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
-                                    
-                                    // Deal logic
-                                    let dealDisplay = 'General Contact';
-                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
-                                    if (linkedDealIds.length > 0) {
-                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
-                                        const firstName = firstDeal ? firstDeal.name : 'Unknown Deal';
-                                        if (linkedDealIds.length > 1) {
-                                            dealDisplay = `${firstName} + ${linkedDealIds.length - 1} more`;
-                                        } else {
-                                            dealDisplay = firstName;
-                                        }
-                                    }
-
-                                    return `
-                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
-                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                                        <div class="flex items-center gap-3 mb-3">
-                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
-                                                ${initial}
-                                            </div>
-                                            <div>
-                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
-                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
-                                            </div>
-                                        </div>
-                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="mail" width="14" class="text-slate-400"></i> 
-                                                <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <i data-lucide="phone" width="14" class="text-slate-400"></i> 
-                                                <span>${c.phone || 'No Phone'}</span>
-                                            </div>
-                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
-                                            ${c.company ? `<div class="flex items-center gap-2"><i data-lucide="building" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${c.company}</span></div>` : ''}
-                                        </div>
-                                    </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-            
-            if (filteredContacts.length === 0) {
-                html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found matching your search.</div>';
-            }
-
-            grid.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-        }
-
-        window.filterContacts = (val) => {
-            renderContacts();
-        }
-
-        // --- Helpers ---
-        function populateDealSelects() {
-            // Task Select (Still Single)
-            const taskOptions = `<option value="">-- General / Unassigned --</option>` + 
-                            deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-            const taskSelect = document.getElementById('task-deal-id');
-            if(taskSelect) taskSelect.innerHTML = taskOptions;
-
-            // Contact Select (Multi-Checkbox)
-            const contactContainer = document.getElementById('contact-deal-container');
-            if(contactContainer) {
-                if (deals.length === 0) {
-                    contactContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No deals available.</div>';
-                } else {
-                    contactContainer.innerHTML = deals.map(d => `
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                            <label for="contact-deal-${d.id}" class="text-sm text-slate-700 cursor-pointer select-none truncate">${d.name}</label>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            // Calculator Deal Select (New)
-            const calcSelect = document.getElementById('calc-deal-select');
-            if (calcSelect) {
-                // Ensure value is maintained if currently loaded deal is selected
-                const currentValue = calcSelect.value;
-                const calcOptions = `<option value="">-- Select a Deal --</option>` + 
-                                deals.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.name}</option>`).join('');
-                calcSelect.innerHTML = calcOptions;
-                // Re-select if possible (in case innerHTML wiped selection but DOM value persisted, or use state variable)
-                if (currentlyLoadedDealForCalc) {
-                   calcSelect.value = currentlyLoadedDealForCalc;
-                }
-            }
-        }
-
-        // --- CRUD Operations ---
-        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, "gc_deals", id)); };
-        window.moveStage = async (id, stage) => await updateDoc(doc(db, "gc_deals", id), { stage });
-        
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, "gc_tasks", id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, "gc_tasks", id));
-
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, "gc_contacts", id)); };
-
-        // --- Form Submissions with Error Handling ---
-        
-        document.getElementById('deal-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('deal-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const dealId = document.getElementById('deal-id').value;
-                const data = {
-                    name: document.getElementById('deal-name').value,
-                    address: document.getElementById('deal-address').value,
-                    value: document.getElementById('deal-value').value,
-                    stage: document.getElementById('deal-stage').value,
-                    salePrice: document.getElementById('deal-sale-price').value,
-                    commencementDate: document.getElementById('deal-commencement-date').value,
-                    saleDate: document.getElementById('deal-sale-date').value
-                };
-
-                if (dealId) {
-                    await updateDoc(doc(db, "gc_deals", dealId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_deals"), data);
-                }
-
-                e.target.reset();
-                closeModal('deal-modal');
-            } catch (error) {
-                console.error("Error adding/updating deal:", error);
-                alert("Failed to save deal. Error: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('task-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('task-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const taskId = document.getElementById('task-id').value;
-                const data = {
-                    title: document.getElementById('task-title').value,
-                    date: document.getElementById('task-date').value,
-                    time: document.getElementById('task-time').value, // Add time
-                    dealId: document.getElementById('task-deal-id').value,
-                    notes: document.getElementById('task-notes').value,
-                };
-
-                if (taskId) {
-                    await updateDoc(doc(db, "gc_tasks", taskId), data);
-                } else {
-                    data.completed = false;
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_tasks"), data);
-                }
-                
-                e.target.reset();
-                closeModal('task-modal');
-            } catch (error) {
-                console.error("Error saving task:", error);
-                alert("Failed to save task: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('contact-submit-btn');
-            const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-
-            try {
-                const contactId = document.getElementById('contact-id').value;
-                
-                // Harvest Checked Deal IDs
-                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
-
-                const data = {
-                    name: document.getElementById('contact-name').value,
-                    role: document.getElementById('contact-role').value,
-                    email: document.getElementById('contact-email').value,
-                    phone: document.getElementById('contact-phone').value,
-                    company: document.getElementById('contact-company').value, // Save Company
-                    category: document.getElementById('contact-category').value, // Save Category
-                    dealIds: selectedDealIds, 
-                    dealId: null 
-                };
-
-                if (contactId) {
-                    await updateDoc(doc(db, "gc_contacts", contactId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, "gc_contacts"), data);
-                }
-
-                e.target.reset();
-                closeModal('contact-modal');
-            } catch (error) {
-                console.error("Error saving contact:", error);
-                alert("Failed to save contact: " + error.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
-
- // 1. Handle the Logout Button Click
-document.getElementById('logout-button').addEventListener('click', () => {
-    auth.signOut().then(() => {
-        // Redirecting here ensures the user sees the login page immediately
-        window.location.href = 'index.html';
-    }).catch((error) => {
-        console.error("Logout Error:", error);
-    });
-});
-
-// 2. Add a Security Guard (Observer)
-// This kicks the user out if they try to access this page without being logged in
-auth.onAuthStateChanged((user) => {
-    if (!user) {
-        window.location.href = 'index.html';
-    }
-});  
-
-// Function to show/hide the sidebar on mobile
-function toggleSidebar() {
-    // Only toggle sidebar if we are on mobile (less than 768px usually triggers md breakpoint)
-    // This prevents the desktop menu from disappearing when clicking items
-    if (window.innerWidth >= 768) {
-        return;
-    }
-
-    const sidebar = document.getElementById('sidebar');
-    
-    if (!sidebar) {
-        console.error("Error: Could not find the element with id='sidebar'");
-        alert("Technical Error: Sidebar ID not found.");
-        return;
-    }
-
-    // This toggles the 'sliding' class
-    if (sidebar.classList.contains('-translate-x-full')) {
-        sidebar.classList.remove('-translate-x-full');
-        console.log("Sidebar opened");
-    } else {
-        sidebar.classList.add('-translate-x-full');
-        console.log("Sidebar closed");
-    }
-}
-	</script>
-</body>
-</html>
