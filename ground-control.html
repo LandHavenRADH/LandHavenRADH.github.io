@@ -228,25 +228,25 @@
                                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                          <i data-lucide="dollar-sign" width="16"></i>
                                      </div>
-                                     <input type="number" id="calc-price" value="500000" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all">
+                                     <input type="text" inputmode="decimal" id="calc-price" value="500000" data-type="currency" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all">
                                  </div>
                              </div>
 
                              <div class="grid grid-cols-2 gap-4">
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Purchase LTV %</label>
-                                     <input type="number" id="calc-ltv" value="100" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-ltv" value="100" data-type="percent" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                  </div>
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Interest Rate %</label>
-                                     <input type="number" id="calc-rate" value="6.0" step="0.1" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-rate" value="6.0" data-type="percent" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                  </div>
                              </div>
 
                              <div class="grid grid-cols-2 gap-4">
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Amortization (Mo)</label>
-                                     <input type="number" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                     <input type="text" inputmode="decimal" id="calc-term" value="300" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
                                      <label class="flex items-center gap-2 mt-2 cursor-pointer">
                                         <input type="checkbox" id="calc-interest-only" class="calc-input rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3 h-3">
                                         <span class="text-xs text-slate-500 font-medium">Interest Only</span>
@@ -254,7 +254,7 @@
                                  </div>
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">DSCR Target</label>
-                                     <input type="number" id="calc-dscr" value="1.20" step="0.05" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-dscr" value="1.20" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                  </div>
                              </div>
 
@@ -264,16 +264,16 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-500 block mb-1.5">RE Taxes ($)</label>
-                                        <input type="number" id="calc-taxes" value="0" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                        <input type="text" inputmode="decimal" id="calc-taxes" value="0" data-type="currency" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-500 block mb-1.5">Insurance ($)</label>
-                                        <input type="number" id="calc-insurance" value="0" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                        <input type="text" inputmode="decimal" id="calc-insurance" value="0" data-type="currency" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                     </div>
                                 </div>
                                 <div class="mt-3">
                                      <label class="text-xs font-semibold text-slate-500 block mb-1.5">Landlord's Work ($)</label>
-                                     <input type="number" id="calc-landlord-work" value="0" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-landlord-work" value="0" data-type="currency" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                 </div>
                                 <div class="mt-3 flex justify-between items-center text-xs bg-amber-50 p-2 rounded border border-amber-100">
                                     <span class="text-amber-800 font-medium">Total Holding (Inc. Debt):</span>
@@ -294,18 +294,18 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                         <i data-lucide="dollar-sign" width="16"></i>
                                     </div>
-                                    <input type="number" id="calc-contract-rent" value="0" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" disabled>
+                                    <input type="text" inputmode="decimal" id="calc-contract-rent" value="0" data-type="currency" class="calc-input block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" disabled>
                                 </div>
                              </div>
 
                              <div class="grid grid-cols-2 gap-4">
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Market Cap Rate %</label>
-                                     <input type="number" id="calc-cap" value="6.0" step="0.1" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-cap" value="6.0" data-type="percent" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                  </div>
                                  <div>
                                      <label class="text-sm font-semibold text-slate-700 block mb-1.5">Market LTV Limit %</label>
-                                     <input type="number" id="calc-market-ltv" value="70" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
+                                     <input type="text" inputmode="decimal" id="calc-market-ltv" value="70" data-type="percent" class="calc-input block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                  </div>
                              </div>
 
@@ -1059,6 +1059,8 @@ window.toggleSidebar = function() {
                     console.warn("Lucide icons not loaded yet.");
                 }
 
+                setupFormattedInputs(); // Initial setup for any inputs present
+
                 onSnapshot(collection(db, "gc_deals"), (snapshot) => {
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderPipeline();
@@ -1155,12 +1157,63 @@ window.toggleSidebar = function() {
 
         // --- RENT CALCULATOR LOGIC ---
         
+        // Helper to strip formatting for calculation
+        function getRawValue(id) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            const val = el.value.replace(/[^0-9.-]/g, '');
+            return parseFloat(val) || 0;
+        }
+
+        // Setup input formatting listeners
+        function setupFormattedInputs() {
+            const inputs = document.querySelectorAll('.calc-input');
+            inputs.forEach(el => {
+                const type = el.getAttribute('data-type');
+                if (!type) return;
+
+                // Format on initial load if value exists
+                if (el.value) formatField(el, type);
+
+                el.addEventListener('focus', () => {
+                    const val = el.value;
+                    const clean = val.replace(/[^0-9.-]/g, '');
+                    el.value = clean;
+                    el.select();
+                });
+
+                el.addEventListener('blur', () => {
+                    formatField(el, type);
+                    calculateRent(); // Trigger calculation update
+                });
+
+                el.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') el.blur();
+                });
+            });
+        }
+
+        function formatField(el, type) {
+            const val = el.value.replace(/[^0-9.-]/g, '');
+            if (val === '') return;
+            const num = parseFloat(val);
+            if (isNaN(num)) return;
+
+            if (type === 'currency') {
+                el.value = num.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+            } else if (type === 'percent') {
+                el.value = num.toLocaleString('en-US', { maximumFractionDigits: 3 }) + '%';
+            }
+        }
+
         // Populate Calculator Dropdown
         window.loadDealToCalculator = (dealId) => {
             if (!dealId) {
                 // Reset inputs if cleared
                 document.getElementById('calc-price').value = 500000;
                 currentlyLoadedDealForCalc = null;
+                // Re-apply formatting to the default value
+                formatField(document.getElementById('calc-price'), 'currency');
                 calculateRent();
                 return;
             }
@@ -1176,23 +1229,32 @@ window.toggleSidebar = function() {
                 if (deal.value) {
                     const numValue = parseFloat(deal.value.toString().replace(/,/g, ''));
                     if (!isNaN(numValue)) {
-                        document.getElementById('calc-price').value = numValue;
+                        const priceEl = document.getElementById('calc-price');
+                        priceEl.value = numValue;
+                        formatField(priceEl, 'currency');
                     }
                 }
                 
                 // 2. Load Saved Parameters OR Defaults
                 const params = deal.calcParams || {};
-                document.getElementById('calc-ltv').value = params.ltv || 100;
-                document.getElementById('calc-rate').value = params.rate || 6.0;
+                
+                const setVal = (id, val, type) => {
+                    const el = document.getElementById(id);
+                    el.value = val !== undefined ? val : 0;
+                    if(type) formatField(el, type);
+                };
+
+                setVal('calc-ltv', params.ltv || 100, 'percent');
+                setVal('calc-rate', params.rate || 6.0, 'percent');
                 document.getElementById('calc-term').value = params.term || 300;
                 document.getElementById('calc-dscr').value = params.dscr || 1.20;
-                document.getElementById('calc-cap').value = params.cap || 6.0;
-                document.getElementById('calc-market-ltv').value = params.marketLtv || 70;
+                setVal('calc-cap', params.cap || 6.0, 'percent');
+                setVal('calc-market-ltv', params.marketLtv || 70, 'percent');
                 
                 // Load Holding Costs
-                document.getElementById('calc-taxes').value = params.taxes || 0;
-                document.getElementById('calc-insurance').value = params.insurance || 0;
-                document.getElementById('calc-landlord-work').value = params.landlordWork || 0;
+                setVal('calc-taxes', params.taxes || 0, 'currency');
+                setVal('calc-insurance', params.insurance || 0, 'currency');
+                setVal('calc-landlord-work', params.landlordWork || 0, 'currency');
 
                 // Interest Only Checkbox
                 const ioCheckbox = document.getElementById('calc-interest-only');
@@ -1214,6 +1276,7 @@ window.toggleSidebar = function() {
                 
                 const contractInput = document.getElementById('calc-contract-rent');
                 contractInput.value = params.contractRent || 0;
+                formatField(contractInput, 'currency');
                 
                 // Manually trigger the enabled/disabled state logic for Contract Rent
                 if(checkbox.checked) {
@@ -1230,19 +1293,19 @@ window.toggleSidebar = function() {
 
         // Core Calculation Function (Updated with Save Logic)
         window.calculateRent = async () => {
-            // 1. Get Inputs
-            const purchasePrice = parseFloat(document.getElementById('calc-price').value) || 0;
-            const purchaseLtv = parseFloat(document.getElementById('calc-ltv').value) || 0;
-            const interestRate = parseFloat(document.getElementById('calc-rate').value) || 0;
-            const amortization = parseFloat(document.getElementById('calc-term').value) || 0;
-            const dscr = parseFloat(document.getElementById('calc-dscr').value) || 0;
-            const capRate = parseFloat(document.getElementById('calc-cap').value) || 0;
-            const marketLtv = parseFloat(document.getElementById('calc-market-ltv').value) || 0;
+            // 1. Get Inputs using getRawValue to strip formatting
+            const purchasePrice = getRawValue('calc-price');
+            const purchaseLtv = getRawValue('calc-ltv');
+            const interestRate = getRawValue('calc-rate');
+            const amortization = getRawValue('calc-term');
+            const dscr = getRawValue('calc-dscr');
+            const capRate = getRawValue('calc-cap');
+            const marketLtv = getRawValue('calc-market-ltv');
             
             // New Holding Costs Inputs
-            const taxes = parseFloat(document.getElementById('calc-taxes').value) || 0;
-            const insurance = parseFloat(document.getElementById('calc-insurance').value) || 0;
-            const landlordWork = parseFloat(document.getElementById('calc-landlord-work').value) || 0;
+            const taxes = getRawValue('calc-taxes');
+            const insurance = getRawValue('calc-insurance');
+            const landlordWork = getRawValue('calc-landlord-work');
 
             const interestOnly = document.getElementById('calc-interest-only').checked;
             const amortizationInput = document.getElementById('calc-term');
@@ -1270,7 +1333,7 @@ window.toggleSidebar = function() {
                 contractRentInput.classList.add('disabled:bg-slate-100', 'disabled:text-slate-400', 'disabled:cursor-not-allowed');
             }
 
-            const contractRentValue = parseFloat(contractRentInput.value) || 0;
+            const contractRentValue = getRawValue('calc-contract-rent');
 
             // --- AUTO-SAVE LOGIC ---
             if (currentlyLoadedDealForCalc) {
