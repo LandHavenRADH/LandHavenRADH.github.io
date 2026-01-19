@@ -78,7 +78,11 @@
 </button>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchView('pipeline'); toggleSidebar()" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
+            <button onclick="switchView('dashboard'); toggleSidebar()" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-emerald-600 text-white shadow-md">
+                <i data-lucide="layout-dashboard" size="20"></i>
+                <span class="font-medium">Dashboard</span>
+            </button>
+            <button onclick="switchView('pipeline'); toggleSidebar()" id="nav-pipeline" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
                 <i data-lucide="map-pin" size="20"></i>
                 <span class="font-medium">Deal Pipeline</span>
             </button>
@@ -96,14 +100,103 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.15.0 • Mobile Optimized
+            v2.16.0 • Mobile Optimized
         </div>
     </div>
 
     <main class="flex-1 relative bg-slate-100 overflow-hidden">
             
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section absolute inset-0 p-8 flex flex-col h-full overflow-y-auto">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Dashboard</h2>
+                        <p class="text-slate-500 text-sm">Welcome back. Here is your portfolio overview.</p>
+                    </div>
+                    <div class="text-sm text-slate-400" id="current-date-display"></div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Properties</div>
+                        <div class="text-2xl font-bold text-slate-800" id="dash-total-props">0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Active Leases</div>
+                        <div class="text-2xl font-bold text-emerald-700" id="dash-active-leases">0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Pending Actions</div>
+                        <div class="text-2xl font-bold text-blue-700" id="dash-pending-tasks">0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Pipeline Vol.</div>
+                        <div class="text-2xl font-bold text-slate-800" id="dash-total-value">$0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Schedule Summary -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="calendar-clock" class="text-blue-500" width="18"></i> Upcoming Schedule
+                            </h3>
+                            <button onclick="switchView('tasks')" class="text-xs text-blue-600 hover:underline">View All</button>
+                        </div>
+                        <div id="dash-upcoming-list" class="space-y-3">
+                            <!-- Injected JS -->
+                            <div class="text-slate-400 text-sm italic">No upcoming tasks.</div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                            <i data-lucide="trending-up" class="text-emerald-500" width="18"></i> Financial Overview
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <span class="block text-xs text-slate-500 uppercase">Est. Total Market Value</span>
+                                <span class="block text-xl font-bold text-slate-800 mt-1" id="dash-est-market-value">$0</span>
+                                <span class="text-xs text-slate-400">Based on deal calculator projections</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                <span class="block text-xs text-slate-500 uppercase">Total Potential Profit</span>
+                                <span class="block text-xl font-bold text-emerald-600 mt-1" id="dash-est-profit">$0</span>
+                            </div>
+                            <div class="text-xs text-center text-slate-400 mt-2">
+                                *Figures derived from individual deal calculations.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white">
+                            <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
+                            <div class="space-y-3">
+                                <button onclick="openModal('contact-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
+                                    <div class="bg-emerald-500 p-1.5 rounded-md"><i data-lucide="user-plus" width="16" class="text-white"></i></div>
+                                    <span class="font-medium text-sm">Add New Contact</span>
+                                </button>
+                                <button onclick="openModal('task-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
+                                    <div class="bg-blue-500 p-1.5 rounded-md"><i data-lucide="check-square" width="16" class="text-white"></i></div>
+                                    <span class="font-medium text-sm">Add To-Do Item</span>
+                                </button>
+                                <button onclick="openModal('deal-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
+                                    <div class="bg-purple-500 p-1.5 rounded-md"><i data-lucide="plus-circle" width="16" class="text-white"></i></div>
+                                    <span class="font-medium text-sm">Start New Deal</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- VIEW: PIPELINE -->
-            <div id="view-pipeline" class="view-section absolute inset-0 p-8 flex flex-col h-full">
+            <div id="view-pipeline" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
@@ -723,6 +816,11 @@ window.toggleSidebar = function() {
             if (viewName === 'tasks' && calendar) {
                 setTimeout(() => calendar.render(), 100);
             }
+            
+            // Render Dashboard if selected
+            if (viewName === 'dashboard') {
+                renderDashboard();
+            }
         };
 
         // --- Task View Switching (List vs Calendar) ---
@@ -1048,6 +1146,104 @@ window.toggleSidebar = function() {
             document.getElementById('contact-modal').classList.remove('hidden');
         }
 
+        // --- DASHBOARD RENDER LOGIC ---
+        function renderDashboard() {
+            // 1. Metrics
+            document.getElementById('dash-total-props').textContent = deals.length;
+            document.getElementById('dash-active-leases').textContent = deals.filter(d => d.stage === 'leased').length;
+            document.getElementById('dash-pending-tasks').textContent = tasks.filter(t => !t.completed).length;
+            
+            const totalValue = deals.reduce((acc, d) => {
+                const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                return acc + val;
+            }, 0);
+            
+            document.getElementById('dash-total-value').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue);
+
+            // 2. Upcoming Schedule (Top 5)
+            const upcomingTasks = tasks
+                .filter(t => !t.completed)
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .slice(0, 5);
+            
+            const taskContainer = document.getElementById('dash-upcoming-list');
+            if (upcomingTasks.length === 0) {
+                taskContainer.innerHTML = '<div class="text-slate-400 text-sm italic">No upcoming tasks.</div>';
+            } else {
+                taskContainer.innerHTML = upcomingTasks.map(t => `
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded border border-transparent hover:border-slate-100 transition cursor-pointer" onclick="editTask('${t.id}')">
+                        <div class="bg-blue-100 text-blue-600 rounded p-1.5 shrink-0"><i data-lucide="calendar" width="16"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-slate-800 truncate">${t.title}</div>
+                            <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 3. Financial Summary (Rough Estimates based on defaults if not set)
+            let totalEstProfit = 0;
+            let totalEstMarketValue = 0;
+
+            deals.forEach(deal => {
+                // Same logic as calculator but non-visual
+                const params = deal.calcParams || {};
+                const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                
+                // Defaults
+                const purchaseLtv = params.ltv || 100;
+                const interestRate = params.rate || 6.0;
+                const amortization = params.term || 300;
+                const dscr = params.dscr || 1.20;
+                const capRate = params.cap || 6.0;
+                const marketLtv = params.marketLtv || 70;
+                const taxes = params.taxes || 0;
+                const insurance = params.insurance || 0;
+                const landlordWork = params.landlordWork || 0;
+                const interestOnly = params.interestOnly || false;
+                const useContractRent = params.useContractRent || false;
+                const contractRentValue = params.contractRent || 0;
+
+                // Debt Service
+                const loanAmount = purchasePrice * (purchaseLtv / 100);
+                let annualService = 0;
+                
+                if (interestOnly) {
+                    annualService = loanAmount * (interestRate / 100);
+                } else {
+                    const r = (interestRate / 100) / 12;
+                    const n = amortization;
+                    let pmt = 0;
+                    if (r > 0 && n > 0 && loanAmount > 0) {
+                        pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                    } else if (n > 0 && loanAmount > 0) {
+                        pmt = loanAmount / n;
+                    }
+                    annualService = pmt * 12;
+                }
+
+                // Rent & Value
+                let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10);
+                if (useContractRent) rentalRate = contractRentValue;
+
+                let marketValue = 0;
+                if (capRate > 0) marketValue = rentalRate / (capRate / 100);
+
+                const totalCosts = purchasePrice + taxes + insurance + annualService + landlordWork; // Holding costs = Tax+Ins+Debt
+                const profit = marketValue - totalCosts;
+
+                if (marketValue > 0) totalEstMarketValue += marketValue;
+                if (profit !== 0) totalEstProfit += profit;
+            });
+
+            const format = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+            document.getElementById('dash-est-market-value').textContent = format(totalEstMarketValue);
+            document.getElementById('dash-est-profit').textContent = format(totalEstProfit);
+
+            // Re-render icons
+            if(window.lucide) lucide.createIcons();
+        }
+
         // --- Initialization ---
         function initApp() {
             // Listeners with Error Handling
@@ -1060,11 +1256,22 @@ window.toggleSidebar = function() {
                 }
 
                 setupFormattedInputs(); // Initial setup for any inputs present
+                
+                // Show Date
+                const dateEl = document.getElementById('current-date-display');
+                if(dateEl) {
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    dateEl.textContent = new Date().toLocaleDateString('en-US', options);
+                }
 
                 onSnapshot(collection(db, "gc_deals"), (snapshot) => {
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderPipeline();
                     populateDealSelects();
+                    // Dashboard Update
+                    if (!document.getElementById('view-dashboard').classList.contains('hidden')) {
+                        renderDashboard();
+                    }
                     // If detailed view is open, refresh it
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
                         openDealDetail(currentDealId);
@@ -1078,6 +1285,10 @@ window.toggleSidebar = function() {
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderTasks();
                     updateCalendarEvents();
+                    // Dashboard Update
+                    if (!document.getElementById('view-dashboard').classList.contains('hidden')) {
+                        renderDashboard();
+                    }
                     // If detailed view is open, refresh it
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) {
                         renderRelatedTasks(currentDealId);
