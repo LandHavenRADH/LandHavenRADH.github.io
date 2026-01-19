@@ -17,6 +17,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- FullCalendar -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -100,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.16.0 • Mobile Optimized
+            v2.17.0 • Mobile Optimized
         </div>
     </div>
 
@@ -127,12 +129,12 @@
                         <div class="text-2xl font-bold text-emerald-700" id="dash-active-leases">0</div>
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Pending Actions</div>
-                        <div class="text-2xl font-bold text-blue-700" id="dash-pending-tasks">0</div>
+                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Properties Sold</div>
+                        <div class="text-2xl font-bold text-slate-800" id="dash-sold-props">0</div>
                     </div>
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total Pipeline Vol.</div>
-                        <div class="text-2xl font-bold text-slate-800" id="dash-total-value">$0</div>
+                        <div class="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Pending Actions</div>
+                        <div class="text-2xl font-bold text-blue-700" id="dash-pending-tasks">0</div>
                     </div>
                 </div>
 
@@ -151,44 +153,33 @@
                         </div>
                     </div>
 
-                    <!-- Financial Summary -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                            <i data-lucide="trending-up" class="text-emerald-500" width="18"></i> Financial Overview
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <span class="block text-xs text-slate-500 uppercase">Est. Total Market Value</span>
+                    <!-- Financial Summary & Chart -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Top Level Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                <span class="block text-xs text-slate-500 uppercase">Est. Market Value (Current)</span>
                                 <span class="block text-xl font-bold text-slate-800 mt-1" id="dash-est-market-value">$0</span>
-                                <span class="text-xs text-slate-400">Based on deal calculator projections</span>
                             </div>
-                            <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                <span class="block text-xs text-slate-500 uppercase">Total Potential Profit</span>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                <span class="block text-xs text-emerald-600 uppercase font-bold">Total Potential Profit</span>
                                 <span class="block text-xl font-bold text-emerald-600 mt-1" id="dash-est-profit">$0</span>
+                                <span class="text-[10px] text-slate-400">Unrealized (Current Portfolio)</span>
                             </div>
-                            <div class="text-xs text-center text-slate-400 mt-2">
-                                *Figures derived from individual deal calculations.
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                <span class="block text-xs text-blue-600 uppercase font-bold">Realized Profit (Sold)</span>
+                                <span class="block text-xl font-bold text-blue-600 mt-1" id="dash-realized-profit">$0</span>
+                                <span class="text-[10px] text-slate-400">Closed & Sold</span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Quick Actions -->
-                    <div class="space-y-6">
-                        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white">
-                            <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
-                            <div class="space-y-3">
-                                <button onclick="openModal('contact-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
-                                    <div class="bg-emerald-500 p-1.5 rounded-md"><i data-lucide="user-plus" width="16" class="text-white"></i></div>
-                                    <span class="font-medium text-sm">Add New Contact</span>
-                                </button>
-                                <button onclick="openModal('task-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
-                                    <div class="bg-blue-500 p-1.5 rounded-md"><i data-lucide="check-square" width="16" class="text-white"></i></div>
-                                    <span class="font-medium text-sm">Add To-Do Item</span>
-                                </button>
-                                <button onclick="openModal('deal-modal')" class="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-left px-4 py-3 rounded-lg flex items-center gap-3 transition">
-                                    <div class="bg-purple-500 p-1.5 rounded-md"><i data-lucide="plus-circle" width="16" class="text-white"></i></div>
-                                    <span class="font-medium text-sm">Start New Deal</span>
-                                </button>
+                        <!-- Chart -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                <i data-lucide="bar-chart-3" class="text-indigo-500" width="18"></i> Financial Performance (Annual)
+                            </h3>
+                            <div class="h-64 w-full">
+                                <canvas id="financialChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -200,7 +191,7 @@
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
-                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease. <span class="text-emerald-600 text-xs">(Click a deal to view details)</span></p>
+                        <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease to sale. <span class="text-emerald-600 text-xs">(Click a deal to view details)</span></p>
                     </div>
                     <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Deal
@@ -536,9 +527,25 @@
                             <option value="dd">Due Diligence</option>
                             <option value="closing">Closing</option>
                             <option value="leased">Active Lease</option>
+                            <option value="sold">Properties Sold</option>
                         </select>
                     </div>
                 </div>
+                
+                <!-- Date Fields for Visuals -->
+                <div class="grid grid-cols-2 gap-4 border-t pt-4 border-slate-100">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Lease Start (Optional)</label>
+                        <input type="date" id="deal-commencement-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
+                        <span class="text-[10px] text-slate-400">For Active Deals</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Date (Optional)</label>
+                        <input type="date" id="deal-sale-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
+                        <span class="text-[10px] text-slate-400">For Sold Properties</span>
+                    </div>
+                </div>
+
                 <button type="submit" id="deal-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
             </form>
         </div>
@@ -771,6 +778,7 @@ window.toggleSidebar = function() {
         let contacts = [];
         let currentUserId = null;
         let calendar = null;
+        let financialChart = null; // Chart Instance
         let currentDealId = null; // Track currently open deal
         let currentlyLoadedDealForCalc = null; // Track loaded deal ID for calculator
 
@@ -1091,6 +1099,10 @@ window.toggleSidebar = function() {
             document.getElementById('deal-value').value = deal.value || '';
             document.getElementById('deal-stage').value = deal.stage || 'prospect';
             
+            // Load dates
+            document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
+            document.getElementById('deal-sale-date').value = deal.saleDate || '';
+            
             document.getElementById('deal-modal-title').textContent = 'Edit Deal';
             document.getElementById('deal-submit-btn').textContent = 'Update Deal';
             
@@ -1151,12 +1163,17 @@ window.toggleSidebar = function() {
             // 1. Metrics
             document.getElementById('dash-total-props').textContent = deals.length;
             document.getElementById('dash-active-leases').textContent = deals.filter(d => d.stage === 'leased').length;
+            document.getElementById('dash-sold-props').textContent = deals.filter(d => d.stage === 'sold').length;
             document.getElementById('dash-pending-tasks').textContent = tasks.filter(t => !t.completed).length;
             
-            const totalValue = deals.reduce((acc, d) => {
-                const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
-                return acc + val;
-            }, 0);
+            // Only sum value of active/pipeline properties, excluding sold? Or Total including sold?
+            // "Total Pipeline Vol" usually implies active deals. Let's filter out sold.
+            const totalValue = deals
+                .filter(d => d.stage !== 'sold')
+                .reduce((acc, d) => {
+                    const val = parseFloat(d.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
+                    return acc + val;
+                }, 0);
             
             document.getElementById('dash-total-value').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalValue);
 
@@ -1181,9 +1198,13 @@ window.toggleSidebar = function() {
                 `).join('');
             }
 
-            // 3. Financial Summary (Rough Estimates based on defaults if not set)
+            // 3. Financial Summary & Chart Prep
             let totalEstProfit = 0;
             let totalEstMarketValue = 0;
+            let totalRealizedProfit = 0;
+            
+            // Data buckets for chart: Year -> { realized: 0, potential: 0 }
+            const annualData = {};
 
             deals.forEach(deal => {
                 // Same logic as calculator but non-visual
@@ -1196,7 +1217,6 @@ window.toggleSidebar = function() {
                 const amortization = params.term || 300;
                 const dscr = params.dscr || 1.20;
                 const capRate = params.cap || 6.0;
-                const marketLtv = params.marketLtv || 70;
                 const taxes = params.taxes || 0;
                 const insurance = params.insurance || 0;
                 const landlordWork = params.landlordWork || 0;
@@ -1229,19 +1249,103 @@ window.toggleSidebar = function() {
                 let marketValue = 0;
                 if (capRate > 0) marketValue = rentalRate / (capRate / 100);
 
-                const totalCosts = purchasePrice + taxes + insurance + annualService + landlordWork; // Holding costs = Tax+Ins+Debt
+                const totalCosts = purchasePrice + taxes + insurance + annualService + landlordWork; 
                 const profit = marketValue - totalCosts;
 
-                if (marketValue > 0) totalEstMarketValue += marketValue;
-                if (profit !== 0) totalEstProfit += profit;
+                // --- Aggregation Logic ---
+                if (deal.stage === 'sold') {
+                    // Realized Profit
+                    if (profit !== 0) totalRealizedProfit += profit;
+                    
+                    // Chart Data (Use Sale Date)
+                    const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
+                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                    annualData[year].realized += profit;
+
+                } else {
+                    // Active / Pipeline
+                    if (marketValue > 0) totalEstMarketValue += marketValue;
+                    if (profit !== 0) totalEstProfit += profit;
+
+                    // Chart Data (Use Commencement Date, else Created At, else Current Year)
+                    let year;
+                    if(deal.commencementDate) {
+                        year = new Date(deal.commencementDate).getFullYear();
+                    } else if (deal.createdAt && deal.createdAt.toDate) {
+                        year = deal.createdAt.toDate().getFullYear();
+                    } else {
+                        year = new Date().getFullYear();
+                    }
+                    
+                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                    annualData[year].potential += profit;
+                }
             });
 
+            // Update DOM Numbers
             const format = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
             document.getElementById('dash-est-market-value').textContent = format(totalEstMarketValue);
             document.getElementById('dash-est-profit').textContent = format(totalEstProfit);
+            document.getElementById('dash-realized-profit').textContent = format(totalRealizedProfit);
 
             // Re-render icons
             if(window.lucide) lucide.createIcons();
+
+            // Render Chart
+            renderFinancialChart(annualData);
+        }
+
+        function renderFinancialChart(dataObj) {
+            const ctx = document.getElementById('financialChart');
+            if(!ctx) return;
+
+            // Sort years
+            const years = Object.keys(dataObj).sort();
+            const realizedData = years.map(y => dataObj[y].realized);
+            const potentialData = years.map(y => dataObj[y].potential);
+
+            // Destroy existing if exists to prevent overlapping
+            if(financialChart) {
+                financialChart.destroy();
+            }
+
+            financialChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'Realized Profit',
+                            data: realizedData,
+                            backgroundColor: '#2563eb', // Blue-600
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Potential Profit',
+                            data: potentialData,
+                            backgroundColor: '#10b981', // Emerald-500
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // --- Initialization ---
@@ -1265,7 +1369,11 @@ window.toggleSidebar = function() {
                 }
 
                 onSnapshot(collection(db, "gc_deals"), (snapshot) => {
-                    deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    deals = snapshot.docs.map(doc => {
+                        const d = doc.data();
+                        // Handle potential Firestore timestamp conversion for sorting/display
+                        return {id: doc.id, ...d};
+                    });
                     renderPipeline();
                     populateDealSelects();
                     // Dashboard Update
@@ -1701,7 +1809,8 @@ window.toggleSidebar = function() {
             { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
             { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
             { id: 'closing', label: 'Closing', color: 'border-purple-500' },
-            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' }
+            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' },
+            { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
         ];
 
         function renderPipeline() {
@@ -1964,6 +2073,8 @@ window.toggleSidebar = function() {
                     address: document.getElementById('deal-address').value,
                     value: document.getElementById('deal-value').value,
                     stage: document.getElementById('deal-stage').value,
+                    commencementDate: document.getElementById('deal-commencement-date').value,
+                    saleDate: document.getElementById('deal-sale-date').value
                 };
 
                 if (dealId) {
