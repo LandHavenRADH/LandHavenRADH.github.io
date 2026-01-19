@@ -617,18 +617,24 @@
     <script type="module">
 // --- SAFE ZONE: THIS MUST BE AT THE VERY TOP OF YOUR SCRIPT TAG ---
 window.toggleSidebar = function() {
+    // Only toggle sidebar if we are on mobile (less than 768px usually triggers md breakpoint)
+    // This prevents the desktop menu from disappearing when clicking items
+    if (window.innerWidth >= 768) {
+        return;
+    }
+
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) {
         alert("Sidebar element not found in the HTML!");
         return;
     }
     
+    // Toggle the class that handles the sliding
+    // We do NOT touch style.transform directly anymore, letting CSS classes do the work
     if (sidebar.classList.contains('-translate-x-full')) {
         sidebar.classList.remove('-translate-x-full');
-        sidebar.style.transform = "translateX(0)"; // Force move
     } else {
         sidebar.classList.add('-translate-x-full');
-        sidebar.style.transform = "translateX(-100%)"; // Force hide
     }
 };
 // --- END SAFE ZONE ---
@@ -1732,6 +1738,12 @@ auth.onAuthStateChanged((user) => {
 
 // Function to show/hide the sidebar on mobile
 function toggleSidebar() {
+    // Only toggle sidebar if we are on mobile (less than 768px usually triggers md breakpoint)
+    // This prevents the desktop menu from disappearing when clicking items
+    if (window.innerWidth >= 768) {
+        return;
+    }
+
     const sidebar = document.getElementById('sidebar');
     
     if (!sidebar) {
