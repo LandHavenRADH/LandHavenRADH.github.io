@@ -260,7 +260,7 @@
 
                              <!-- Holding Costs Section -->
                              <div class="pt-4 border-t border-slate-100">
-                                <h3 class="text-sm font-bold text-slate-800 mb-3">Holding Costs (Year 1)</h3>
+                                <h3 class="text-sm font-bold text-slate-800 mb-3">Holding Costs (Year 1) & Capex</h3>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-500 block mb-1.5">RE Taxes ($)</label>
@@ -270,6 +270,10 @@
                                         <label class="text-xs font-semibold text-slate-500 block mb-1.5">Insurance ($)</label>
                                         <input type="number" id="calc-insurance" value="0" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                     </div>
+                                </div>
+                                <div class="mt-3">
+                                     <label class="text-xs font-semibold text-slate-500 block mb-1.5">Landlord's Work ($)</label>
+                                     <input type="number" id="calc-landlord-work" value="0" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-slate-900 text-sm">
                                 </div>
                                 <div class="mt-3 flex justify-between items-center text-xs bg-amber-50 p-2 rounded border border-amber-100">
                                     <span class="text-amber-800 font-medium">Total Holding (Inc. Debt):</span>
@@ -334,10 +338,10 @@
                             </div>
 
                             <div class="flex justify-between items-start py-3 border-b border-slate-100 bg-slate-50 -mx-4 px-4">
-                                <span class="text-sm text-slate-600 font-medium pt-0.5">Required Net Rental Rate (NOI)</span>
+                                <span class="text-sm text-slate-600 font-medium pt-0.5">Required Net Rental Rate</span>
                                 <div class="text-right">
                                     <div class="text-base font-bold text-slate-900" id="res-rental-rate">$0</div>
-                                    <div class="text-xs text-slate-500 mt-0.5" id="res-dscr-label">Based on 1.20x DSCR</div>
+                                    <div class="text-xs text-slate-500 mt-0.5" id="res-dscr-label">Inc. Debt(DSCR) + Tax/Ins + 10% Work</div>
                                 </div>
                             </div>
 
@@ -388,12 +392,12 @@
                                     <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
                                         <div class="text-sm text-emerald-800 font-medium mb-1">Potential Profit</div>
                                         <div class="text-2xl font-bold text-emerald-700" id="res-profit">$0</div>
-                                        <div class="text-xs text-emerald-600 mt-1" id="res-profit-subtext">After Holding Costs</div>
+                                        <div class="text-xs text-emerald-600 mt-1" id="res-profit-subtext">After Holding & Work</div>
                                     </div>
                                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
                                         <div class="text-sm text-blue-800 font-medium mb-1">ROI (On Total Cost)</div>
                                         <div class="text-2xl font-bold text-blue-700" id="res-roi">0%</div>
-                                        <div class="text-xs text-blue-600 mt-1" id="res-roi-subtext">Basis: Price + Holding</div>
+                                        <div class="text-xs text-blue-600 mt-1" id="res-roi-subtext">Basis: Price + Holding + Work</div>
                                     </div>
                                 </div>
                             </div>
@@ -1173,6 +1177,7 @@ window.toggleSidebar = function() {
                 // Load Holding Costs
                 document.getElementById('calc-taxes').value = params.taxes || 0;
                 document.getElementById('calc-insurance').value = params.insurance || 0;
+                document.getElementById('calc-landlord-work').value = params.landlordWork || 0;
 
                 // Interest Only Checkbox
                 const ioCheckbox = document.getElementById('calc-interest-only');
@@ -1222,6 +1227,7 @@ window.toggleSidebar = function() {
             // New Holding Costs Inputs
             const taxes = parseFloat(document.getElementById('calc-taxes').value) || 0;
             const insurance = parseFloat(document.getElementById('calc-insurance').value) || 0;
+            const landlordWork = parseFloat(document.getElementById('calc-landlord-work').value) || 0;
 
             const interestOnly = document.getElementById('calc-interest-only').checked;
             const amortizationInput = document.getElementById('calc-term');
@@ -1265,7 +1271,8 @@ window.toggleSidebar = function() {
                     contractRent: contractRentValue,
                     interestOnly: interestOnly,
                     taxes: taxes,
-                    insurance: insurance
+                    insurance: insurance,
+                    landlordWork: landlordWork
                 };
                 
                 // Only save if values changed (Firestore handles this optimization usually, but good to be safe)
@@ -1299,12 +1306,13 @@ window.toggleSidebar = function() {
             }
             
             // Calculate Total Holding Costs (Taxes + Insurance + Year 1 Debt)
+            // Note: Landlord Work is NOT included here for the "Holding" display, but IS included in ROI.
             const totalHoldingCosts = taxes + insurance + annualService;
 
             // Determine which Rental Rate to use
-            // NOTE: Required Net Rent is driven by DEBT COVERAGE (Bank rules), not by Holding Costs (Sunk costs).
-            // However, the Investor Return (Profit/ROI) IS driven by Holding Costs.
-            let rentalRate = annualService * dscr; // Default (Required NOI)
+            // Logic: Required Rent = (Debt * DSCR) + Taxes + Insurance + (LandlordWork * 10%)
+            let rentalRate = (annualService * dscr) + taxes + insurance + (landlordWork * 0.10); 
+            
             let isUsingContractRent = false;
 
             if (useContractRent) {
@@ -1323,12 +1331,13 @@ window.toggleSidebar = function() {
                 impliedLtv = purchasePrice / marketValue;
             }
 
-            // Total Project Cost = Purchase Price + Holding Costs
-            const totalProjectCost = purchasePrice + totalHoldingCosts;
+            // Total Project Cost = Purchase Price + Holding Costs + Landlord Work
+            // Note: totalHoldingCosts already includes taxes + insurance + debt
+            const totalProjectCost = purchasePrice + totalHoldingCosts + landlordWork;
 
             const isFinancable = impliedLtv < (marketLtv / 100);
             
-            // Profit is Market Value minus Total Costs (Price + Holding)
+            // Profit is Market Value minus Total Costs
             const profit = marketValue - totalProjectCost;
             
             // ROI is Profit divided by Total Costs
@@ -1351,7 +1360,7 @@ window.toggleSidebar = function() {
                 document.getElementById('res-dscr-label').textContent = "Using Contract Rent (Override)";
                 document.getElementById('res-dscr-label').className = "text-xs text-blue-600 font-bold mt-0.5";
             } else {
-                document.getElementById('res-dscr-label').textContent = `Based on ${dscr}x DSCR`;
+                document.getElementById('res-dscr-label').textContent = `Inc. Debt(DSCR) + Tax/Ins + 10% Work`;
                 document.getElementById('res-dscr-label').className = "text-xs text-slate-500 mt-0.5";
             }
             
