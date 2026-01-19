@@ -102,7 +102,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.18.0 • Mobile Optimized
+            v2.19.0 • Mobile Optimized
         </div>
     </div>
 
@@ -517,7 +517,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Est. Value / Purchase ($)</label>
-                        <input type="text" id="deal-value" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1,200,000">
+                        <input type="text" inputmode="decimal" id="deal-value" data-type="currency" class="calc-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1,200,000">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Stage</label>
@@ -981,6 +981,7 @@ window.toggleSidebar = function() {
         // --- Helper: Centralized Financial Logic ---
         function calculateDealFinancials(deal) {
             const params = deal.calcParams || {};
+            // Robust parsing: Handle formatted strings (with commas/$) or raw numbers
             const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
             const salePrice = parseFloat(deal.salePrice?.toString().replace(/[^0-9.-]/g, '')) || 0;
 
@@ -1038,7 +1039,8 @@ window.toggleSidebar = function() {
                 annualService,
                 taxes,
                 insurance,
-                landlordWork
+                landlordWork,
+                contractRentValue // Return raw contract rent for pipeline display
             };
         }
 
@@ -1095,15 +1097,19 @@ window.toggleSidebar = function() {
             if (!deal) return;
 
             document.getElementById('deal-id').value = deal.id;
+            // Set value and trigger format
+            const valueEl = document.getElementById('deal-value');
+            valueEl.value = deal.value || '';
+            formatField(valueEl, 'currency');
+
             document.getElementById('deal-name').value = deal.name || '';
             document.getElementById('deal-address').value = deal.address || '';
-            document.getElementById('deal-value').value = deal.value || '';
             document.getElementById('deal-stage').value = deal.stage || 'prospect';
             
-            // Set Sale Price
+            // Set Sale Price and trigger format
             const salePriceEl = document.getElementById('deal-sale-price');
             salePriceEl.value = deal.salePrice || '';
-            formatField(salePriceEl, 'currency'); // Format immediately
+            formatField(salePriceEl, 'currency'); 
 
             // Load dates
             document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
@@ -1216,34 +1222,38 @@ window.toggleSidebar = function() {
                 // --- Aggregation Logic ---
                 if (deal.stage === 'sold') {
                     // Realized Profit = Sale Price - Total Costs
-                    const profit = fin.salePrice - fin.totalCosts;
-                    totalRealizedProfit += profit;
-                    
-                    // Chart Data (Use Sale Date)
-                    const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
-                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
-                    annualData[year].realized += profit;
+                    // Only count profit if we have valid Sale Price and Purchase Price
+                    if (fin.salePrice > 0 && fin.purchasePrice > 0) {
+                        const profit = fin.salePrice - fin.totalCosts;
+                        totalRealizedProfit += profit;
+                        
+                        // Chart Data (Use Sale Date)
+                        const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
+                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                        annualData[year].realized += profit;
+                    }
 
                 } else {
                     // Active / Pipeline
                     // Potential Profit = Market Value - Total Costs
-                    const profit = fin.marketValue - fin.totalCosts;
-                    
-                    if (fin.marketValue > 0) totalEstMarketValue += fin.marketValue;
-                    if (profit !== 0) totalEstProfit += profit;
+                    if (fin.marketValue > 0 && fin.purchasePrice > 0) {
+                        const profit = fin.marketValue - fin.totalCosts;
+                        totalEstMarketValue += fin.marketValue;
+                        totalEstProfit += profit;
 
-                    // Chart Data (Use Commencement Date, else Created At, else Current Year)
-                    let year;
-                    if(deal.commencementDate) {
-                        year = new Date(deal.commencementDate).getFullYear();
-                    } else if (deal.createdAt && deal.createdAt.toDate) {
-                        year = deal.createdAt.toDate().getFullYear();
-                    } else {
-                        year = new Date().getFullYear();
+                        // Chart Data (Use Commencement Date, else Created At, else Current Year)
+                        let year;
+                        if(deal.commencementDate) {
+                            year = new Date(deal.commencementDate).getFullYear();
+                        } else if (deal.createdAt && deal.createdAt.toDate) {
+                            year = deal.createdAt.toDate().getFullYear();
+                        } else {
+                            year = new Date().getFullYear();
+                        }
+                        
+                        if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
+                        annualData[year].potential += profit;
                     }
-                    
-                    if(!annualData[year]) annualData[year] = { realized: 0, potential: 0 };
-                    annualData[year].potential += profit;
                 }
             });
 
@@ -1304,7 +1314,8 @@ window.toggleSidebar = function() {
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    if(value >= 1000 || value <= -1000) return '$' + (value/1000) + 'k';
+                                    if(value >= 1000000 || value <= -1000000) return '$' + (value/1000000).toFixed(1) + 'M';
+                                    if(value >= 1000 || value <= -1000) return '$' + (value/1000).toFixed(0) + 'k';
                                     return '$' + value;
                                 }
                             }
