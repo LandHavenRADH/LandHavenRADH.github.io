@@ -54,18 +54,15 @@
 
                 <form id="config-form" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Firebase Configuration JSON</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Firebase Configuration</label>
                         <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-500 mb-2">
-                            Go to Firebase Console &gt; Project Settings &gt; General &gt; Your Apps. Copy the content inside <code>const firebaseConfig = { ... };</code>
+                            Paste the entire <code>const firebaseConfig = { ... };</code> block from the Firebase Console below. We will clean it automatically.
                         </div>
-                        <textarea id="config-input" rows="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-xs" placeholder='{
-  "apiKey": "AIzaSy...",
-  "authDomain": "...",
-  "projectId": "...",
-  "storageBucket": "...",
-  "messagingSenderId": "...",
-  "appId": "..."
-}' required></textarea>
+                        <textarea id="config-input" rows="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-xs" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "...",
+  ...
+};' required></textarea>
                     </div>
 
                     <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
@@ -117,7 +114,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100 flex justify-between items-center px-8">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure v2.23</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure v2.24</p>
                 <button onclick="resetConfig()" class="text-[10px] text-slate-400 hover:text-red-500 uppercase tracking-widest font-semibold">Reset Config</button>
             </div>
         </div>
@@ -871,11 +868,34 @@
         // Handle Config Submission
         document.getElementById('config-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const configStr = document.getElementById('config-input').value;
+            let configStr = document.getElementById('config-input').value.trim();
+            
             try {
-                // Validate JSON
-                const config = JSON.parse(configStr);
-                if (!config.apiKey || !config.authDomain) throw new Error("Missing required fields");
+                // CLEANUP LOGIC: Handle "const firebaseConfig = { ... }" paste
+                const firstBrace = configStr.indexOf('{');
+                const lastBrace = configStr.lastIndexOf('}');
+                
+                if (firstBrace !== -1 && lastBrace !== -1) {
+                    // Extract just the JSON object part
+                    configStr = configStr.substring(firstBrace, lastBrace + 1);
+                }
+
+                // Attempt to parse. If it fails, try to fix common JS object literal issues (unquoted keys)
+                let config;
+                try {
+                    config = JSON.parse(configStr);
+                } catch (jsonErr) {
+                    // Fix unquoted keys:  apiKey: "..."  ->  "apiKey": "..."
+                    let fixedStr = configStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":');
+                    // Fix single quoted values:  : 'value'  ->  : "value"
+                    fixedStr = fixedStr.replace(/:\s*'([^']*)'/g, ': "$1"');
+                    // Remove trailing commas:  , }  ->  }
+                    fixedStr = fixedStr.replace(/,\s*}/g, '}');
+                    
+                    config = JSON.parse(fixedStr);
+                }
+
+                if (!config.apiKey || !config.authDomain) throw new Error("Missing required fields (apiKey or authDomain)");
                 
                 // Save to Local Storage
                 localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -883,7 +903,7 @@
                 // Reload to apply
                 window.location.reload();
             } catch (error) {
-                alert("Invalid JSON format. Please copy the object exactly from Firebase Console.\n\n" + error.message);
+                alert("Unable to parse configuration. \n\nError: " + error.message + "\n\nPlease ensure you copy the configuration object from Firebase Console.");
             }
         });
 
