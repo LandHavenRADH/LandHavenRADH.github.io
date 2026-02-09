@@ -40,6 +40,42 @@
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
 
+    <!-- CONFIGURATION MODAL (Safe Setup) -->
+    <div id="config-modal" class="hidden fixed inset-0 z-[110] bg-slate-900 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-8">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 mb-3">
+                        <i data-lucide="settings" width="24"></i>
+                    </div>
+                    <h1 class="text-2xl font-extrabold text-slate-900">System Setup</h1>
+                    <p class="text-slate-500 text-sm mt-1 text-center">Connect your database securely. Your keys will be saved to your browser, not this file.</p>
+                </div>
+
+                <form id="config-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Firebase Configuration JSON</label>
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-500 mb-2">
+                            Go to Firebase Console &gt; Project Settings &gt; General &gt; Your Apps. Copy the content inside <code>const firebaseConfig = { ... };</code>
+                        </div>
+                        <textarea id="config-input" rows="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-xs" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}' required></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
+                        Save & Connect
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -80,8 +116,9 @@
                     </button>
                 </div>
             </div>
-            <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure Environment v2.22</p>
+            <div class="bg-slate-50 p-4 text-center border-t border-slate-100 flex justify-between items-center px-8">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure v2.23</p>
+                <button onclick="resetConfig()" class="text-[10px] text-slate-400 hover:text-red-500 uppercase tracking-widest font-semibold">Reset Config</button>
             </div>
         </div>
     </div>
@@ -785,28 +822,78 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- SECURE CONFIG: Works in Preview AND Local ---
-        let firebaseConfig;
-        if (typeof __firebase_config !== 'undefined') {
-            // Preview Environment
-            firebaseConfig = JSON.parse(__firebase_config);
-        } else {
-            // Local Development (PASTE YOUR KEYS HERE)
-            firebaseConfig = {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_PROJECT.firebaseapp.com",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_PROJECT.appspot.com",
-                messagingSenderId: "123456789",
-                appId: "1:123456789:web:abc12345"
-            };
-        }
-        
+        // --- DYNAMIC CONFIGURATION LOGIC ---
+        // This ensures secrets are never hardcoded in the file.
+        let app, auth, db;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const CONFIG_KEY = 'groundworks_firebase_config';
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        async function initSystem() {
+            let firebaseConfig;
+            const storedConfig = localStorage.getItem(CONFIG_KEY);
+
+            if (typeof __firebase_config !== 'undefined') {
+                // Scenario 1: Preview Environment (Secrets injected by system)
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else if (storedConfig) {
+                // Scenario 2: Local Environment (Secrets loaded from browser storage)
+                try {
+                    firebaseConfig = JSON.parse(storedConfig);
+                } catch (e) {
+                    console.error("Invalid stored config", e);
+                    localStorage.removeItem(CONFIG_KEY);
+                }
+            }
+
+            if (firebaseConfig) {
+                // We have config, initialize Firebase
+                try {
+                    app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    setupAuthListeners();
+                } catch (error) {
+                    console.error("Firebase Init Error:", error);
+                    alert("Configuration error. Please check your settings.");
+                    showConfigModal();
+                }
+            } else {
+                // No config found, show setup screen
+                showConfigModal();
+            }
+        }
+
+        function showConfigModal() {
+            document.getElementById('config-modal').classList.remove('hidden');
+            document.getElementById('login-overlay').classList.add('hidden-overlay');
+        }
+
+        // Handle Config Submission
+        document.getElementById('config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const configStr = document.getElementById('config-input').value;
+            try {
+                // Validate JSON
+                const config = JSON.parse(configStr);
+                if (!config.apiKey || !config.authDomain) throw new Error("Missing required fields");
+                
+                // Save to Local Storage
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+                
+                // Reload to apply
+                window.location.reload();
+            } catch (error) {
+                alert("Invalid JSON format. Please copy the object exactly from Firebase Console.\n\n" + error.message);
+            }
+        });
+
+        // Handle Config Reset
+        window.resetConfig = () => {
+            if(confirm("Are you sure? This will disconnect the database from this browser.")) {
+                localStorage.removeItem(CONFIG_KEY);
+                window.location.reload();
+            }
+        };
 
         // --- State ---
         let deals = [];
@@ -823,78 +910,74 @@
         const loginError = document.getElementById('login-error');
         const loginErrorText = document.getElementById('login-error-text');
 
-        // 1. Initial Check (Runs on load)
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // If in Preview Environment with a token, use it
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } 
-            // Else: Do nothing. Wait for user to interact with login form.
-        };
-        initAuth();
+        function setupAuthListeners() {
+            // 1. Initial Token Check
+            const initAuth = async () => {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } 
+            };
+            initAuth();
 
-        // 2. Auth Listener (Controls UI)
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Logged In
-                currentUserId = user.uid;
-                loginOverlay.classList.add('hidden-overlay'); // Hide login
-                initApp(user);
-            } else {
-                // Logged Out
-                currentUserId = null;
-                loginOverlay.classList.remove('hidden-overlay'); // Show login
-            }
-        });
+            // 2. Auth State Listener
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    loginOverlay.classList.add('hidden-overlay');
+                    initApp(user);
+                } else {
+                    currentUserId = null;
+                    loginOverlay.classList.remove('hidden-overlay');
+                }
+            });
 
-        // 3. Login Form Handler
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            const originalText = btn.innerText;
-            btn.innerText = 'Signing In...';
-            btn.disabled = true;
-            loginError.classList.add('hidden');
+            // 3. Login Form Handler
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btn-login');
+                const originalText = btn.innerText;
+                btn.innerText = 'Signing In...';
+                btn.disabled = true;
+                loginError.classList.add('hidden');
 
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
 
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // Success is handled by onAuthStateChanged
-            } catch (error) {
-                console.error("Login Failed:", error);
-                
-                let msg = "Login failed.";
-                if (error.code === 'auth/invalid-email') msg = "Invalid email address format.";
-                else if (error.code === 'auth/user-not-found') msg = "No user found with this email.";
-                else if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
-                else if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Try again later.";
-                else if (error.message) msg = error.message;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    console.error("Login Failed:", error);
+                    let msg = "Login failed.";
+                    if (error.code === 'auth/invalid-email') msg = "Invalid email address format.";
+                    else if (error.code === 'auth/user-not-found') msg = "No user found with this email.";
+                    else if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
+                    else if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Try again later.";
+                    else if (error.message) msg = error.message;
 
-                loginErrorText.textContent = msg;
-                loginError.classList.remove('hidden');
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        });
+                    loginErrorText.textContent = msg;
+                    loginError.classList.remove('hidden');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            });
 
-        // 4. Guest Login Handler
-        document.getElementById('btn-guest').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-guest');
-            btn.innerHTML = 'Accessing Demo...';
-            try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Guest login error:", error);
-                alert("Demo access failed.");
-                btn.innerHTML = 'Enter as Guest (Demo) <i data-lucide="arrow-right" width="16"></i>';
-            }
-        });
+            // 4. Guest Login Handler
+            document.getElementById('btn-guest').addEventListener('click', async () => {
+                const btn = document.getElementById('btn-guest');
+                btn.innerHTML = 'Accessing Demo...';
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Guest login error:", error);
+                    alert("Demo access failed. Check console.");
+                    btn.innerHTML = 'Enter as Guest (Demo) <i data-lucide="arrow-right" width="16"></i>';
+                }
+            });
 
-        document.getElementById('logout-button').addEventListener('click', () => {
-             signOut(auth).then(() => window.location.reload());
-        });
+            document.getElementById('logout-button').addEventListener('click', () => {
+                signOut(auth).then(() => window.location.reload());
+            });
+        }
 
         // --- Secure Collection Path Helper ---
         const getCollectionRef = (colName) => {
@@ -1780,6 +1863,9 @@
             } catch (error) { console.error(error); alert("Failed to save contact."); } 
             finally { btn.innerText = originalText; btn.disabled = false; }
         });
+        
+        // Start System
+        initSystem();
     </script>
 </body>
 </html>
