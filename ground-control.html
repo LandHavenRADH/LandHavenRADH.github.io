@@ -32,9 +32,59 @@
         .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; }
         .fc-button-primary:hover { background-color: #334155 !important; border-color: #334155 !important; }
         .fc-button-active { background-color: #059669 !important; border-color: #059669 !important; }
+        
+        /* Login Overlay Transition */
+        #login-overlay { transition: opacity 0.3s ease-in-out, visibility 0.3s; }
+        #login-overlay.hidden-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-8">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
+                        <i data-lucide="building" width="24"></i>
+                    </div>
+                    <h1 class="text-2xl font-extrabold text-slate-900">GroundWorks</h1>
+                    <p class="text-slate-500 text-sm mt-1">Retail Lease Management System</p>
+                </div>
+
+                <form id="login-form" class="space-y-4">
+                    <div id="login-error" class="hidden bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 flex items-start gap-2">
+                        <i data-lucide="alert-circle" width="16" class="mt-0.5 shrink-0"></i>
+                        <span id="login-error-text">Error message</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+                        <input type="email" id="login-email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="name@company.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+                        <input type="password" id="login-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="••••••••" required>
+                    </div>
+
+                    <button type="submit" id="btn-login" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-400 mb-4">Don't have an account? Ask your administrator.</p>
+                    <button id="btn-guest" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center justify-center gap-2 mx-auto py-2 px-4 rounded-lg hover:bg-emerald-50 transition-colors">
+                        Enter as Guest (Demo) <i data-lucide="arrow-right" width="16"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure Environment v2.22</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Global Header -->
    <header class="bg-white/80 backdrop-blur-lg z-40 shadow-sm border-b border-slate-200 shrink-0">
@@ -732,13 +782,26 @@
         };
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- SECURITY: USE ENVIRONMENT VARIABLES (No Hardcoded Keys) ---
-        // For production (outside this tool), use process.env or similar build-time injection.
-        // In this preview, we use the injected configuration object.
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // --- SECURE CONFIG: Works in Preview AND Local ---
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            // Preview Environment
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // Local Development (PASTE YOUR KEYS HERE)
+            firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_PROJECT.firebaseapp.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:abc12345"
+            };
+        }
+        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const app = initializeApp(firebaseConfig);
@@ -755,32 +818,77 @@
         let currentDealId = null; 
         let currentlyLoadedDealForCalc = null;
 
-        // --- Auth with Secure Token Flow ---
+        // --- Authentication Flow ---
+        const loginOverlay = document.getElementById('login-overlay');
+        const loginError = document.getElementById('login-error');
+        const loginErrorText = document.getElementById('login-error-text');
+
+        // 1. Initial Check (Runs on load)
         const initAuth = async () => {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                // If in Preview Environment with a token, use it
                 await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            } 
+            // Else: Do nothing. Wait for user to interact with login form.
         };
         initAuth();
 
+        // 2. Auth Listener (Controls UI)
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                // Logged In
                 currentUserId = user.uid;
+                loginOverlay.classList.add('hidden-overlay'); // Hide login
                 initApp(user);
+            } else {
+                // Logged Out
+                currentUserId = null;
+                loginOverlay.classList.remove('hidden-overlay'); // Show login
             }
-            // Note: No redirection to login.html as this is a single-file app.
-            // Auth is handled transparently in this environment.
+        });
+
+        // 3. Login Form Handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            const originalText = btn.innerText;
+            btn.innerText = 'Signing In...';
+            btn.disabled = true;
+            loginError.classList.add('hidden');
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Success is handled by onAuthStateChanged
+            } catch (error) {
+                console.error("Login Failed:", error);
+                loginErrorText.textContent = "Invalid email or password.";
+                loginError.classList.remove('hidden');
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 4. Guest Login Handler
+        document.getElementById('btn-guest').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-guest');
+            btn.innerHTML = 'Accessing Demo...';
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Guest login error:", error);
+                alert("Demo access failed.");
+                btn.innerHTML = 'Enter as Guest (Demo) <i data-lucide="arrow-right" width="16"></i>';
+            }
         });
 
         document.getElementById('logout-button').addEventListener('click', () => {
-             // In a single file app, sign out usually just resets state or reloads
              signOut(auth).then(() => window.location.reload());
         });
 
         // --- Secure Collection Path Helper ---
-        // Uses the mandated isolated path structure: /artifacts/{appId}/public/data/{collection}
         const getCollectionRef = (colName) => {
              return collection(db, 'artifacts', appId, 'public', 'data', colName);
         };
@@ -791,7 +899,6 @@
                 if (window.lucide) lucide.createIcons();
                 setupFormattedInputs(); 
                 
-                // Show Date
                 const dateEl = document.getElementById('current-date-display');
                 if(dateEl) {
                     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
