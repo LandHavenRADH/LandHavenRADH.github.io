@@ -36,46 +36,9 @@
         /* Login Overlay Transition */
         #login-overlay { transition: opacity 0.5s ease-in-out, visibility 0.5s; }
         #login-overlay.hidden-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
-
-        /* Diagnostics Panel */
-        #diagnostics-panel {
-            font-family: monospace;
-            font-size: 11px;
-            line-height: 1.4;
-        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
-
-    <!-- DIAGNOSTICS PANEL (For Debugging) -->
-    <div id="diagnostics-panel" class="fixed bottom-4 right-4 z-[200] bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xl w-80 max-h-64 overflow-y-auto hidden md:block opacity-90 hover:opacity-100 transition-opacity">
-        <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
-            <span class="font-bold text-emerald-400">System Diagnostics</span>
-            <button onclick="document.getElementById('diagnostics-panel').style.display='none'" class="text-slate-500 hover:text-white">&times;</button>
-        </div>
-        <div id="log-container" class="space-y-1">
-            <div id="init-msg" class="text-slate-500">Waiting for system init...</div>
-        </div>
-    </div>
-
-    <!-- GLOBAL ERROR HANDLER (Must be before main script) -->
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            var container = document.getElementById('log-container');
-            var initMsg = document.getElementById('init-msg');
-            if(initMsg) initMsg.style.display = 'none';
-            
-            var div = document.createElement('div');
-            div.style.color = '#ef4444'; // Red-500
-            div.style.fontWeight = 'bold';
-            div.style.borderTop = '1px solid #7f1d1d';
-            div.style.paddingTop = '4px';
-            div.style.marginTop = '4px';
-            div.innerText = "CRITICAL ERROR: " + msg + " (Line " + line + ")";
-            if(container) container.appendChild(div);
-            return false;
-        };
-    </script>
 
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
@@ -1118,17 +1081,10 @@
 
         // --- Diagnostics Functions ---
         function logDiagnostic(message, type = 'info') {
-            const container = document.getElementById('log-container');
-            const initMsg = document.getElementById('init-msg');
-            if(initMsg) initMsg.style.display = 'none';
-
-            if (!container) return;
-            
-            const div = document.createElement('div');
-            div.className = type === 'error' ? 'text-red-400 font-bold' : (type === 'success' ? 'text-emerald-400' : 'text-slate-400');
-            div.innerHTML = `<span class="opacity-50">[${new Date().toLocaleTimeString().split(' ')[0]}]</span> ${message}`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const logMsg = `[${time}] ${message}`;
+            if (type === 'error') console.error(logMsg);
+            else console.log(logMsg);
         }
 
         // --- Authentication Flow ---
