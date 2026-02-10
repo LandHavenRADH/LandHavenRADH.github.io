@@ -40,39 +40,6 @@
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
 
-    <!-- CONFIGURATION MODAL (Safe Setup) -->
-    <div id="config-modal" class="hidden fixed inset-0 z-[110] bg-slate-900 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
-            <div class="p-8">
-                <div class="flex flex-col items-center mb-6">
-                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 mb-3">
-                        <i data-lucide="settings" width="24"></i>
-                    </div>
-                    <h1 class="text-2xl font-extrabold text-slate-900">System Setup</h1>
-                    <p class="text-slate-500 text-sm mt-1 text-center">Connect your database securely. Your keys will be saved to your browser, not this file.</p>
-                </div>
-
-                <form id="config-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Firebase Configuration</label>
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-500 mb-2">
-                            Paste the entire <code>const firebaseConfig = { ... };</code> block from the Firebase Console below.
-                        </div>
-                        <textarea id="config-input" rows="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-xs" placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "...",
-  ...
-};' required></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
-                        Save & Connect
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -113,9 +80,8 @@
                     </button>
                 </div>
             </div>
-            <div class="bg-slate-50 p-4 text-center border-t border-slate-100 flex justify-between items-center px-8">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Secure v2.25</p>
-                <button onclick="resetConfig()" class="text-[10px] text-slate-400 hover:text-red-500 uppercase tracking-widest font-semibold">Reset Config</button>
+            <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.27 • Hardcoded Config</p>
             </div>
         </div>
     </div>
@@ -180,7 +146,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.25.0 • Secured Environment
+            v2.27.0
         </div>
     </div>
 
@@ -819,101 +785,44 @@
         import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- DYNAMIC CONFIGURATION LOGIC ---
-        // This ensures secrets are never hardcoded in the file.
-        let app, auth, db;
+        // --- HARDCODED CREDENTIALS (SAFE ONLY WITH HTTP REFERRER RESTRICTIONS) ---
+        // 1. Go to Google Cloud Console > Credentials.
+        // 2. Edit API Key > Application restrictions > HTTP referrers (websites).
+        // 3. Add: https://landhavenradh.github.io/* and http://localhost:*
+        
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            // Preview Environment
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // Local / Production Environment
+            firebaseConfig = {
+                // PASTE YOUR NEW API KEYS HERE
+                apiKey: "AIzaSyAFvNkM8_MZ1n13EbAG3QzvTj50zZDcpqE",
+                authDomain: "restaurant-groundworks-db.firebaseapp.com",
+                projectId: "restaurant-groundworks-db",
+                storageBucket: "restaurant-groundworks-db.firebasestorage.app",
+                messagingSenderId: "391704584139",
+                appId: "1:391704584139:web:bee1a86cde8411acf8a04e",
+                measurementId: "G-J6FR64HDJP"
+            };
+        }
+        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const CONFIG_KEY = 'groundworks_firebase_config';
 
-        async function initSystem() {
-            let firebaseConfig;
-            const storedConfig = localStorage.getItem(CONFIG_KEY);
-
-            if (typeof __firebase_config !== 'undefined') {
-                // Scenario 1: Preview Environment (Secrets injected by system)
-                firebaseConfig = JSON.parse(__firebase_config);
-            } else if (storedConfig) {
-                // Scenario 2: Local Environment (Secrets loaded from browser storage)
-                try {
-                    firebaseConfig = JSON.parse(storedConfig);
-                } catch (e) {
-                    console.error("Invalid stored config", e);
-                    localStorage.removeItem(CONFIG_KEY);
-                }
-            }
-
-            if (firebaseConfig) {
-                // We have config, initialize Firebase
-                try {
-                    app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    setupAuthListeners();
-                } catch (error) {
-                    console.error("Firebase Init Error:", error);
-                    alert("Configuration error. Please check your settings.");
-                    showConfigModal();
-                }
+        // Initialize Firebase
+        let app, auth, db;
+        try {
+            if (!firebaseConfig.apiKey) {
+                console.warn("Firebase Config missing. Waiting for keys.");
             } else {
-                // No config found, show setup screen
-                showConfigModal();
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
             }
+        } catch (e) {
+            console.error("Firebase Init Error", e);
         }
-
-        function showConfigModal() {
-            document.getElementById('config-modal').classList.remove('hidden');
-            document.getElementById('login-overlay').classList.add('hidden-overlay');
-        }
-
-        // Handle Config Submission
-        document.getElementById('config-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            let configStr = document.getElementById('config-input').value.trim();
-            
-            try {
-                // 1. Extract the Object Literal part
-                const firstBrace = configStr.indexOf('{');
-                const lastBrace = configStr.lastIndexOf('}');
-                
-                if (firstBrace !== -1 && lastBrace !== -1) {
-                    // Extract just the JSON object part
-                    configStr = configStr.substring(firstBrace, lastBrace + 1);
-                }
-
-                let config;
-                // Strategy A: Try Strict JSON first
-                try {
-                    config = JSON.parse(configStr);
-                } catch (e) {
-                    // Strategy B: Try Relaxed JSON (JavaScript Object) via Function constructor
-                    // This handles unquoted keys, single quotes, and trailing commas natively.
-                    // We treat the string as a return statement.
-                    const relaxedJsonParser = new Function("return " + configStr);
-                    config = relaxedJsonParser();
-                }
-
-                // Validation
-                if (!config || typeof config !== 'object') throw new Error("Parsed content is not an object");
-                if (!config.apiKey || !config.authDomain) throw new Error("Missing required fields (apiKey or authDomain)");
-                
-                // Save to Local Storage
-                localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-                
-                // Reload to apply
-                window.location.reload();
-            } catch (error) {
-                console.error("Config Parsing Error:", error);
-                alert("Configuration Error:\n" + error.message + "\n\nTip: Ensure you copied the entire 'const firebaseConfig = { ... }' block.");
-            }
-        });
-
-        // Handle Config Reset
-        window.resetConfig = () => {
-            if(confirm("Are you sure? This will disconnect the database from this browser.")) {
-                localStorage.removeItem(CONFIG_KEY);
-                window.location.reload();
-            }
-        };
 
         // --- State ---
         let deals = [];
@@ -931,6 +840,8 @@
         const loginErrorText = document.getElementById('login-error-text');
 
         function setupAuthListeners() {
+            if (!auth) return;
+
             // 1. Initial Token Check
             const initAuth = async () => {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -972,6 +883,7 @@
                     else if (error.code === 'auth/user-not-found') msg = "No user found with this email.";
                     else if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
                     else if (error.code === 'auth/too-many-requests') msg = "Too many attempts. Try again later.";
+                    else if (error.message && error.message.includes('requests-from-referer')) msg = "Domain Not Authorized. Go to Google Cloud Console > APIs & Services > Credentials > API Key > Website restrictions and add: https://landhavenradh.github.io/*";
                     else if (error.message) msg = error.message;
 
                     loginErrorText.textContent = msg;
@@ -1885,7 +1797,7 @@
         });
         
         // Start System
-        initSystem();
+        setupAuthListeners();
     </script>
 </body>
 </html>
