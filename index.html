@@ -1235,6 +1235,14 @@
              }
         };
 
+        const getDocRef = (colName, docId) => {
+            if (typeof __app_id !== 'undefined') {
+                return doc(db, 'artifacts', __app_id, 'public', 'data', colName, docId);
+            } else {
+                return doc(db, colName, docId);
+            }
+        };
+
         // --- Initialization ---
         function initApp(user) {
             try {
@@ -1573,7 +1581,7 @@
                     contractRent: contractRentValue, interestOnly: interestOnly,
                     taxes: taxes, insurance: insurance, landlordWork: landlordWork
                 };
-                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+                updateDoc(getDocRef('gc_deals', currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
             }
 
             const loanAmount = purchasePrice * (purchaseLtv / 100);
@@ -1773,10 +1781,10 @@
                     updatedAt: serverTimestamp()
                 };
 
-                if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id), dealData);
+                if (id) await updateDoc(getDocRef('gc_deals', id), dealData);
                 else {
                     dealData.createdAt = serverTimestamp();
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_deals'), dealData);
+                    await addDoc(getCollectionRef('gc_deals'), dealData);
                 }
                 closeModal('deal-modal');
                 // Force switch to pipeline to see new deal
@@ -1793,7 +1801,7 @@
         window.deleteDeal = async (id) => {
             if (confirm('Delete this deal? This action cannot be undone.')) {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id));
+                    await deleteDoc(getDocRef('gc_deals', id));
                 } catch (error) {
                     console.error("Delete error:", error);
                     alert("Error deleting deal.");
@@ -1820,9 +1828,9 @@
                 };
                 if (id) {
                      delete taskData.completed; // Don't reset completed status on edit
-                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id), taskData);
+                     await updateDoc(getDocRef('gc_tasks', id), taskData);
                 } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_tasks'), taskData);
+                    await addDoc(getCollectionRef('gc_tasks'), taskData);
                 }
                 closeModal('task-modal');
                 switchView('tasks');
@@ -1835,8 +1843,8 @@
             }
         });
 
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id));
+        window.toggleTask = async (id, status) => await updateDoc(getDocRef('gc_tasks', id), { completed: status });
+        window.deleteTask = async (id) => await deleteDoc(getDocRef('gc_tasks', id));
 
         // CONTACTS
         document.getElementById('contact-form').addEventListener('submit', async (e) => {
@@ -1862,8 +1870,8 @@
                     userId: currentUserId
                 };
 
-                if (id) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id), contactData);
-                else await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_contacts'), contactData);
+                if (id) await updateDoc(getDocRef('gc_contacts', id), contactData);
+                else await addDoc(getCollectionRef('gc_contacts'), contactData);
                 
                 closeModal('contact-modal');
                 switchView('contacts');
@@ -1876,12 +1884,8 @@
             }
         });
 
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id)); };
+        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(getDocRef('gc_contacts', id)); };
         window.moveStage = async (id, stage) => {
-             const getDocRef = (colName, docId) => {
-                 if (typeof __app_id !== 'undefined') return doc(db, 'artifacts', __app_id, 'public', 'data', colName, docId);
-                 else return doc(db, colName, docId);
-             }
              await updateDoc(getDocRef("gc_deals", id), { stage });
         };
 
