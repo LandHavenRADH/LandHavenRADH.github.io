@@ -1758,6 +1758,8 @@
             document.getElementById('contact-submit-btn').textContent = 'Update Contact';
             document.getElementById('contact-modal').classList.remove('hidden');
         }
+
+        window.filterContacts = () => renderContacts();
         
         // --- Persistence Logic ---
         
