@@ -72,7 +72,7 @@
             div.style.paddingTop = '4px';
             div.style.marginTop = '4px';
             div.innerText = "CRITICAL ERROR: " + msg + " (Line " + line + ")";
-            container.appendChild(div);
+            if(container) container.appendChild(div);
             return false;
         };
     </script>
@@ -118,7 +118,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.36 • Fix Missing Func</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.37 • Complete</p>
             </div>
         </div>
     </div>
@@ -183,7 +183,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.36.0
+            v2.37.0
         </div>
     </div>
 
@@ -362,7 +362,7 @@
                     </div>
                     <div class="flex gap-2 items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200">
                          <span class="text-sm text-slate-600 font-medium">Load Deal:</span>
-                         <select id="calc-deal-select" class="p-2 border rounded-lg text-sm min-w-[200px] outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50" onchange="loadDealToCalculator(this.value)">
+                         <select id="calc-deal-select" class="p-2 border rounded-lg text-sm min-w-[200px] outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50" onchange="window.loadDealToCalculator(this.value)">
                             <option value="">-- Select a Deal --</option>
                          </select>
                     </div>
@@ -627,91 +627,6 @@
 
                 <button type="submit" id="deal-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
             </form>
-        </div>
-    </div>
-
-    <!-- Deal Detail Modal -->
-    <div id="deal-detail-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center p-6 border-b bg-slate-50 shrink-0">
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800" id="detail-deal-name">Deal Name</h3>
-                    <p class="text-slate-500 text-sm flex items-center gap-2 mt-1">
-                        <i data-lucide="map-pin" width="14"></i> <span id="detail-deal-address">Address</span>
-                    </p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="editCurrentDeal()" class="text-slate-500 hover:text-emerald-600 font-medium text-sm flex items-center gap-1">
-                        <i data-lucide="edit-2" width="14"></i> Edit Deal
-                    </button>
-                    <button onclick="closeModal('deal-detail-modal')" class="text-slate-400 hover:text-red-500 ml-4">
-                        <i data-lucide="x" width="24"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
-                
-                <!-- Rent Calculator Summary -->
-                <div id="deal-calc-summary" class="bg-white p-4 rounded-lg border border-blue-100 shadow-sm mb-6 hidden">
-                    <h4 class="font-bold text-slate-700 flex items-center gap-2 mb-3">
-                        <i data-lucide="trending-up" class="text-blue-600" width="18"></i> Financial Snapshot
-                    </h4>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                        <div>
-                            <span class="block text-slate-500 text-xs" id="summary-rent-label">Required Rent (NOI)</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-rent">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">Projected Value</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-value">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">Potential Profit</span>
-                            <span class="block font-bold text-emerald-600 text-lg" id="summary-profit">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">ROI (On Price)</span>
-                            <span class="block font-bold text-blue-600 text-lg" id="summary-roi">0%</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">100% Finance?</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-finance">--</span>
-                        </div>
-                    </div>
-                    <div class="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
-                        <span id="summary-assumptions-text">Based on standard assumptions</span>
-                        <a href="#" onclick="closeModal('deal-detail-modal'); switchView('calculator'); loadDealToCalculator(currentDealId);" class="text-blue-600 hover:underline">Open in Calculator</a>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
-                                <i data-lucide="calendar" class="text-emerald-600" width="18"></i> Related Tasks
-                            </h4>
-                            <button onclick="openModal('task-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Task</button>
-                        </div>
-                        <div id="detail-tasks-list" class="space-y-2"></div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
-                                <i data-lucide="users" class="text-emerald-600" width="18"></i> Related Contacts
-                            </h4>
-                            <button onclick="openModal('contact-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Contact</button>
-                        </div>
-                        <div id="detail-contacts-list" class="space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t bg-white flex justify-between items-center text-sm text-slate-500">
-                <span id="detail-deal-value" class="font-mono font-medium text-emerald-600"></span>
-                <span id="detail-deal-stage" class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold uppercase"></span>
-            </div>
         </div>
     </div>
 
