@@ -48,7 +48,7 @@
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
 
     <!-- DIAGNOSTICS PANEL (For Debugging) -->
-    <div id="diagnostics-panel" class="fixed bottom-4 right-4 z-[200] bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xl w-80 max-h-64 overflow-y-auto hidden md:block opacity-90 hover:opacity-100 transition-opacity">
+    <div id="diagnostics-panel" class="fixed bottom-4 right-4 z-[200] bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xl w-80 max-h-64 overflow-y-auto opacity-90 hover:opacity-100 transition-opacity">
         <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
             <span class="font-bold text-emerald-400">System Diagnostics</span>
             <button onclick="document.getElementById('diagnostics-panel').style.display='none'" class="text-slate-500 hover:text-white">&times;</button>
@@ -118,7 +118,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.35 • Stable Release</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.36 • Fix Missing Func</p>
             </div>
         </div>
     </div>
@@ -183,7 +183,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.35.0
+            v2.36.0
         </div>
     </div>
 
@@ -930,6 +930,27 @@
             calendar.render();
         }
 
+        // Add the MISSING setup function here
+        function setupFormattedInputs() {
+            const inputs = document.querySelectorAll('.calc-input');
+            inputs.forEach(el => {
+                const type = el.getAttribute('data-type');
+                if (!type) return;
+                if (el.value) formatField(el, type);
+                el.addEventListener('focus', () => {
+                    el.value = el.value.replace(/[^0-9.-]/g, '');
+                    el.select();
+                });
+                el.addEventListener('blur', () => {
+                    formatField(el, type);
+                    if(el.id.startsWith('calc-')) window.calculateRent(); 
+                });
+                el.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') el.blur();
+                });
+            });
+        }
+
         // --- Render Functions (Hoisted) ---
         const STAGES = [
             { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
@@ -1558,7 +1579,8 @@
                 if (r > 0 && n > 0 && loanAmount > 0) {
                     const pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
                     annualService = pmt * 12;
-                } else if (n > 0 && loanAmount > 0) annualService = (loanAmount / n) * 12;
+                } else if (n > 0 && loanAmount > 0) pmt = loanAmount / n;
+                annualService = pmt * 12;
             }
 
             const totalHoldingCosts = taxes + insurance + annualService;
@@ -1618,127 +1640,118 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.loadDealToCalculator = (dealId) => {
-            if (!dealId) {
-                document.getElementById('calc-price').value = 500000;
-                currentlyLoadedDealForCalc = null;
-                formatField(document.getElementById('calc-price'), 'currency');
-                window.calculateRent();
-                return;
+        // --- Helpers & CRUD ---
+        function populateDealSelects() {
+            const taskOptions = `<option value="">-- General / Unassigned --</option>` + deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            const taskSelect = document.getElementById('task-deal-id');
+            if(taskSelect) taskSelect.innerHTML = taskOptions;
+
+            const contactContainer = document.getElementById('contact-deal-container');
+            if(contactContainer) {
+                if (deals.length === 0) contactContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No deals available.</div>';
+                else contactContainer.innerHTML = deals.map(d => `<div class="flex items-center gap-2"><input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"><label for="contact-deal-${d.id}" class="text-sm text-slate-700 cursor-pointer select-none truncate">${d.name}</label></div>`).join('');
             }
-            const deal = deals.find(d => d.id === dealId);
-            currentlyLoadedDealForCalc = dealId;
-            const selectElement = document.getElementById('calc-deal-select');
-            if (selectElement) selectElement.value = dealId;
-
-            if (deal) {
-                if (deal.value) {
-                    const priceEl = document.getElementById('calc-price');
-                    priceEl.value = parseFloat(deal.value.toString().replace(/,/g, ''));
-                    formatField(priceEl, 'currency');
-                }
-                const params = deal.calcParams || {};
-                const setVal = (id, val, type) => {
-                    const el = document.getElementById(id);
-                    el.value = val !== undefined ? val : 0;
-                    if(type) formatField(el, type);
-                };
-                setVal('calc-ltv', params.ltv || 100, 'percent');
-                setVal('calc-rate', params.rate || 6.0, 'percent');
-                document.getElementById('calc-term').value = params.term || 300;
-                document.getElementById('calc-dscr').value = params.dscr || 1.20;
-                setVal('calc-cap', params.cap || 6.0, 'percent');
-                setVal('calc-market-ltv', params.marketLtv || 70, 'percent');
-                setVal('calc-taxes', params.taxes || 0, 'currency');
-                setVal('calc-insurance', params.insurance || 0, 'currency');
-                setVal('calc-landlord-work', params.landlordWork || 0, 'currency');
-
-                document.getElementById('calc-interest-only').checked = params.interestOnly || false;
-                document.getElementById('calc-use-contract').checked = params.useContractRent || false;
-                
-                const contractInput = document.getElementById('calc-contract-rent');
-                contractInput.value = params.contractRent || 0;
-                formatField(contractInput, 'currency');
-                
-                window.calculateRent();
+            const calcSelect = document.getElementById('calc-deal-select');
+            if (calcSelect) {
+                const currentValue = calcSelect.value;
+                const calcOptions = `<option value="">-- Select a Deal --</option>` + deals.map(d => `<option value="${d.id}" ${d.id === currentValue ? 'selected' : ''}>${d.name}</option>`).join('');
+                calcSelect.innerHTML = calcOptions;
+                if (currentlyLoadedDealForCalc) calcSelect.value = currentlyLoadedDealForCalc;
             }
-        };
-
-        // --- Editing ---
-        window.editDeal = (id) => {
-            const deal = deals.find(d => d.id === id);
-            if (!deal) return;
-            document.getElementById('deal-id').value = deal.id;
-            const valueEl = document.getElementById('deal-value'); valueEl.value = deal.value || ''; formatField(valueEl, 'currency');
-            document.getElementById('deal-name').value = deal.name || '';
-            document.getElementById('deal-address').value = deal.address || '';
-            document.getElementById('deal-stage').value = deal.stage || 'prospect';
-            const salePriceEl = document.getElementById('deal-sale-price'); salePriceEl.value = deal.salePrice || ''; formatField(salePriceEl, 'currency'); 
-            document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
-            document.getElementById('deal-sale-date').value = deal.saleDate || '';
-            document.getElementById('deal-modal-title').textContent = 'Edit Deal';
-            document.getElementById('deal-submit-btn').textContent = 'Update Deal';
-            document.getElementById('deal-modal').classList.remove('hidden');
-        };
-
-        window.editTask = (id) => {
-            const task = tasks.find(t => t.id === id);
-            if (!task) return;
-            populateDealSelects();
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('task-title').value = task.title || '';
-            document.getElementById('task-date').value = task.date || '';
-            document.getElementById('task-time').value = task.time || '';
-            document.getElementById('task-deal-id').value = task.dealId || '';
-            document.getElementById('task-notes').value = task.notes || '';
-            document.getElementById('task-modal-title').textContent = 'Edit Task';
-            document.getElementById('task-submit-btn').textContent = 'Update Task';
-            document.getElementById('task-modal').classList.remove('hidden');
         }
 
-        window.editContact = (id) => {
-            const contact = contacts.find(c => c.id === id);
-            if (!contact) return;
-            populateDealSelects();
-            document.getElementById('contact-id').value = contact.id;
-            document.getElementById('contact-name').value = contact.name || '';
-            document.getElementById('contact-role').value = contact.role || '';
-            document.getElementById('contact-company').value = contact.company || '';
-            document.getElementById('contact-email').value = contact.email || '';
-            document.getElementById('contact-phone').value = contact.phone || '';
-            document.getElementById('contact-category').value = contact.category || 'Other';
-            const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
-            checkboxes.forEach(cb => cb.checked = false);
-            const linkedDealIds = contact.dealIds || (contact.dealId ? [contact.dealId] : []);
-            linkedDealIds.forEach(dealId => {
-                const checkbox = document.getElementById(`contact-deal-${dealId}`);
-                if (checkbox) checkbox.checked = true;
-            });
-            document.getElementById('contact-modal-title').textContent = 'Edit Contact';
-            document.getElementById('contact-submit-btn').textContent = 'Update Contact';
-            document.getElementById('contact-modal').classList.remove('hidden');
-        }
-        
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id));
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id)); };
+        // --- Database Actions ---
+        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id)); };
         window.moveStage = async (id, stage) => {
-             const ref = getCollectionRef("gc_deals");
-             // To update, we need doc reference. In v9, updateDoc takes a doc reference.
-             // Our getCollectionRef returns a collection reference.
-             // We can construct a doc reference using the same logic.
-             // BUT, since we have the ID, we can just use the firestore instance and path string if we knew the path.
-             // Let's use a simpler way:
-             // We know the deals array has the full object.
-             // Wait, updateDoc needs a reference.
-             // The cleanest way in this hybrid model is to use the same logic as getCollectionRef but for doc.
-             // Let's make a helper:
              const getDocRef = (colName, docId) => {
                  if (typeof __app_id !== 'undefined') return doc(db, 'artifacts', __app_id, 'public', 'data', colName, docId);
                  else return doc(db, colName, docId);
              }
              await updateDoc(getDocRef("gc_deals", id), { stage });
         };
+        window.toggleTask = async (id, status) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id), { completed: status });
+        window.deleteTask = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id));
+        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id)); };
+
+        // --- Form Submissions ---
+        document.getElementById('deal-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('deal-submit-btn'); const originalText = btn.innerText;
+            btn.innerText = 'Saving...'; btn.disabled = true;
+            try {
+                const dealId = document.getElementById('deal-id').value;
+                const data = {
+                    name: document.getElementById('deal-name').value,
+                    address: document.getElementById('deal-address').value,
+                    value: document.getElementById('deal-value').value,
+                    stage: document.getElementById('deal-stage').value,
+                    salePrice: document.getElementById('deal-sale-price').value,
+                    commencementDate: document.getElementById('deal-commencement-date').value,
+                    saleDate: document.getElementById('deal-sale-date').value
+                };
+                
+                // Use dynamic reference
+                const collectionRef = getCollectionRef("gc_deals");
+                
+                if (dealId) {
+                    // Update existing
+                    await updateDoc(doc(collectionRef, dealId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collectionRef, data);
+                }
+                e.target.reset(); closeModal('deal-modal');
+            } catch (error) { console.error(error); alert("Failed to save deal: " + error.message); } 
+            finally { btn.innerText = originalText; btn.disabled = false; }
+        });
+
+        document.getElementById('task-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('task-submit-btn'); const originalText = btn.innerText;
+            btn.innerText = 'Saving...'; btn.disabled = true;
+            try {
+                const taskId = document.getElementById('task-id').value;
+                const data = {
+                    title: document.getElementById('task-title').value,
+                    date: document.getElementById('task-date').value,
+                    time: document.getElementById('task-time').value,
+                    dealId: document.getElementById('task-deal-id').value,
+                    notes: document.getElementById('task-notes').value,
+                };
+                const collectionRef = getCollectionRef("gc_tasks");
+                
+                if (taskId) await updateDoc(doc(collectionRef, taskId), data);
+                else { data.completed = false; data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
+                e.target.reset(); closeModal('task-modal');
+            } catch (error) { console.error(error); alert("Failed to save task: " + error.message); } 
+            finally { btn.innerText = originalText; btn.disabled = false; }
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('contact-submit-btn'); const originalText = btn.innerText;
+            btn.innerText = 'Saving...'; btn.disabled = true;
+            try {
+                const contactId = document.getElementById('contact-id').value;
+                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
+                const data = {
+                    name: document.getElementById('contact-name').value,
+                    role: document.getElementById('contact-role').value,
+                    email: document.getElementById('contact-email').value,
+                    phone: document.getElementById('contact-phone').value,
+                    company: document.getElementById('contact-company').value,
+                    category: document.getElementById('contact-category').value,
+                    dealIds: selectedDealIds, 
+                    dealId: null 
+                };
+                const collectionRef = getCollectionRef("gc_contacts");
+                
+                if (contactId) await updateDoc(doc(collectionRef, contactId), data);
+                else { data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
+                e.target.reset(); closeModal('contact-modal');
+            } catch (error) { console.error(error); alert("Failed to save contact: " + error.message); } 
+            finally { btn.innerText = originalText; btn.disabled = false; }
+        });
         
         // Start System
         setupAuthListeners();
