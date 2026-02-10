@@ -36,9 +36,27 @@
         /* Login Overlay Transition */
         #login-overlay { transition: opacity 0.3s ease-in-out, visibility 0.3s; }
         #login-overlay.hidden-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* Diagnostics Panel */
+        #diagnostics-panel {
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
+
+    <!-- DIAGNOSTICS PANEL (For Debugging) -->
+    <div id="diagnostics-panel" class="fixed bottom-4 right-4 z-[200] bg-slate-900 text-slate-200 p-4 rounded-lg shadow-xl w-80 max-h-64 overflow-y-auto hidden md:block opacity-90 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+            <span class="font-bold text-emerald-400">System Diagnostics</span>
+            <button onclick="document.getElementById('diagnostics-panel').style.display='none'" class="text-slate-500 hover:text-white">&times;</button>
+        </div>
+        <div id="log-container" class="space-y-1">
+            <div class="text-slate-500">Waiting for system init...</div>
+        </div>
+    </div>
 
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
@@ -81,7 +99,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.28 • Hybrid Storage</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.29 • Diagnostics Enabled</p>
             </div>
         </div>
     </div>
@@ -146,7 +164,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.28.0
+            v2.29.0
         </div>
     </div>
 
@@ -749,16 +767,32 @@
         let currentDealId = null; 
         let currentlyLoadedDealForCalc = null;
 
+        // --- Diagnostics Functions ---
+        function logDiagnostic(message, type = 'info') {
+            const container = document.getElementById('log-container');
+            if (!container) return;
+            
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'text-red-400 font-bold' : (type === 'success' ? 'text-emerald-400' : 'text-slate-400');
+            div.innerHTML = `<span class="opacity-50">[${new Date().toLocaleTimeString().split(' ')[0]}]</span> ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
         // --- Authentication Flow ---
         const loginOverlay = document.getElementById('login-overlay');
         const loginError = document.getElementById('login-error');
         const loginErrorText = document.getElementById('login-error-text');
 
         function setupAuthListeners() {
-            if (!auth) return;
+            if (!auth) {
+                logDiagnostic("Auth not initialized. Check config.", "error");
+                return;
+            }
 
             // 1. Initial Token Check
             const initAuth = async () => {
+                logDiagnostic("Checking auth state...");
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } 
@@ -768,10 +802,12 @@
             // 2. Auth State Listener
             onAuthStateChanged(auth, (user) => {
                 if (user) {
+                    logDiagnostic(`✅ Authenticated: ${user.email || 'Anonymous'}`, "success");
                     currentUserId = user.uid;
                     loginOverlay.classList.add('hidden-overlay');
                     initApp(user);
                 } else {
+                    logDiagnostic("User signed out.");
                     currentUserId = null;
                     loginOverlay.classList.remove('hidden-overlay');
                 }
@@ -790,6 +826,7 @@
                 const password = document.getElementById('login-password').value;
 
                 try {
+                    logDiagnostic("Attempting login...");
                     await signInWithEmailAndPassword(auth, email, password);
                 } catch (error) {
                     console.error("Login Failed:", error);
@@ -801,6 +838,7 @@
                     else if (error.message && error.message.includes('requests-from-referer')) msg = "Domain Not Authorized. Go to Google Cloud Console > APIs & Services > Credentials > API Key > Website restrictions and add: https://landhavenradh.github.io/*";
                     else if (error.message) msg = error.message;
 
+                    logDiagnostic(`Login Error: ${msg}`, "error");
                     loginErrorText.textContent = msg;
                     loginError.classList.remove('hidden');
                     btn.innerText = originalText;
@@ -829,12 +867,11 @@
         // --- Secure Collection Path Helper ---
         const getCollectionRef = (colName) => {
              // HYBRID PATH STRATEGY:
-             // 1. In the Preview Environment (where __app_id is defined), we use the strict sandboxed path to comply with platform rules.
-             // 2. In Production/Local (where __app_id is undefined), we use the ROOT collection. 
-             //    This ensures your original data (stored in 'gc_deals' etc.) loads correctly on your website.
              if (typeof __app_id !== 'undefined') {
+                 // PREVIEW: Use sandbox
                  return collection(db, 'artifacts', __app_id, 'public', 'data', colName);
              } else {
+                 // PROD: Use root
                  return collection(db, colName);
              }
         };
@@ -852,32 +889,47 @@
                 }
 
                 // Use Secure Paths
+                logDiagnostic("📡 Connecting to 'gc_deals'...");
+                
+                // DEALS
                 onSnapshot(getCollectionRef("gc_deals"), (snapshot) => {
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    logDiagnostic(`📥 Loaded ${deals.length} deals.`);
                     renderPipeline();
                     populateDealSelects();
                     if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) openDealDetail(currentDealId);
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
+                    logDiagnostic(`❌ Deals Error: ${error.code}`, "error");
                     if (error.code === 'permission-denied') alert("Database Permission Denied. Check your Firestore Security Rules.");
                 });
 
+                // TASKS
                 onSnapshot(getCollectionRef("gc_tasks"), (snapshot) => {
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderTasks();
                     updateCalendarEvents();
                     if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) renderRelatedTasks(currentDealId);
-                }, (error) => console.error("Tasks Sync Error:", error));
+                }, (error) => {
+                    console.error("Tasks Sync Error:", error);
+                    logDiagnostic(`❌ Tasks Error: ${error.code}`, "error");
+                });
 
+                // CONTACTS
                 onSnapshot(getCollectionRef("gc_contacts"), (snapshot) => {
                     contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     renderContacts();
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) renderRelatedContacts(currentDealId);
-                }, (error) => console.error("Contacts Sync Error:", error));
+                }, (error) => {
+                    console.error("Contacts Sync Error:", error);
+                    logDiagnostic(`❌ Contacts Error: ${error.code}`, "error");
+                });
+                
             } catch (e) {
                 console.error("Init Error:", e);
+                logDiagnostic(`Init Exception: ${e.message}`, "error");
             }
         }
 
