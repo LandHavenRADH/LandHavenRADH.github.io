@@ -1581,7 +1581,12 @@
                     contractRent: contractRentValue, interestOnly: interestOnly,
                     taxes: taxes, insurance: insurance, landlordWork: landlordWork
                 };
-                updateDoc(getDocRef('gc_deals', currentlyLoadedDealForCalc), { calcParams: paramsToSave }).catch(err => console.error("Auto-save failed", err));
+                
+                // Now also updates the main deal 'value' (Purchase Price) along with params
+                updateDoc(getDocRef('gc_deals', currentlyLoadedDealForCalc), { 
+                    value: purchasePrice, // Save Price as number
+                    calcParams: paramsToSave 
+                }).catch(err => console.error("Auto-save failed", err));
             }
 
             const loanAmount = purchasePrice * (purchaseLtv / 100);
@@ -1683,15 +1688,17 @@
                     el.value = val !== undefined ? val : 0;
                     if(type) formatField(el, type);
                 };
-                setVal('calc-ltv', params.ltv || 100, 'percent');
-                setVal('calc-rate', params.rate || 6.0, 'percent');
-                document.getElementById('calc-term').value = params.term || 300;
-                document.getElementById('calc-dscr').value = params.dscr || 1.20;
-                setVal('calc-cap', params.cap || 6.0, 'percent');
-                setVal('calc-market-ltv', params.marketLtv || 70, 'percent');
-                setVal('calc-taxes', params.taxes || 0, 'currency');
-                setVal('calc-insurance', params.insurance || 0, 'currency');
-                setVal('calc-landlord-work', params.landlordWork || 0, 'currency');
+                
+                // Allow 0 values (e.g. 0% LTV) by checking for undefined explicitly
+                setVal('calc-ltv', params.ltv !== undefined ? params.ltv : 100, 'percent');
+                setVal('calc-rate', params.rate !== undefined ? params.rate : 6.0, 'percent');
+                document.getElementById('calc-term').value = params.term !== undefined ? params.term : 300;
+                document.getElementById('calc-dscr').value = params.dscr !== undefined ? params.dscr : 1.20;
+                setVal('calc-cap', params.cap !== undefined ? params.cap : 6.0, 'percent');
+                setVal('calc-market-ltv', params.marketLtv !== undefined ? params.marketLtv : 70, 'percent');
+                setVal('calc-taxes', params.taxes !== undefined ? params.taxes : 0, 'currency');
+                setVal('calc-insurance', params.insurance !== undefined ? params.insurance : 0, 'currency');
+                setVal('calc-landlord-work', params.landlordWork !== undefined ? params.landlordWork : 0, 'currency');
 
                 document.getElementById('calc-interest-only').checked = params.interestOnly || false;
                 document.getElementById('calc-use-contract').checked = params.useContractRent || false;
