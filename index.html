@@ -804,7 +804,14 @@
                 if (user) {
                     logDiagnostic(`✅ Authenticated: ${user.email || 'Anonymous'}`, "success");
                     currentUserId = user.uid;
-                    loginOverlay.classList.add('hidden-overlay');
+                    
+                    // FORCE HIDE
+                    const overlay = document.getElementById('login-overlay');
+                    if(overlay) {
+                        overlay.classList.add('hidden-overlay');
+                        setTimeout(() => overlay.style.display = 'none', 500); // Remove from flow after transition
+                    }
+                    
                     initApp(user);
                 } else {
                     logDiagnostic("User signed out.");
