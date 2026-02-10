@@ -81,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.27 • Hardcoded Config</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.28 • Hybrid Storage</p>
             </div>
         </div>
     </div>
@@ -146,7 +146,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.27.0
+            v2.28.0
         </div>
     </div>
 
@@ -593,91 +593,6 @@
         </div>
     </div>
 
-    <!-- Deal Detail Modal -->
-    <div id="deal-detail-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
-            <div class="flex justify-between items-center p-6 border-b bg-slate-50 shrink-0">
-                <div>
-                    <h3 class="text-2xl font-bold text-slate-800" id="detail-deal-name">Deal Name</h3>
-                    <p class="text-slate-500 text-sm flex items-center gap-2 mt-1">
-                        <i data-lucide="map-pin" width="14"></i> <span id="detail-deal-address">Address</span>
-                    </p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="editCurrentDeal()" class="text-slate-500 hover:text-emerald-600 font-medium text-sm flex items-center gap-1">
-                        <i data-lucide="edit-2" width="14"></i> Edit Deal
-                    </button>
-                    <button onclick="closeModal('deal-detail-modal')" class="text-slate-400 hover:text-red-500 ml-4">
-                        <i data-lucide="x" width="24"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50">
-                
-                <!-- Rent Calculator Summary -->
-                <div id="deal-calc-summary" class="bg-white p-4 rounded-lg border border-blue-100 shadow-sm mb-6 hidden">
-                    <h4 class="font-bold text-slate-700 flex items-center gap-2 mb-3">
-                        <i data-lucide="trending-up" class="text-blue-600" width="18"></i> Financial Snapshot
-                    </h4>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                        <div>
-                            <span class="block text-slate-500 text-xs" id="summary-rent-label">Required Rent (NOI)</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-rent">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">Projected Value</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-value">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">Potential Profit</span>
-                            <span class="block font-bold text-emerald-600 text-lg" id="summary-profit">$0</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">ROI (On Price)</span>
-                            <span class="block font-bold text-blue-600 text-lg" id="summary-roi">0%</span>
-                        </div>
-                        <div>
-                            <span class="block text-slate-500 text-xs">100% Finance?</span>
-                            <span class="block font-bold text-slate-800 text-lg" id="summary-finance">--</span>
-                        </div>
-                    </div>
-                    <div class="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
-                        <span id="summary-assumptions-text">Based on standard assumptions</span>
-                        <a href="#" onclick="closeModal('deal-detail-modal'); switchView('calculator'); loadDealToCalculator(currentDealId);" class="text-blue-600 hover:underline">Open in Calculator</a>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
-                                <i data-lucide="calendar" class="text-emerald-600" width="18"></i> Related Tasks
-                            </h4>
-                            <button onclick="openModal('task-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Task</button>
-                        </div>
-                        <div id="detail-tasks-list" class="space-y-2"></div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
-                                <i data-lucide="users" class="text-emerald-600" width="18"></i> Related Contacts
-                            </h4>
-                            <button onclick="openModal('contact-modal', currentDealId)" class="text-xs bg-white border border-slate-200 px-2 py-1 rounded hover:bg-emerald-50 text-slate-600 font-medium">+ Add Contact</button>
-                        </div>
-                        <div id="detail-contacts-list" class="space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t bg-white flex justify-between items-center text-sm text-slate-500">
-                <span id="detail-deal-value" class="font-mono font-medium text-emerald-600"></span>
-                <span id="detail-deal-stage" class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-bold uppercase"></span>
-            </div>
-        </div>
-    </div>
-
     <!-- Task Modal -->
     <div id="task-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
@@ -913,7 +828,15 @@
 
         // --- Secure Collection Path Helper ---
         const getCollectionRef = (colName) => {
-             return collection(db, 'artifacts', appId, 'public', 'data', colName);
+             // HYBRID PATH STRATEGY:
+             // 1. In the Preview Environment (where __app_id is defined), we use the strict sandboxed path to comply with platform rules.
+             // 2. In Production/Local (where __app_id is undefined), we use the ROOT collection. 
+             //    This ensures your original data (stored in 'gc_deals' etc.) loads correctly on your website.
+             if (typeof __app_id !== 'undefined') {
+                 return collection(db, 'artifacts', __app_id, 'public', 'data', colName);
+             } else {
+                 return collection(db, colName);
+             }
         };
 
         // --- Initialization ---
@@ -935,7 +858,10 @@
                     populateDealSelects();
                     if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) openDealDetail(currentDealId);
-                }, (error) => console.error("Deal Sync Error:", error));
+                }, (error) => {
+                    console.error("Deal Sync Error:", error);
+                    if (error.code === 'permission-denied') alert("Database Permission Denied. Check your Firestore Security Rules.");
+                });
 
                 onSnapshot(getCollectionRef("gc_tasks"), (snapshot) => {
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -1338,291 +1264,6 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.loadDealToCalculator = (dealId) => {
-            if (!dealId) {
-                document.getElementById('calc-price').value = 500000;
-                currentlyLoadedDealForCalc = null;
-                formatField(document.getElementById('calc-price'), 'currency');
-                calculateRent();
-                return;
-            }
-            const deal = deals.find(d => d.id === dealId);
-            currentlyLoadedDealForCalc = dealId;
-            const selectElement = document.getElementById('calc-deal-select');
-            if (selectElement) selectElement.value = dealId;
-
-            if (deal) {
-                if (deal.value) {
-                    const priceEl = document.getElementById('calc-price');
-                    priceEl.value = parseFloat(deal.value.toString().replace(/,/g, ''));
-                    formatField(priceEl, 'currency');
-                }
-                const params = deal.calcParams || {};
-                const setVal = (id, val, type) => {
-                    const el = document.getElementById(id);
-                    el.value = val !== undefined ? val : 0;
-                    if(type) formatField(el, type);
-                };
-                setVal('calc-ltv', params.ltv || 100, 'percent');
-                setVal('calc-rate', params.rate || 6.0, 'percent');
-                document.getElementById('calc-term').value = params.term || 300;
-                document.getElementById('calc-dscr').value = params.dscr || 1.20;
-                setVal('calc-cap', params.cap || 6.0, 'percent');
-                setVal('calc-market-ltv', params.marketLtv || 70, 'percent');
-                setVal('calc-taxes', params.taxes || 0, 'currency');
-                setVal('calc-insurance', params.insurance || 0, 'currency');
-                setVal('calc-landlord-work', params.landlordWork || 0, 'currency');
-
-                document.getElementById('calc-interest-only').checked = params.interestOnly || false;
-                document.getElementById('calc-use-contract').checked = params.useContractRent || false;
-                
-                const contractInput = document.getElementById('calc-contract-rent');
-                contractInput.value = params.contractRent || 0;
-                formatField(contractInput, 'currency');
-                
-                calculateRent();
-            }
-        };
-
-        // --- Render Functions (Uses New Paths) ---
-        const STAGES = [
-            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
-            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
-            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
-            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
-            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' },
-            { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
-        ];
-
-        function renderPipeline() {
-            const container = document.getElementById('pipeline-container');
-            container.innerHTML = '';
-            STAGES.forEach(stage => {
-                const stageDeals = deals.filter(d => d.stage === stage.id);
-                const col = document.createElement('div');
-                col.className = 'w-80 flex flex-col h-full';
-                col.innerHTML = `
-                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
-                        <span class="flex-1">${stage.label}</span>
-                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
-                    </div>
-                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
-                        ${stageDeals.map(deal => {
-                            const formattedValue = deal.value ? parseFloat(deal.value.toString().replace(/,/g, '')).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
-                            return `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
-                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
-                                </div>
-                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
-                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
-                                </p>
-                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
-                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
-                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
-                                    </select>
-                                </div>
-                            </div>
-                        `}).join('')}
-                    </div>`;
-                container.appendChild(col);
-            });
-            if (window.lucide) lucide.createIcons();
-        }
-
-        function renderTasks() {
-            const tbody = document.getElementById('tasks-table-body');
-            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
-            if(sortedTasks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
-                return;
-            }
-            const today = new Date(); today.setHours(0,0,0,0);
-            tbody.innerHTML = sortedTasks.map(task => {
-                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
-                const [y, m, d] = task.date.split('-').map(Number);
-                const taskDate = new Date(y, m - 1, d);
-                const isOverdue = !task.completed && taskDate < today;
-                return `
-                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
-                        <td class="p-4 text-center">
-                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
-                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
-                            </button>
-                        </td>
-                        <td class="p-4">
-                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
-                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
-                        </td>
-                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
-                        <td class="p-4">
-                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
-                                ${formatDateForDisplay(task.date)}
-                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
-                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
-                            </div>
-                        </td>
-                        <td class="p-4 text-right">
-                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
-                        </td>
-                    </tr>`;
-            }).join('');
-            if (window.lucide) lucide.createIcons();
-        }
-
-        function renderContacts() {
-            const grid = document.getElementById('contacts-grid');
-            if(contacts.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
-                return;
-            }
-            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
-            const filteredContacts = contacts.filter(c => 
-                (c.name && c.name.toLowerCase().includes(searchVal)) ||
-                (c.email && c.email.toLowerCase().includes(searchVal)) ||
-                (c.role && c.role.toLowerCase().includes(searchVal))
-            );
-            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Other': [] };
-            filteredContacts.forEach(c => {
-                const category = c.category || 'Other';
-                if (groups[category]) groups[category].push(c); else groups['Other'].push(c);
-            });
-
-            let html = '';
-            for (const [category, groupContacts] of Object.entries(groups)) {
-                if (groupContacts.length > 0) {
-                    html += `
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                ${groupContacts.map(c => {
-                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
-                                    let dealDisplay = 'General Contact';
-                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
-                                    if (linkedDealIds.length > 0) {
-                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
-                                        if (firstDeal) dealDisplay = linkedDealIds.length > 1 ? `${firstDeal.name} + ${linkedDealIds.length - 1} more` : firstDeal.name;
-                                    }
-                                    return `
-                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
-                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
-                                        <div class="flex items-center gap-3 mb-3">
-                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">${initial}</div>
-                                            <div>
-                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
-                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
-                                            </div>
-                                        </div>
-                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
-                                            <div class="flex items-center gap-2"><i data-lucide="mail" width="14" class="text-slate-400"></i> <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span></div>
-                                            <div class="flex items-center gap-2"><i data-lucide="phone" width="14" class="text-slate-400"></i> <span>${c.phone || 'No Phone'}</span></div>
-                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
-                                            ${c.company ? `<div class="flex items-center gap-2"><i data-lucide="building" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${c.company}</span></div>` : ''}
-                                        </div>
-                                    </div>`;
-                                }).join('')}
-                            </div>
-                        </div>`;
-                }
-            }
-            if (filteredContacts.length === 0) html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found.</div>';
-            grid.innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-        }
-
-        window.filterContacts = () => renderContacts();
-
-        // --- Dashboard Render ---
-        function renderDashboard() {
-            document.getElementById('dash-total-props').textContent = deals.length;
-            document.getElementById('dash-active-leases').textContent = deals.filter(d => d.stage === 'leased').length;
-            document.getElementById('dash-sold-props').textContent = deals.filter(d => d.stage === 'sold').length;
-            document.getElementById('dash-pending-tasks').textContent = tasks.filter(t => !t.completed).length;
-
-            const upcomingTasks = tasks.filter(t => !t.completed).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
-            const taskContainer = document.getElementById('dash-upcoming-list');
-            if (upcomingTasks.length === 0) taskContainer.innerHTML = '<div class="text-slate-400 text-sm italic">No upcoming tasks.</div>';
-            else {
-                taskContainer.innerHTML = upcomingTasks.map(t => `
-                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded border border-transparent hover:border-slate-100 transition cursor-pointer" onclick="editTask('${t.id}')">
-                        <div class="bg-blue-100 text-blue-600 rounded p-1.5 shrink-0"><i data-lucide="calendar" width="16"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium text-slate-800 truncate">${t.title}</div>
-                            <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
-                        </div>
-                    </div>`).join('');
-            }
-
-            let totalEstProfit = 0, totalEstMarketValue = 0, totalRealizedProfit = 0;
-            const annualData = {};
-
-            deals.forEach(deal => {
-                const fin = calculateDealFinancials(deal);
-                if (deal.stage === 'sold') {
-                    const profit = fin.salePrice - fin.totalCosts;
-                    if (fin.salePrice > 0) {
-                         totalRealizedProfit += profit;
-                        const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
-                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
-                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
-                        annualData[safeYear].realized += profit;
-                    }
-                } else {
-                    if (fin.marketValue > 0) {
-                        totalEstMarketValue += fin.marketValue;
-                        const profit = fin.marketValue - fin.totalCosts;
-                        if(fin.purchasePrice > 0) totalEstProfit += profit;
-                        let year = deal.commencementDate ? new Date(deal.commencementDate).getFullYear() : (deal.createdAt?.toDate ? deal.createdAt.toDate().getFullYear() : new Date().getFullYear());
-                        const safeYear = isNaN(year) ? new Date().getFullYear() : year;
-                        if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
-                        if(fin.purchasePrice > 0) annualData[safeYear].potential += profit;
-                    }
-                }
-            });
-
-            const format = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
-            document.getElementById('dash-est-market-value').textContent = format(totalEstMarketValue);
-            document.getElementById('dash-est-profit').textContent = format(totalEstProfit);
-            document.getElementById('dash-realized-profit').textContent = format(totalRealizedProfit);
-            
-            if(window.lucide) lucide.createIcons();
-            renderFinancialChart(annualData);
-        }
-
-        function renderFinancialChart(dataObj) {
-            const ctx = document.getElementById('financialChart');
-            if(!ctx) return;
-            const years = Object.keys(dataObj).sort();
-            const realizedData = years.map(y => dataObj[y].realized);
-            const potentialData = years.map(y => dataObj[y].potential);
-
-            if(financialChart) financialChart.destroy();
-
-            financialChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: years,
-                    datasets: [
-                        { label: 'Realized Profit', data: realizedData, backgroundColor: '#2563eb', borderRadius: 4 },
-                        { label: 'Potential Profit', data: potentialData, backgroundColor: '#10b981', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { callback: function(value) {
-                            if(value >= 1000000 || value <= -1000000) return '$' + (value/1000000).toFixed(1) + 'M';
-                            if(value >= 1000 || value <= -1000) return '$' + (value/1000).toFixed(0) + 'k';
-                            return '$' + value;
-                        }}}
-                    }
-                }
-            });
-        }
-
         // --- Helpers & CRUD ---
         function populateDealSelects() {
             const taskOptions = `<option value="">-- General / Unassigned --</option>` + deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
@@ -1641,85 +1282,6 @@
                 calcSelect.innerHTML = calcOptions;
                 if (currentlyLoadedDealForCalc) calcSelect.value = currentlyLoadedDealForCalc;
             }
-        }
-
-        function initCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-                height: '100%', editable: true,
-                events: tasks.map(t => ({ id: t.id, title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), start: t.time ? `${t.date}T${t.time}` : t.date, backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', borderColor: t.completed ? '#94a3b8' : '#3b82f6', textColor: '#ffffff' })),
-                eventClick: function(info) { editTask(info.event.id); },
-                eventDrop: async function(info) {
-                    const newDate = info.event.start.toISOString().split('T')[0];
-                    try { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', info.event.id), { date: newDate }); }
-                    catch (error) { info.revert(); }
-                }
-            });
-            calendar.render();
-        }
-
-        function updateCalendarEvents() {
-            if (calendar) {
-                calendar.removeAllEvents();
-                calendar.addEventSource(tasks.map(t => ({ id: t.id, title: t.title + (t.time ? ` @ ${formatTimeForDisplay(t.time)}` : ''), start: t.time ? `${t.date}T${t.time}` : t.date, backgroundColor: t.completed ? '#94a3b8' : '#3b82f6', borderColor: t.completed ? '#94a3b8' : '#3b82f6', textColor: '#ffffff' })));
-            }
-        }
-
-        // --- Editing ---
-        window.editDeal = (id) => {
-            const deal = deals.find(d => d.id === id);
-            if (!deal) return;
-            document.getElementById('deal-id').value = deal.id;
-            const valueEl = document.getElementById('deal-value'); valueEl.value = deal.value || ''; formatField(valueEl, 'currency');
-            document.getElementById('deal-name').value = deal.name || '';
-            document.getElementById('deal-address').value = deal.address || '';
-            document.getElementById('deal-stage').value = deal.stage || 'prospect';
-            const salePriceEl = document.getElementById('deal-sale-price'); salePriceEl.value = deal.salePrice || ''; formatField(salePriceEl, 'currency'); 
-            document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
-            document.getElementById('deal-sale-date').value = deal.saleDate || '';
-            document.getElementById('deal-modal-title').textContent = 'Edit Deal';
-            document.getElementById('deal-submit-btn').textContent = 'Update Deal';
-            document.getElementById('deal-modal').classList.remove('hidden');
-        };
-
-        window.editTask = (id) => {
-            const task = tasks.find(t => t.id === id);
-            if (!task) return;
-            populateDealSelects();
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('task-title').value = task.title || '';
-            document.getElementById('task-date').value = task.date || '';
-            document.getElementById('task-time').value = task.time || '';
-            document.getElementById('task-deal-id').value = task.dealId || '';
-            document.getElementById('task-notes').value = task.notes || '';
-            document.getElementById('task-modal-title').textContent = 'Edit Task';
-            document.getElementById('task-submit-btn').textContent = 'Update Task';
-            document.getElementById('task-modal').classList.remove('hidden');
-        }
-
-        window.editContact = (id) => {
-            const contact = contacts.find(c => c.id === id);
-            if (!contact) return;
-            populateDealSelects();
-            document.getElementById('contact-id').value = contact.id;
-            document.getElementById('contact-name').value = contact.name || '';
-            document.getElementById('contact-role').value = contact.role || '';
-            document.getElementById('contact-company').value = contact.company || '';
-            document.getElementById('contact-email').value = contact.email || '';
-            document.getElementById('contact-phone').value = contact.phone || '';
-            document.getElementById('contact-category').value = contact.category || 'Other';
-            const checkboxes = document.querySelectorAll('.contact-deal-checkbox');
-            checkboxes.forEach(cb => cb.checked = false);
-            const linkedDealIds = contact.dealIds || (contact.dealId ? [contact.dealId] : []);
-            linkedDealIds.forEach(dealId => {
-                const checkbox = document.getElementById(`contact-deal-${dealId}`);
-                if (checkbox) checkbox.checked = true;
-            });
-            document.getElementById('contact-modal-title').textContent = 'Edit Contact';
-            document.getElementById('contact-submit-btn').textContent = 'Update Contact';
-            document.getElementById('contact-modal').classList.remove('hidden');
         }
 
         // --- Database Actions ---
@@ -1745,10 +1307,24 @@
                     commencementDate: document.getElementById('deal-commencement-date').value,
                     saleDate: document.getElementById('deal-sale-date').value
                 };
-                if (dealId) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', dealId), data);
-                else { data.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_deals'), data); }
+                
+                // Use dynamic reference
+                const collectionRef = getCollectionRef("gc_deals");
+                
+                if (dealId) {
+                    // Update existing
+                    // Need to reconstruct doc ref based on hybrid logic. 
+                    // To keep it simple, we can just use doc() on the collection ref
+                    // But collection ref is an object. We can use doc(db, path...) logic.
+                    // Instead, let's just use the ID on the collection ref.
+                    // doc(collectionRef, dealId) works in v9 modular SDK? Yes.
+                    await updateDoc(doc(collectionRef, dealId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collectionRef, data);
+                }
                 e.target.reset(); closeModal('deal-modal');
-            } catch (error) { console.error(error); alert("Failed to save deal."); } 
+            } catch (error) { console.error(error); alert("Failed to save deal: " + error.message); } 
             finally { btn.innerText = originalText; btn.disabled = false; }
         });
 
@@ -1765,10 +1341,12 @@
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
                 };
-                if (taskId) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', taskId), data);
-                else { data.completed = false; data.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_tasks'), data); }
+                const collectionRef = getCollectionRef("gc_tasks");
+                
+                if (taskId) await updateDoc(doc(collectionRef, taskId), data);
+                else { data.completed = false; data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
                 e.target.reset(); closeModal('task-modal');
-            } catch (error) { console.error(error); alert("Failed to save task."); } 
+            } catch (error) { console.error(error); alert("Failed to save task: " + error.message); } 
             finally { btn.innerText = originalText; btn.disabled = false; }
         });
 
@@ -1789,10 +1367,12 @@
                     dealIds: selectedDealIds, 
                     dealId: null 
                 };
-                if (contactId) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', contactId), data);
-                else { data.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'gc_contacts'), data); }
+                const collectionRef = getCollectionRef("gc_contacts");
+                
+                if (contactId) await updateDoc(doc(collectionRef, contactId), data);
+                else { data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
                 e.target.reset(); closeModal('contact-modal');
-            } catch (error) { console.error(error); alert("Failed to save contact."); } 
+            } catch (error) { console.error(error); alert("Failed to save contact: " + error.message); } 
             finally { btn.innerText = originalText; btn.disabled = false; }
         });
         
