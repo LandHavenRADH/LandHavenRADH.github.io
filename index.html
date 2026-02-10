@@ -1585,9 +1585,11 @@
                 const r = (interestRate / 100) / 12;
                 const n = amortization;
                 if (r > 0 && n > 0 && loanAmount > 0) {
-                    const pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
-                    annualService = pmt * 12;
-                } else if (n > 0 && loanAmount > 0) pmt = loanAmount / n;
+                    // FIXED: Removed 'const' so it updates the outer variable
+                    pmt = (loanAmount * r) / (1 - Math.pow(1 + r, -n));
+                } else if (n > 0 && loanAmount > 0) {
+                    pmt = loanAmount / n;
+                }
                 annualService = pmt * 12;
             }
 
