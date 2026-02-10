@@ -99,7 +99,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.29 • Diagnostics Enabled</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.30 • Crash Proof</p>
             </div>
         </div>
     </div>
@@ -164,7 +164,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.29.0
+            v2.30.0
         </div>
     </div>
 
@@ -895,9 +895,13 @@
                 onSnapshot(getCollectionRef("gc_deals"), (snapshot) => {
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     logDiagnostic(`📥 Loaded ${deals.length} deals.`);
-                    renderPipeline();
-                    populateDealSelects();
-                    if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
+                    
+                    try { renderPipeline(); } catch(e) { logDiagnostic(`⚠️ Pipeline Render Failed: ${e.message}`, "error"); console.error(e); }
+                    try { populateDealSelects(); } catch(e) { logDiagnostic(`⚠️ Selects Failed: ${e.message}`, "error"); }
+                    
+                    // Force render dashboard regardless of visibility on first load to update counts
+                    try { renderDashboard(); } catch(e) { logDiagnostic(`⚠️ Dashboard Render Failed: ${e.message}`, "error"); console.error(e); }
+                    
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) openDealDetail(currentDealId);
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
@@ -906,11 +910,16 @@
                 });
 
                 // TASKS
+                logDiagnostic("📡 Connecting to 'gc_tasks'...");
                 onSnapshot(getCollectionRef("gc_tasks"), (snapshot) => {
                     tasks = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                    renderTasks();
-                    updateCalendarEvents();
-                    if (!document.getElementById('view-dashboard').classList.contains('hidden')) renderDashboard();
+                    logDiagnostic(`📥 Loaded ${tasks.length} tasks.`);
+                    
+                    try { renderTasks(); } catch(e) { logDiagnostic(`⚠️ Tasks Render Failed: ${e.message}`, "error"); }
+                    try { updateCalendarEvents(); } catch(e) { logDiagnostic(`⚠️ Calendar Failed: ${e.message}`, "error"); }
+                    
+                    try { renderDashboard(); } catch(e) {} // Silent update
+                    
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) renderRelatedTasks(currentDealId);
                 }, (error) => {
                     console.error("Tasks Sync Error:", error);
@@ -918,9 +927,13 @@
                 });
 
                 // CONTACTS
+                logDiagnostic("📡 Connecting to 'gc_contacts'...");
                 onSnapshot(getCollectionRef("gc_contacts"), (snapshot) => {
                     contacts = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                    renderContacts();
+                    logDiagnostic(`📥 Loaded ${contacts.length} contacts.`);
+                    
+                    try { renderContacts(); } catch(e) { logDiagnostic(`⚠️ Contacts Render Failed: ${e.message}`, "error"); }
+                    
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) renderRelatedContacts(currentDealId);
                 }, (error) => {
                     console.error("Contacts Sync Error:", error);
@@ -947,7 +960,9 @@
             activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
 
             if (viewName === 'tasks' && calendar) setTimeout(() => calendar.render(), 100);
-            if (viewName === 'dashboard') renderDashboard();
+            // Re-render to ensure data is fresh
+            if (viewName === 'dashboard') try { renderDashboard(); } catch(e) {}
+            if (viewName === 'pipeline') try { renderPipeline(); } catch(e) {}
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -1127,8 +1142,15 @@
         // --- Calculator Logic ---
         function calculateDealFinancials(deal) {
             const params = deal.calcParams || {};
-            const purchasePrice = parseFloat(deal.value?.toString().replace(/[^0-9.-]/g, '')) || 0;
-            const salePrice = parseFloat(deal.salePrice?.toString().replace(/[^0-9.-]/g, '')) || 0;
+            // Robust parsing: strip non-numeric but keep decimal points and negative signs
+            const rawValue = deal.value ? deal.value.toString() : '0';
+            const cleanValue = rawValue.replace(/[^0-9.-]+/g,"");
+            const purchasePrice = parseFloat(cleanValue) || 0;
+            
+            const rawSale = deal.salePrice ? deal.salePrice.toString() : '0';
+            const cleanSale = rawSale.replace(/[^0-9.-]+/g,"");
+            const salePrice = parseFloat(cleanSale) || 0;
+
             const purchaseLtv = params.ltv !== undefined ? parseFloat(params.ltv) : 100;
             const interestRate = params.rate !== undefined ? parseFloat(params.rate) : 6.0;
             const amortization = params.term !== undefined ? parseFloat(params.term) : 300;
@@ -1336,100 +1358,259 @@
             }
         }
 
-        // --- Database Actions ---
-        window.deleteDeal = async (id) => { if(confirm('Delete deal?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id)); };
-        window.moveStage = async (id, stage) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_deals', id), { stage });
-        window.toggleTask = async (id, status) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id), { completed: status });
-        window.deleteTask = async (id) => await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_tasks', id));
-        window.deleteContact = async (id) => { if(confirm('Delete contact?')) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'gc_contacts', id)); };
+        // --- Render Functions (Uses New Paths) ---
+        const STAGES = [
+            { id: 'prospect', label: 'Prospecting', color: 'border-blue-500' },
+            { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
+            { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
+            { id: 'closing', label: 'Closing', color: 'border-purple-500' },
+            { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' },
+            { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
+        ];
 
-        // --- Form Submissions ---
-        document.getElementById('deal-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('deal-submit-btn'); const originalText = btn.innerText;
-            btn.innerText = 'Saving...'; btn.disabled = true;
-            try {
-                const dealId = document.getElementById('deal-id').value;
-                const data = {
-                    name: document.getElementById('deal-name').value,
-                    address: document.getElementById('deal-address').value,
-                    value: document.getElementById('deal-value').value,
-                    stage: document.getElementById('deal-stage').value,
-                    salePrice: document.getElementById('deal-sale-price').value,
-                    commencementDate: document.getElementById('deal-commencement-date').value,
-                    saleDate: document.getElementById('deal-sale-date').value
-                };
-                
-                // Use dynamic reference
-                const collectionRef = getCollectionRef("gc_deals");
-                
-                if (dealId) {
-                    // Update existing
-                    // Need to reconstruct doc ref based on hybrid logic. 
-                    // To keep it simple, we can just use doc() on the collection ref
-                    // But collection ref is an object. We can use doc(db, path...) logic.
-                    // Instead, let's just use the ID on the collection ref.
-                    // doc(collectionRef, dealId) works in v9 modular SDK? Yes.
-                    await updateDoc(doc(collectionRef, dealId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collectionRef, data);
+        function renderPipeline() {
+            const container = document.getElementById('pipeline-container');
+            container.innerHTML = '';
+            STAGES.forEach(stage => {
+                const stageDeals = deals.filter(d => d.stage === stage.id);
+                const col = document.createElement('div');
+                col.className = 'w-80 flex flex-col h-full';
+                col.innerHTML = `
+                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
+                        <span class="flex-1">${stage.label}</span>
+                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
+                    </div>
+                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
+                        ${stageDeals.map(deal => {
+                            // SAFER NUMBER PARSING
+                            let formattedValue = '$0';
+                            try {
+                                const valStr = deal.value ? deal.value.toString().replace(/[^0-9.-]+/g, "") : "0";
+                                const valNum = parseFloat(valStr) || 0;
+                                formattedValue = valNum.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                            } catch (e) {
+                                formattedValue = 'Error';
+                            }
+                            
+                            return `
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="openDealDetail('${deal.id}')">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
+                                    <button onclick="event.stopPropagation(); deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="14"></i></button>
+                                </div>
+                                <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
+                                    <i data-lucide="map-pin" width="12"></i> ${deal.address || 'No Address'}
+                                </p>
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                    <span class="text-xs font-mono font-medium text-emerald-600">${formattedValue}</span>
+                                    <select onclick="event.stopPropagation()" onchange="moveStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0">
+                                        ${STAGES.map(s => `<option value="${s.id}" ${s.id === deal.stage ? 'selected' : ''}>${s.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>`;
+                container.appendChild(col);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderTasks() {
+            const tbody = document.getElementById('tasks-table-body');
+            const sortedTasks = [...tasks].sort((a,b) => (a.completed === b.completed ? new Date(a.date) - new Date(b.date) : a.completed ? 1 : -1));
+            if(sortedTasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-slate-400">No active tasks</td></tr>';
+                return;
+            }
+            const today = new Date(); today.setHours(0,0,0,0);
+            tbody.innerHTML = sortedTasks.map(task => {
+                const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
+                const [y, m, d] = task.date.split('-').map(Number);
+                const taskDate = new Date(y, m - 1, d);
+                const isOverdue = !task.completed && taskDate < today;
+                return `
+                    <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="editTask('${task.id}')">
+                        <td class="p-4 text-center">
+                            <button onclick="event.stopPropagation(); toggleTask('${task.id}', ${!task.completed})" class="w-6 h-6 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-emerald-500'}">
+                                ${task.completed ? '<i data-lucide="check" width="14"></i>' : ''}
+                            </button>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
+                            <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
+                        </td>
+                        <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600 font-bold' : 'text-slate-600'}">
+                                ${formatDateForDisplay(task.date)}
+                                ${task.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(task.time)}</span>` : ''}
+                                ${isOverdue ? '<span class="text-[10px] bg-red-100 text-red-600 px-1 rounded uppercase">Overdue</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="p-4 text-right">
+                            <button onclick="event.stopPropagation(); deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                        </td>
+                    </tr>`;
+            }).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderContacts() {
+            const grid = document.getElementById('contacts-grid');
+            if(contacts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-slate-400">No contacts added yet.</div>';
+                return;
+            }
+            const searchVal = document.getElementById('contact-search')?.value.toLowerCase() || '';
+            const filteredContacts = contacts.filter(c => 
+                (c.name && c.name.toLowerCase().includes(searchVal)) ||
+                (c.email && c.email.toLowerCase().includes(searchVal)) ||
+                (c.role && c.role.toLowerCase().includes(searchVal))
+            );
+            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Other': [] };
+            filteredContacts.forEach(c => {
+                const category = c.category || 'Other';
+                if (groups[category]) groups[category].push(c); else groups['Other'].push(c);
+            });
+
+            let html = '';
+            for (const [category, groupContacts] of Object.entries(groups)) {
+                if (groupContacts.length > 0) {
+                    html += `
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">${category} (${groupContacts.length})</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                ${groupContacts.map(c => {
+                                    const initial = (c.name && c.name.length > 0) ? c.name.charAt(0).toUpperCase() : '?';
+                                    let dealDisplay = 'General Contact';
+                                    const linkedDealIds = c.dealIds || (c.dealId ? [c.dealId] : []);
+                                    if (linkedDealIds.length > 0) {
+                                        const firstDeal = deals.find(d => d.id === linkedDealIds[0]);
+                                        if (firstDeal) dealDisplay = linkedDealIds.length > 1 ? `${firstDeal.name} + ${linkedDealIds.length - 1} more` : firstDeal.name;
+                                    }
+                                    return `
+                                    <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition relative group cursor-pointer" onclick="editContact('${c.id}')">
+                                        <button onclick="event.stopPropagation(); deleteContact('${c.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="x" width="16"></i></button>
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">${initial}</div>
+                                            <div>
+                                                <h4 class="font-bold text-slate-800">${c.name || 'No Name'}</h4>
+                                                <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">${c.role || 'No Role'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 mt-4 text-sm text-slate-600">
+                                            <div class="flex items-center gap-2"><i data-lucide="mail" width="14" class="text-slate-400"></i> <span class="truncate hover:text-emerald-600">${c.email || 'No Email'}</span></div>
+                                            <div class="flex items-center gap-2"><i data-lucide="phone" width="14" class="text-slate-400"></i> <span>${c.phone || 'No Phone'}</span></div>
+                                            <div class="flex items-center gap-2"><i data-lucide="briefcase" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${dealDisplay}</span></div>
+                                            ${c.company ? `<div class="flex items-center gap-2"><i data-lucide="building" width="14" class="text-slate-400"></i> <span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${c.company}</span></div>` : ''}
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
                 }
-                e.target.reset(); closeModal('deal-modal');
-            } catch (error) { console.error(error); alert("Failed to save deal: " + error.message); } 
-            finally { btn.innerText = originalText; btn.disabled = false; }
-        });
+            }
+            if (filteredContacts.length === 0) html = '<div class="col-span-full text-center py-12 text-slate-400">No contacts found.</div>';
+            grid.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+        }
 
-        document.getElementById('task-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('task-submit-btn'); const originalText = btn.innerText;
-            btn.innerText = 'Saving...'; btn.disabled = true;
-            try {
-                const taskId = document.getElementById('task-id').value;
-                const data = {
-                    title: document.getElementById('task-title').value,
-                    date: document.getElementById('task-date').value,
-                    time: document.getElementById('task-time').value,
-                    dealId: document.getElementById('task-deal-id').value,
-                    notes: document.getElementById('task-notes').value,
-                };
-                const collectionRef = getCollectionRef("gc_tasks");
-                
-                if (taskId) await updateDoc(doc(collectionRef, taskId), data);
-                else { data.completed = false; data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
-                e.target.reset(); closeModal('task-modal');
-            } catch (error) { console.error(error); alert("Failed to save task: " + error.message); } 
-            finally { btn.innerText = originalText; btn.disabled = false; }
-        });
+        window.filterContacts = () => renderContacts();
 
-        document.getElementById('contact-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('contact-submit-btn'); const originalText = btn.innerText;
-            btn.innerText = 'Saving...'; btn.disabled = true;
-            try {
-                const contactId = document.getElementById('contact-id').value;
-                const selectedDealIds = Array.from(document.querySelectorAll('.contact-deal-checkbox:checked')).map(cb => cb.value);
-                const data = {
-                    name: document.getElementById('contact-name').value,
-                    role: document.getElementById('contact-role').value,
-                    email: document.getElementById('contact-email').value,
-                    phone: document.getElementById('contact-phone').value,
-                    company: document.getElementById('contact-company').value,
-                    category: document.getElementById('contact-category').value,
-                    dealIds: selectedDealIds, 
-                    dealId: null 
-                };
-                const collectionRef = getCollectionRef("gc_contacts");
-                
-                if (contactId) await updateDoc(doc(collectionRef, contactId), data);
-                else { data.createdAt = serverTimestamp(); await addDoc(collectionRef, data); }
-                e.target.reset(); closeModal('contact-modal');
-            } catch (error) { console.error(error); alert("Failed to save contact: " + error.message); } 
-            finally { btn.innerText = originalText; btn.disabled = false; }
-        });
-        
-        // Start System
-        setupAuthListeners();
+        // --- Dashboard Render ---
+        function renderDashboard() {
+            // Force safe rendering with fallbacks
+            const safeDeals = Array.isArray(deals) ? deals : [];
+            const safeTasks = Array.isArray(tasks) ? tasks : [];
+
+            document.getElementById('dash-total-props').textContent = safeDeals.length;
+            document.getElementById('dash-active-leases').textContent = safeDeals.filter(d => d.stage === 'leased').length;
+            document.getElementById('dash-sold-props').textContent = safeDeals.filter(d => d.stage === 'sold').length;
+            document.getElementById('dash-pending-tasks').textContent = safeTasks.filter(t => !t.completed).length;
+
+            const upcomingTasks = safeTasks.filter(t => !t.completed).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
+            const taskContainer = document.getElementById('dash-upcoming-list');
+            if (upcomingTasks.length === 0) taskContainer.innerHTML = '<div class="text-slate-400 text-sm italic">No upcoming tasks.</div>';
+            else {
+                taskContainer.innerHTML = upcomingTasks.map(t => `
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded border border-transparent hover:border-slate-100 transition cursor-pointer" onclick="editTask('${t.id}')">
+                        <div class="bg-blue-100 text-blue-600 rounded p-1.5 shrink-0"><i data-lucide="calendar" width="16"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-slate-800 truncate">${t.title}</div>
+                            <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                        </div>
+                    </div>`).join('');
+            }
+
+            let totalEstProfit = 0, totalEstMarketValue = 0, totalRealizedProfit = 0;
+            const annualData = {};
+
+            safeDeals.forEach(deal => {
+                try {
+                    const fin = calculateDealFinancials(deal);
+                    if (deal.stage === 'sold') {
+                        const profit = fin.salePrice - fin.totalCosts;
+                        if (fin.salePrice > 0) {
+                             totalRealizedProfit += profit;
+                            const year = deal.saleDate ? new Date(deal.saleDate).getFullYear() : new Date().getFullYear();
+                            const safeYear = isNaN(year) ? new Date().getFullYear() : year;
+                            if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
+                            annualData[safeYear].realized += profit;
+                        }
+                    } else {
+                        if (fin.marketValue > 0) {
+                            totalEstMarketValue += fin.marketValue;
+                            const profit = fin.marketValue - fin.totalCosts;
+                            if(fin.purchasePrice > 0) totalEstProfit += profit;
+                            let year = deal.commencementDate ? new Date(deal.commencementDate).getFullYear() : (deal.createdAt?.toDate ? deal.createdAt.toDate().getFullYear() : new Date().getFullYear());
+                            const safeYear = isNaN(year) ? new Date().getFullYear() : year;
+                            if(!annualData[safeYear]) annualData[safeYear] = { realized: 0, potential: 0 };
+                            if(fin.purchasePrice > 0) annualData[safeYear].potential += profit;
+                        }
+                    }
+                } catch(e) { console.error("Error calc financials for deal", deal.id, e); }
+            });
+
+            const format = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+            document.getElementById('dash-est-market-value').textContent = format(totalEstMarketValue);
+            document.getElementById('dash-est-profit').textContent = format(totalEstProfit);
+            document.getElementById('dash-realized-profit').textContent = format(totalRealizedProfit);
+            
+            if(window.lucide) lucide.createIcons();
+            renderFinancialChart(annualData);
+        }
+
+        function renderFinancialChart(dataObj) {
+            const ctx = document.getElementById('financialChart');
+            if(!ctx) return;
+            const years = Object.keys(dataObj).sort();
+            const realizedData = years.map(y => dataObj[y].realized);
+            const potentialData = years.map(y => dataObj[y].potential);
+
+            if(financialChart) financialChart.destroy();
+
+            financialChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [
+                        { label: 'Realized Profit', data: realizedData, backgroundColor: '#2563eb', borderRadius: 4 },
+                        { label: 'Potential Profit', data: potentialData, backgroundColor: '#10b981', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: function(value) {
+                            if(value >= 1000000 || value <= -1000000) return '$' + (value/1000000).toFixed(1) + 'M';
+                            if(value >= 1000 || value <= -1000) return '$' + (value/1000).toFixed(0) + 'k';
+                            return '$' + value;
+                        }}}
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
