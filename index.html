@@ -151,7 +151,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.39.1
+            v2.39.2
         </div>
     </div>
 
@@ -1080,7 +1080,7 @@
                             let badge = '';
                             if(deal.franchiseId) {
                                 const fran = franchises.find(f => f.id === deal.franchiseId);
-                                if(fran) badge = `<div class="absolute top-2 right-2"><span class="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded font-bold">${fran.name}</span></div>`;
+                                if(fran) badge = `<div class="absolute top-2 right-8"><span class="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded font-bold">${fran.name}</span></div>`;
                             }
 
                             return `
@@ -1421,6 +1421,9 @@
                     logDiagnostic(`📥 Loaded ${franchises.length} franchises.`);
                     try { renderFranchises(); } catch(e) { logDiagnostic(`⚠️ Franchises Render Failed: ${e.message}`, "error"); }
                     try { populateFranchiseSelects(); } catch(e) { logDiagnostic(`⚠️ Franchise Selects Failed: ${e.message}`, "error"); }
+                }, (error) => {
+                    console.error("Franchise Sync Error:", error);
+                    logDiagnostic(`❌ Franchises Error: ${error.code}`, "error");
                 });
 
                 // TASKS
@@ -2053,7 +2056,7 @@
                 switchView('franchises');
             } catch (error) {
                 console.error("Franchise save error:", error);
-                alert("Error saving franchise.");
+                alert("Error saving franchise: " + error.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = id ? 'Update Franchise' : 'Save Franchise Profile';
