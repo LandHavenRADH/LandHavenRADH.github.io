@@ -81,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.39 • Full System</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.41 • Full System</p>
             </div>
         </div>
     </div>
@@ -151,7 +151,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.39.2
+            v2.41.0
         </div>
     </div>
 
@@ -1116,11 +1116,12 @@
                 return;
             }
 
-            grid.innerHTML = franchises.map(f => `
+            grid.innerHTML = franchises.map(f => {
+                return `
                 <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer" onclick="window.editFranchise('${f.id}')">
                     <button onclick="event.stopPropagation(); window.deleteFranchise('${f.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
                     
-                    <div class="flex items-center gap-3 mb-4">
+                    <div class="flex items-center gap-3 mb-4 mt-2">
                         <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
                             <i data-lucide="store" width="20"></i>
                         </div>
@@ -1155,7 +1156,7 @@
                     
                     ${f.notes ? `<p class="mt-3 text-xs text-slate-500 italic truncate border-t border-slate-100 pt-2">"${f.notes}"</p>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
              if (window.lucide) lucide.createIcons();
         }
 
@@ -2059,11 +2060,19 @@
                 alert("Error saving franchise: " + error.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = id ? 'Update Franchise' : 'Save Franchise Profile';
+                btn.textContent = 'Save Franchise Profile';
             }
         });
         
-        window.deleteFranchise = async (id) => { if(confirm('Delete franchise profile?')) await deleteDoc(getDocRef('gc_franchises', id)); };
+        window.deleteFranchise = async (id) => { 
+            if(confirm('Delete franchise profile?')) {
+                try {
+                    await deleteDoc(getDocRef('gc_franchises', id)); 
+                } catch(e) {
+                    alert("Error deleting: " + e.message);
+                }
+            }
+        };
 
 
         // TASKS
