@@ -1117,20 +1117,20 @@
 
             grid.innerHTML = franchises.map(f => {
                 return `
-                <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer" onclick="window.editFranchise('${f.id}')">
-                    <button onclick="event.stopPropagation(); window.deleteFranchise('${f.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer flex flex-col h-full" onclick="window.editFranchise('${f.id}')">
+                    <button onclick="event.stopPropagation(); window.deleteFranchise('${f.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
                     
                     <div class="flex items-center gap-3 mb-4 mt-2">
-                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0">
                             <i data-lucide="store" width="20"></i>
                         </div>
                         <div>
-                            <h4 class="font-bold text-slate-800 text-lg">${f.name || 'No Name'}</h4>
+                            <h4 class="font-bold text-slate-800 text-lg leading-tight">${f.name || 'No Name'}</h4>
                             <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">${f.category || 'Retail'}</span>
                         </div>
                     </div>
 
-                    <div class="space-y-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                    <div class="space-y-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100 mb-3">
                          <div class="flex justify-between border-b border-slate-200 pb-1 mb-1">
                             <span class="text-xs text-slate-400">Sq Ft</span>
                             <span class="font-medium">${f.minSqFt || '?'} - ${f.maxSqFt || '?'}</span>
@@ -1143,17 +1143,23 @@
                             <span class="text-xs text-slate-400">Traffic</span>
                             <span class="font-medium">${f.traffic || '-'}</span>
                         </div>
-                        <div class="flex justify-between border-b border-slate-200 pb-1 mb-1">
+                        <div class="flex justify-between">
                             <span class="text-xs text-slate-400">Income</span>
                             <span class="font-medium">${f.income || '-'}</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-xs text-slate-400">Target Markets</span>
-                            <span class="font-medium truncate max-w-[120px]" title="${f.markets || ''}">${f.markets || '-'}</span>
-                        </div>
                     </div>
+
+                    ${f.markets ? `
+                    <div class="mb-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">Target Markets</span>
+                        <p class="text-sm text-slate-700 leading-snug bg-white p-1 rounded border border-transparent">${f.markets}</p>
+                    </div>` : ''}
                     
-                    ${f.notes ? `<p class="mt-3 text-xs text-slate-500 italic truncate border-t border-slate-100 pt-2">"${f.notes}"</p>` : ''}
+                    ${f.notes ? `
+                    <div class="mt-auto border-t border-slate-100 pt-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">Notes</span>
+                        <p class="text-xs text-slate-500 italic leading-relaxed">"${f.notes}"</p>
+                    </div>` : ''}
                 </div>
             `}).join('');
              if (window.lucide) lucide.createIcons();
