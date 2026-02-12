@@ -1076,18 +1076,17 @@
                                 formattedValue = valNum.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
                             } catch (e) { formattedValue = 'Error'; }
                             
-                            // Check for linked franchise
-                            let badge = '';
+                            // Check for linked franchise to replace title
+                            let displayTitle = deal.name;
                             if(deal.franchiseId) {
                                 const fran = franchises.find(f => f.id === deal.franchiseId);
-                                if(fran) badge = `<div class="absolute top-2 right-8"><span class="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded font-bold">${fran.name}</span></div>`;
+                                if(fran) displayTitle = fran.name;
                             }
 
                             return `
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="window.openDealDetail('${deal.id}')">
-                                ${badge}
                                 <div class="flex justify-between items-start mb-2 pr-4">
-                                    <h4 class="font-bold text-slate-800">${deal.name}</h4>
+                                    <h4 class="font-bold text-slate-800">${displayTitle}</h4>
                                     <button onclick="event.stopPropagation(); window.deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition absolute top-2 right-2"><i data-lucide="trash-2" width="14"></i></button>
                                 </div>
                                 <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
