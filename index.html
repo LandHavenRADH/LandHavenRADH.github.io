@@ -81,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.41 • Full System</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.42 • Full System</p>
             </div>
         </div>
     </div>
@@ -151,7 +151,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.41.0
+            v2.42.0
         </div>
     </div>
 
@@ -752,7 +752,11 @@
                             <label class="block text-xs font-medium text-slate-600 mb-1">Traffic Count (VPD)</label>
                             <input type="text" id="fran-traffic" class="w-full p-2 border rounded-md text-sm outline-none" placeholder="25,000+">
                         </div>
-                         <div class="col-span-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Population (Trade Area)</label>
+                            <input type="text" id="fran-population" class="w-full p-2 border rounded-md text-sm outline-none" placeholder="50,000+ (3mi)">
+                        </div>
+                         <div>
                             <label class="block text-xs font-medium text-slate-600 mb-1">Household Income Req ($)</label>
                             <input type="text" id="fran-income" class="w-full p-2 border rounded-md text-sm outline-none" placeholder="60,000+">
                         </div>
@@ -1142,6 +1146,10 @@
                          <div class="flex justify-between border-b border-slate-200 pb-1 mb-1">
                             <span class="text-xs text-slate-400">Traffic</span>
                             <span class="font-medium">${f.traffic || '-'}</span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-200 pb-1 mb-1">
+                            <span class="text-xs text-slate-400">Population</span>
+                            <span class="font-medium">${f.population || '-'}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-xs text-slate-400">Income</span>
@@ -1578,6 +1586,7 @@
                         <div class="col-span-2 border-t border-purple-200 mt-2 pt-2"><span class="block text-xs text-purple-600 opacity-70">Requirements:</span> 
                             SqFt: ${fran.minSqFt || '?'} - ${fran.maxSqFt || '?'}<br>
                             VPD: ${fran.traffic || '-'}<br>
+                            Pop: ${fran.population || '-'}<br>
                             Markets: ${fran.markets || 'Not specified'}<br>
                             Notes: ${fran.notes || 'None'}
                         </div>
@@ -1935,6 +1944,7 @@
             document.getElementById('fran-lot').value = fran.lotSize || '';
             document.getElementById('fran-traffic').value = fran.traffic || '';
             document.getElementById('fran-income').value = fran.income || '';
+            document.getElementById('fran-population').value = fran.population || '';
             document.getElementById('fran-markets').value = fran.markets || ''; // NEW: Populate Markets
             document.getElementById('fran-notes').value = fran.notes || '';
             
@@ -2050,6 +2060,7 @@
                     lotSize: document.getElementById('fran-lot').value,
                     traffic: document.getElementById('fran-traffic').value,
                     income: document.getElementById('fran-income').value,
+                    population: document.getElementById('fran-population').value,
                     markets: document.getElementById('fran-markets').value, // NEW FIELD
                     notes: document.getElementById('fran-notes').value,
                     userId: currentUserId
