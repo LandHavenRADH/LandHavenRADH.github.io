@@ -81,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.38 • Full System</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.39 • Full System</p>
             </div>
         </div>
     </div>
@@ -151,7 +151,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.39.0
+            v2.39.1
         </div>
     </div>
 
@@ -760,6 +760,11 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Target Markets</label>
+                    <input type="text" id="fran-markets" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Phoenix, Denver, Austin">
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">General Notes / Specifics</label>
                     <textarea id="fran-notes" rows="3" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Needs drive-thru, AM side of road, etc."></textarea>
                 </div>
@@ -1138,9 +1143,13 @@
                             <span class="text-xs text-slate-400">Traffic</span>
                             <span class="font-medium">${f.traffic || '-'}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between border-b border-slate-200 pb-1 mb-1">
                             <span class="text-xs text-slate-400">Income</span>
                             <span class="font-medium">${f.income || '-'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-slate-400">Target Markets</span>
+                            <span class="font-medium truncate max-w-[120px]" title="${f.markets || ''}">${f.markets || '-'}</span>
                         </div>
                     </div>
                     
@@ -1560,6 +1569,7 @@
                         <div class="col-span-2 border-t border-purple-200 mt-2 pt-2"><span class="block text-xs text-purple-600 opacity-70">Requirements:</span> 
                             SqFt: ${fran.minSqFt || '?'} - ${fran.maxSqFt || '?'}<br>
                             VPD: ${fran.traffic || '-'}<br>
+                            Markets: ${fran.markets || 'Not specified'}<br>
                             Notes: ${fran.notes || 'None'}
                         </div>
                     `;
@@ -1916,6 +1926,7 @@
             document.getElementById('fran-lot').value = fran.lotSize || '';
             document.getElementById('fran-traffic').value = fran.traffic || '';
             document.getElementById('fran-income').value = fran.income || '';
+            document.getElementById('fran-markets').value = fran.markets || ''; // NEW: Populate Markets
             document.getElementById('fran-notes').value = fran.notes || '';
             
             document.getElementById('franchise-modal-title').textContent = 'Edit Franchise';
@@ -2030,6 +2041,7 @@
                     lotSize: document.getElementById('fran-lot').value,
                     traffic: document.getElementById('fran-traffic').value,
                     income: document.getElementById('fran-income').value,
+                    markets: document.getElementById('fran-markets').value, // NEW FIELD
                     notes: document.getElementById('fran-notes').value,
                     userId: currentUserId
                 };
