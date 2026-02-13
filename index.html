@@ -45,10 +45,18 @@
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-8">
                 <div class="flex flex-col items-center mb-6">
-                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
+                    <!-- Updated Logo: Replace the src below with your company logo URL -->
+                    <img src="https://placehold.co/200x200/e2e8f0/1e293b?text=GLG" 
+                         alt="Ground Lease Group" 
+                         class="w-20 h-20 rounded-xl object-contain mb-3"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    
+                    <!-- Fallback Icon (Hidden if logo loads) -->
+                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3" style="display:none;">
                         <i data-lucide="building" width="24"></i>
                     </div>
-                    <h1 class="text-2xl font-extrabold text-slate-900">GroundWorks</h1>
+
+                    <h1 class="text-2xl font-extrabold text-slate-900">Ground Lease Group</h1>
                     <p class="text-slate-500 text-sm mt-1">Retail Lease Management System</p>
                 </div>
 
@@ -741,7 +749,7 @@
                 <!-- ADDED: Logo URL Input -->
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Logo URL (Optional)</label>
-                    <input type="url" id="fran-logo" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" placeholder="https://example.com/logo.png">
+                    <input type="url" id="fran-logo" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" placeholder="https://i.postimg.cc/pTJjSztt/GLG-Logo.png">
                 </div>
 
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
