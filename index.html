@@ -341,9 +341,14 @@
             <!-- VIEW: CALCULATOR -->
             <div id="view-calculator" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden overflow-y-auto">
                 <div class="flex justify-between items-center mb-6 shrink-0">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Investment Financing Calculator</h2>
-                        <p class="text-slate-500 text-sm">Calculate required rental rates and market valuation.</p>
+                    <div class="flex items-center gap-4">
+                        <!-- ADDED: Logo Image Placeholder -->
+                        <img id="calc-deal-logo" class="w-16 h-16 rounded-lg object-contain border border-slate-200 bg-white hidden shadow-sm p-1" alt="Franchise Logo">
+                        
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Investment Financing Calculator</h2>
+                            <p class="text-slate-500 text-sm">Calculate required rental rates and market valuation.</p>
+                        </div>
                     </div>
                     <div class="flex gap-2 items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200">
                          <span class="text-sm text-slate-600 font-medium">Load Deal:</span>
@@ -1910,10 +1915,17 @@
         }
 
         window.loadDealToCalculator = (dealId) => {
+            // Logo Element
+            const logoEl = document.getElementById('calc-deal-logo');
+
             if (!dealId) {
                 document.getElementById('calc-price').value = 500000;
                 currentlyLoadedDealForCalc = null;
                 formatField(document.getElementById('calc-price'), 'currency');
+                
+                // Hide logo on reset
+                if(logoEl) logoEl.style.display = 'none';
+                
                 window.calculateRent();
                 return;
             }
@@ -1923,6 +1935,20 @@
             if (selectElement) selectElement.value = dealId;
 
             if (deal) {
+                // Update Logo
+                if (logoEl) {
+                    let hasLogo = false;
+                    if (deal.franchiseId) {
+                        const fran = franchises.find(f => f.id === deal.franchiseId);
+                        if (fran && fran.logoUrl) {
+                            logoEl.src = fran.logoUrl;
+                            logoEl.style.display = 'block';
+                            hasLogo = true;
+                        }
+                    }
+                    if (!hasLogo) logoEl.style.display = 'none';
+                }
+
                 if (deal.value) {
                     const priceEl = document.getElementById('calc-price');
                     priceEl.value = parseFloat(deal.value.toString().replace(/,/g, ''));
