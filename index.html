@@ -81,7 +81,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.42 • Full System</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.43 • Full System</p>
             </div>
         </div>
     </div>
@@ -151,7 +151,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.42.0
+            v2.43.0
         </div>
     </div>
 
@@ -733,6 +733,12 @@
                     </div>
                 </div>
 
+                <!-- ADDED: Logo URL Input -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Logo URL (Optional)</label>
+                    <input type="url" id="fran-logo" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" placeholder="https://example.com/logo.png">
+                </div>
+
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
                     <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Site Requirements</h4>
                     <div class="grid grid-cols-2 gap-3">
@@ -1120,14 +1126,21 @@
             }
 
             grid.innerHTML = franchises.map(f => {
+                const logoHtml = f.logoUrl 
+                    ? `<img src="${f.logoUrl}" class="w-10 h-10 rounded-full object-cover border border-slate-200 bg-white shrink-0" alt="${f.name}" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                       <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0" style="display:none;">
+                            <i data-lucide="store" width="20"></i>
+                       </div>`
+                    : `<div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0">
+                            <i data-lucide="store" width="20"></i>
+                       </div>`;
+
                 return `
                 <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer flex flex-col h-full" onclick="window.editFranchise('${f.id}')">
                     <button onclick="event.stopPropagation(); window.deleteFranchise('${f.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
                     
                     <div class="flex items-center gap-3 mb-4 mt-2">
-                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0">
-                            <i data-lucide="store" width="20"></i>
-                        </div>
+                        ${logoHtml}
                         <div>
                             <h4 class="font-bold text-slate-800 text-lg leading-tight">${f.name || 'No Name'}</h4>
                             <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">${f.category || 'Retail'}</span>
@@ -1947,6 +1960,7 @@
             document.getElementById('fran-population').value = fran.population || '';
             document.getElementById('fran-markets').value = fran.markets || ''; // NEW: Populate Markets
             document.getElementById('fran-notes').value = fran.notes || '';
+            document.getElementById('fran-logo').value = fran.logoUrl || ''; // NEW: Populate Logo
             
             document.getElementById('franchise-modal-title').textContent = 'Edit Franchise';
             document.getElementById('franchise-submit-btn').textContent = 'Update Franchise';
@@ -2063,6 +2077,7 @@
                     population: document.getElementById('fran-population').value,
                     markets: document.getElementById('fran-markets').value, // NEW FIELD
                     notes: document.getElementById('fran-notes').value,
+                    logoUrl: document.getElementById('fran-logo').value, // NEW
                     userId: currentUserId
                 };
 
