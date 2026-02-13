@@ -1086,17 +1086,30 @@
                                 formattedValue = valNum.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
                             } catch (e) { formattedValue = 'Error'; }
                             
-                            // Check for linked franchise to replace title
+                            // Check for linked franchise to replace title & get logo
                             let displayTitle = deal.name;
+                            let logoHtml = '';
+                            
                             if(deal.franchiseId) {
                                 const fran = franchises.find(f => f.id === deal.franchiseId);
-                                if(fran) displayTitle = fran.name;
+                                if(fran) {
+                                    displayTitle = fran.name;
+                                    if (fran.logoUrl) {
+                                        logoHtml = `<img src="${fran.logoUrl}" class="w-8 h-8 rounded-full object-cover border border-slate-200 bg-white shrink-0 mr-2" alt="${fran.name}" onerror="this.style.display='none'">`;
+                                    } else {
+                                        // Fallback icon for linked deal
+                                        logoHtml = `<div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shrink-0 mr-2"><i data-lucide="store" width="14"></i></div>`;
+                                    }
+                                }
                             }
 
                             return `
                             <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group relative drag-card cursor-pointer" onclick="window.openDealDetail('${deal.id}')">
-                                <div class="flex justify-between items-start mb-2 pr-4">
-                                    <h4 class="font-bold text-slate-800">${displayTitle}</h4>
+                                <div class="flex justify-between items-start mb-2 pr-6">
+                                    <div class="flex items-center">
+                                        ${logoHtml}
+                                        <h4 class="font-bold text-slate-800 leading-tight">${displayTitle}</h4>
+                                    </div>
                                     <button onclick="event.stopPropagation(); window.deleteDeal('${deal.id}')" class="text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition absolute top-2 right-2"><i data-lucide="trash-2" width="14"></i></button>
                                 </div>
                                 <p class="text-xs text-slate-500 flex items-center gap-1 mb-3">
@@ -1126,23 +1139,24 @@
             }
 
             grid.innerHTML = franchises.map(f => {
+                // INCREASED SIZE: w-20 h-20 (80px)
                 const logoHtml = f.logoUrl 
-                    ? `<img src="${f.logoUrl}" class="w-10 h-10 rounded-full object-cover border border-slate-200 bg-white shrink-0" alt="${f.name}" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                       <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0" style="display:none;">
-                            <i data-lucide="store" width="20"></i>
+                    ? `<img src="${f.logoUrl}" class="w-20 h-20 rounded-full object-cover border border-slate-200 bg-white shrink-0 shadow-sm" alt="${f.name}" onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                       <div class="w-20 h-20 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-3xl shrink-0 shadow-sm" style="display:none;">
+                            <i data-lucide="store" width="32"></i>
                        </div>`
-                    : `<div class="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shrink-0">
-                            <i data-lucide="store" width="20"></i>
+                    : `<div class="w-20 h-20 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-3xl shrink-0 shadow-sm">
+                            <i data-lucide="store" width="32"></i>
                        </div>`;
 
                 return `
                 <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer flex flex-col h-full" onclick="window.editFranchise('${f.id}')">
                     <button onclick="event.stopPropagation(); window.deleteFranchise('${f.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
                     
-                    <div class="flex items-center gap-3 mb-4 mt-2">
+                    <div class="flex items-center gap-4 mb-4 mt-2">
                         ${logoHtml}
                         <div>
-                            <h4 class="font-bold text-slate-800 text-lg leading-tight">${f.name || 'No Name'}</h4>
+                            <h4 class="font-bold text-slate-800 text-xl leading-tight">${f.name || 'No Name'}</h4>
                             <span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">${f.category || 'Retail'}</span>
                         </div>
                     </div>
@@ -1593,15 +1607,33 @@
                 const fran = franchises.find(f => f.id === deal.franchiseId);
                 if (fran) {
                     franInfoDiv.classList.remove('hidden');
+                    
+                    // Add Logo to Detail View
+                    const logoHtml = fran.logoUrl 
+                        ? `<img src="${fran.logoUrl}" class="w-12 h-12 rounded-full object-cover border border-purple-200 bg-white mr-3" onerror="this.style.display='none'">` 
+                        : `<div class="w-12 h-12 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center font-bold mr-3"><i data-lucide="store" width="20"></i></div>`;
+                        
                     franContentDiv.innerHTML = `
-                        <div><span class="block text-xs text-purple-600 opacity-70">Linked Profile:</span> <span class="font-bold">${fran.name}</span></div>
-                        <div><span class="block text-xs text-purple-600 opacity-70">Category:</span> ${fran.category}</div>
-                        <div class="col-span-2 border-t border-purple-200 mt-2 pt-2"><span class="block text-xs text-purple-600 opacity-70">Requirements:</span> 
-                            SqFt: ${fran.minSqFt || '?'} - ${fran.maxSqFt || '?'}<br>
-                            VPD: ${fran.traffic || '-'}<br>
-                            Pop: ${fran.population || '-'}<br>
-                            Markets: ${fran.markets || 'Not specified'}<br>
-                            Notes: ${fran.notes || 'None'}
+                        <div class="col-span-2 flex items-center mb-3 border-b border-purple-200 pb-3">
+                            ${logoHtml}
+                            <div>
+                                <span class="block text-xs text-purple-600 opacity-70">Linked Profile</span>
+                                <span class="font-bold text-lg leading-none">${fran.name}</span>
+                                <span class="text-xs text-purple-600 ml-1">(${fran.category})</span>
+                            </div>
+                        </div>
+                        <div class="col-span-2 grid grid-cols-2 gap-2 text-sm">
+                            <div><span class="block text-xs text-purple-600 opacity-70">Sq Ft:</span> ${fran.minSqFt || '?'} - ${fran.maxSqFt || '?'}</div>
+                            <div><span class="block text-xs text-purple-600 opacity-70">VPD:</span> ${fran.traffic || '-'}</div>
+                            <div><span class="block text-xs text-purple-600 opacity-70">Population:</span> ${fran.population || '-'}</div>
+                            <div><span class="block text-xs text-purple-600 opacity-70">Income:</span> ${fran.income || '-'}</div>
+                        </div>
+                        <div class="col-span-2 border-t border-purple-200 mt-2 pt-2">
+                            <span class="block text-xs text-purple-600 opacity-70">Target Markets:</span> ${fran.markets || 'Not specified'}
+                        </div>
+                         <div class="col-span-2 mt-1">
+                            <span class="block text-xs text-purple-600 opacity-70">Notes:</span> 
+                            <span class="italic text-purple-800">${fran.notes || 'None'}</span>
                         </div>
                     `;
                 } else {
