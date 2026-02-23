@@ -915,6 +915,7 @@
             </div>
             <form id="contact-form" class="p-6 space-y-4">
                 <input type="hidden" id="contact-id">
+                <input type="hidden" id="contact-dd-item-id">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
@@ -1817,6 +1818,7 @@
             } else if (id === 'contact-modal') {
                 document.getElementById('contact-form').reset();
                 document.getElementById('contact-id').value = ''; 
+                document.getElementById('contact-dd-item-id').value = ''; // IMPORTANT: Clear DD state for normal opens
                 document.getElementById('contact-modal-title').textContent = 'Add Contact';
                 document.getElementById('contact-submit-btn').textContent = 'Save Contact';
                 populateDealSelects();
@@ -1980,6 +1982,21 @@
         }
 
         // --- Due Diligence Checklist Logic ---
+        
+        // NEW: Open specific Contact Modal for a DD Item
+        window.openContactModalForDD = (dealId, itemId) => {
+            window.openModal('contact-modal', dealId); // Opens the modal and selects the deal
+            
+            const deal = deals.find(d => d.id === dealId);
+            const item = deal?.checklist?.find(i => i.id === itemId);
+            
+            if (item) {
+                document.getElementById('contact-dd-item-id').value = itemId; // Store hidden reference
+                document.getElementById('contact-category').value = 'Due Diligence'; // Pre-select category
+                document.getElementById('contact-role').value = item.text; // Pre-fill title with task name
+            }
+        };
+
         window.renderDealChecklist = (deal) => {
             const container = document.getElementById('dd-modal-checklist');
             if (!container) return;
@@ -2002,10 +2019,9 @@
                                 <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
                                 <button onclick="event.stopPropagation(); window.removeDDContact('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
                             </span>` : 
-                            `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <input type="text" id="dd-contact-${item.id}" placeholder="Add Contact..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-emerald-500 w-28" onkeypress="if(event.key === 'Enter') window.assignDDContact('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDContact('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-emerald-600 p-1.5 bg-slate-100 rounded hover:bg-emerald-50 transition border border-slate-200" title="Save Contact"><i data-lucide="check" width="14"></i></button>
-                            </div>`
+                            `<button onclick="event.stopPropagation(); window.openContactModalForDD('${deal.id}', '${item.id}')" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-md border border-blue-200 transition flex items-center gap-1 opacity-0 group-hover:opacity-100 whitespace-nowrap shrink-0">
+                                <i data-lucide="user-plus" width="14"></i> Add Contact
+                            </button>`
                         }
                         <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
                     </div>
@@ -2014,42 +2030,6 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDContact = async (dealId, itemId) => {
-            const input = document.getElementById(`dd-contact-${itemId}`);
-            if(!input) return;
-            const contactName = input.value.trim();
-            if(!contactName) return;
-
-            const deal = deals.find(d => d.id === dealId);
-            if (!deal) return;
-            
-            const checklist = deal.checklist || [];
-            const itemToUpdate = checklist.find(i => i.id === itemId);
-            if(!itemToUpdate) return;
-            
-            // 1. Update Checklist Item with Contact Name
-            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, contactName } : item);
-            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
-            
-            // 2. Automatically Create New Contact in the Contact Book
-            const contactData = {
-                name: contactName,
-                role: itemToUpdate.text, // e.g. "Survey (ALTA/NSPS)"
-                company: '',
-                email: '',
-                phone: '',
-                category: 'Due Diligence',
-                dealIds: [dealId],
-                userId: currentUserId
-            };
-            
-            try {
-                await addDoc(getCollectionRef('gc_contacts'), contactData);
-            } catch (err) {
-                console.error("Error creating auto-contact:", err);
-            }
-        }
-        
         window.removeDDContact = async (dealId, itemId) => {
             const deal = deals.find(d => d.id === dealId);
             if (!deal) return;
@@ -2624,6 +2604,7 @@
             btn.textContent = 'Saving...';
             try {
                 const id = document.getElementById('contact-id').value;
+                const ddItemId = document.getElementById('contact-dd-item-id').value; // Check if it's a DD attachment
                 
                 // Get selected deal IDs
                 const selectedDeals = [];
@@ -2643,8 +2624,24 @@
                 if (id) await updateDoc(getDocRef('gc_contacts', id), contactData);
                 else await addDoc(getCollectionRef('gc_contacts'), contactData);
                 
+                // If it was a DD contact, update the checklist item
+                if (ddItemId) {
+                    const dealToUpdate = deals.find(d => d.checklist && d.checklist.some(i => i.id === ddItemId));
+                    if (dealToUpdate) {
+                        const updatedChecklist = dealToUpdate.checklist.map(item => 
+                            item.id === ddItemId ? { ...item, contactName: contactData.name } : item
+                        );
+                        await updateDoc(getDocRef('gc_deals', dealToUpdate.id), { checklist: updatedChecklist });
+                    }
+                }
+                
                 closeModal('contact-modal');
-                switchView('contacts');
+                
+                // Only switch to contacts view if we are NOT currently looking at the DD modal or Deal Detail
+                if (!ddItemId && document.getElementById('dd-modal').classList.contains('hidden') && document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                    switchView('contacts');
+                }
+                
             } catch (error) {
                 console.error("Contact save error:", error);
                 alert("Error saving contact.");
