@@ -2090,9 +2090,9 @@
                             <!-- Multiple Links Array -->
                             ${linksHtml}
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
-                                <input type="text" id="dd-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <input type="url" id="dd-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                                <input type="text" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
                             </div>
                             
                             ${item.cost ? 
@@ -2102,8 +2102,8 @@
                                 </span>` :
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
-                                    <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                    <input type="text" inputmode="decimal" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
                         </div>
@@ -2122,9 +2122,10 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDLink = async (dealId, itemId) => {
-            const nameInput = document.getElementById(`dd-link-name-${itemId}`);
-            const urlInput = document.getElementById(`dd-link-url-${itemId}`);
+        window.assignDDLink = async (dealId, itemId, containerEl) => {
+            if(!containerEl) return;
+            const nameInput = containerEl.querySelector('input[type="text"]');
+            const urlInput = containerEl.querySelector('input[type="url"]');
             if(!nameInput || !urlInput) return;
             
             let name = nameInput.value.trim() || 'Document';
@@ -2167,8 +2168,7 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
-        window.assignDDCost = async (dealId, itemId) => {
-            const inputEl = document.getElementById(`dd-cost-${itemId}`);
+        window.assignDDCost = async (dealId, itemId, inputEl) => {
             if(!inputEl) return;
             const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
             if(!costStr) return;
@@ -2180,9 +2180,15 @@
             
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, cost } : item);
+            
+            // Feed through to Landlord's Work
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist
+                checklist: updatedChecklist,
+                calcParams: calcParams
             });
         }
 
@@ -2197,9 +2203,15 @@
                 }
                 return item;
             });
+            
+            // Feed through to Landlord's Work
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist
+                checklist: updatedChecklist,
+                calcParams: calcParams
             });
         }
 
@@ -2250,9 +2262,15 @@
             if (!deal) return;
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.filter(item => item.id !== itemId);
+            
+            // Re-calculate Total Cost in case a priced item is deleted
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist
+                checklist: updatedChecklist,
+                calcParams: calcParams
             });
         }
 
