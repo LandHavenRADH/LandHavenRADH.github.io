@@ -1678,7 +1678,7 @@
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
-            renderDealChecklist(deal); // Render the Checklist
+            renderDealChecklist(deal); // Render the Due Diligence Checklist
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
 
@@ -1730,7 +1730,7 @@
             `).join('');
         }
 
-        // --- Checklist Logic ---
+        // --- Due Diligence Checklist Logic ---
         window.renderDealChecklist = (deal) => {
             const container = document.getElementById('detail-deal-checklist');
             if (!container) return;
@@ -2174,17 +2174,22 @@
                     updatedAt: serverTimestamp()
                 };
 
-                if (id) await updateDoc(getDocRef('gc_deals', id), dealData);
-                else {
+                if (id) {
+                    await updateDoc(getDocRef('gc_deals', id), dealData);
+                } else {
                     dealData.createdAt = serverTimestamp();
                     
-                    // NEW: Add default checklist to brand new deals
+                    // NEW: Add default commercial development checklist to brand new deals
                     dealData.checklist = [
-                        { id: Date.now().toString() + '-1', text: 'Survey', completed: false },
-                        { id: Date.now().toString() + '-2', text: 'Site Clearing', completed: false },
-                        { id: Date.now().toString() + '-3', text: 'Utilities', completed: false },
-                        { id: Date.now().toString() + '-4', text: 'Obtain Zoning', completed: false },
-                        { id: Date.now().toString() + '-5', text: 'Site Work', completed: false }
+                        { id: Date.now().toString() + '-1', text: 'Survey (ALTA/NSPS)', completed: false },
+                        { id: Date.now().toString() + '-2', text: 'Environmental Phase I (ESA)', completed: false },
+                        { id: Date.now().toString() + '-3', text: 'Geotechnical/Soils Report', completed: false },
+                        { id: Date.now().toString() + '-4', text: 'Title Commitment & Exception Review', completed: false },
+                        { id: Date.now().toString() + '-5', text: 'Zoning Approval / Entitlements', completed: false },
+                        { id: Date.now().toString() + '-6', text: 'Utility Availability Verification', completed: false },
+                        { id: Date.now().toString() + '-7', text: 'Site Plan Approval', completed: false },
+                        { id: Date.now().toString() + '-8', text: 'Permitting', completed: false },
+                        { id: Date.now().toString() + '-9', text: 'Site Clearing / Demolition', completed: false }
                     ];
 
                     await addDoc(getCollectionRef('gc_deals'), dealData);
