@@ -142,6 +142,11 @@
                 <i data-lucide="map-pin" size="20"></i>
                 <span class="font-medium">Deal Pipeline</span>
             </button>
+            <!-- NEW DD TAB -->
+            <button onclick="switchView('duediligence'); toggleSidebar()" id="nav-duediligence" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                <i data-lucide="list-checks" size="20"></i>
+                <span class="font-medium">Due Diligence</span>
+            </button>
             <!-- NEW FRANCHISE TAB -->
             <button onclick="switchView('franchises'); toggleSidebar()" id="nav-franchises" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
                 <i data-lucide="store" size="20"></i>
@@ -259,6 +264,22 @@
                 <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4">
                     <div class="flex gap-6 min-w-max h-full" id="pipeline-container">
                         <div class="flex items-center justify-center h-full w-full text-slate-400">Loading Pipeline...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DUE DILIGENCE (NEW) -->
+            <div id="view-duediligence" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Due Diligence Tracking</h2>
+                        <p class="text-slate-500 text-sm">Manage environmental, survey, and title action items per deal.</p>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+                    <div class="flex gap-6 min-w-max h-full" id="dd-container">
+                        <div class="flex items-center justify-center h-full w-full text-slate-400">Loading Due Diligence...</div>
                     </div>
                 </div>
             </div>
@@ -663,14 +684,20 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <span class="text-xs text-slate-500 uppercase font-bold">Value</span>
-                        <div class="text-xl font-bold text-slate-800" id="detail-deal-value">$0</div>
+                        <div class="text-lg font-bold text-slate-800 truncate" id="detail-deal-value">$0</div>
                     </div>
                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <span class="text-xs text-slate-500 uppercase font-bold">Stage</span>
-                        <div class="text-xl font-bold text-emerald-600" id="detail-deal-stage">Prospect</div>
+                        <div class="text-lg font-bold text-emerald-600 truncate" id="detail-deal-stage">Prospect</div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition shadow-sm group" onclick="window.switchView('duediligence'); window.openDDDetail(currentDealId); closeModal('deal-detail-modal');">
+                        <span class="text-xs text-slate-500 uppercase font-bold flex justify-between items-center">
+                            Due Diligence <i data-lucide="arrow-right" width="12" class="text-slate-300 group-hover:text-blue-500 transition"></i>
+                        </span>
+                        <div class="text-lg font-bold text-blue-600 truncate" id="detail-deal-dd-status">Not Started</div>
                     </div>
                 </div>
                 
@@ -691,24 +718,6 @@
 
                         <div class="text-blue-700 font-bold pt-2 border-t border-blue-200">100% Finance?</div>
                         <div class="text-right pt-2 border-t border-blue-200" id="summary-finance">Checking...</div>
-                    </div>
-                </div>
-
-                <!-- NEW: Due Diligence Checklist Section -->
-                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Due Diligence Checklist
-                    </h4>
-                    
-                    <div id="detail-deal-checklist" class="space-y-1 mb-3 max-h-48 overflow-y-auto pr-2 no-scrollbar">
-                        <!-- Checklist items populated via JS -->
-                    </div>
-                    
-                    <div class="flex gap-2 pt-2 border-t border-slate-200">
-                        <input type="text" id="new-checklist-item" onkeypress="if(event.key === 'Enter') window.addChecklistItem()" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
-                        <button onclick="window.addChecklistItem()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
-                            <i data-lucide="plus" width="16"></i> Add
-                        </button>
                     </div>
                 </div>
 
@@ -734,6 +743,43 @@
                     <i data-lucide="calculator" width="16"></i> Run Numbers
                 </button>
                 <button onclick="closeModal('deal-detail-modal')" class="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DD Detail Modal (Checklist) -->
+    <div id="dd-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50 shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800" id="dd-modal-deal-name">Deal Name</h3>
+                    <p class="text-sm text-slate-500">Due Diligence Checklist</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <button onclick="window.openDealDetail(currentDealId); window.switchView('pipeline'); closeModal('dd-modal')" class="flex items-center gap-1 text-xs font-bold bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-50 transition text-slate-700">
+                        <i data-lucide="external-link" width="14"></i> Deal Details
+                    </button>
+                    <button onclick="closeModal('dd-modal')" class="text-slate-400 hover:text-red-500 ml-2"><i data-lucide="x" width="24"></i></button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto bg-slate-50">
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Action Items
+                    </h4>
+                    
+                    <div id="dd-modal-checklist" class="space-y-1 mb-4">
+                        <!-- Checklist items populated via JS -->
+                    </div>
+                    
+                    <div class="flex gap-2 pt-3 border-t border-slate-100">
+                        <input type="text" id="new-checklist-item" onkeypress="if(event.key === 'Enter') window.addChecklistItem()" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
+                        <button onclick="window.addChecklistItem()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="plus" width="16"></i> Add
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1068,6 +1114,13 @@
             { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
         ];
 
+        // NEW: DD STAGES for Kanban Board
+        const DD_STAGES = [
+            { id: 'not_started', label: 'Not Started', color: 'border-slate-400' },
+            { id: 'in_progress', label: 'In Progress', color: 'border-blue-500' },
+            { id: 'completed', label: 'Completed', color: 'border-emerald-500' }
+        ];
+
         function populateDealSelects() {
             const selects = [
                 document.getElementById('task-deal-id'),
@@ -1090,7 +1143,6 @@
             }
         }
 
-        // NEW: Populate Franchise Select dropdown in Deal Modal
         function populateFranchiseSelects() {
             const franSelect = document.getElementById('deal-franchise-id');
             if(!franSelect) return;
@@ -1108,7 +1160,7 @@
             STAGES.forEach(stage => {
                 const stageDeals = deals.filter(d => d.stage === stage.id);
                 const col = document.createElement('div');
-                col.className = 'w-80 flex flex-col h-full';
+                col.className = 'w-80 flex flex-col h-full shrink-0';
                 col.innerHTML = `
                     <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
                         <span class="flex-1">${stage.label}</span>
@@ -1166,6 +1218,75 @@
             });
             if (window.lucide) lucide.createIcons();
         }
+
+        // NEW: Render Due Diligence Tab Board
+        function renderDueDiligence() {
+            const container = document.getElementById('dd-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            // Render all active deals mapped to DD stages
+            DD_STAGES.forEach(stage => {
+                const stageDeals = deals.filter(d => (d.ddStatus || 'not_started') === stage.id);
+                const col = document.createElement('div');
+                col.className = 'w-80 flex flex-col h-full shrink-0';
+                col.innerHTML = `
+                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
+                        <span class="flex-1">${stage.label}</span>
+                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
+                    </div>
+                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
+                        ${stageDeals.map(deal => {
+                            const totalTasks = deal.checklist ? deal.checklist.length : 0;
+                            const completedTasks = deal.checklist ? deal.checklist.filter(t => t.completed).length : 0;
+                            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                            let displayTitle = deal.name;
+                            let logoHtml = '';
+                            if(deal.franchiseId) {
+                                const fran = franchises.find(f => f.id === deal.franchiseId);
+                                if(fran) {
+                                    displayTitle = fran.name;
+                                    if (fran.logoUrl) logoHtml = `<img src="${fran.logoUrl}" class="w-6 h-6 rounded-full object-contain border border-slate-200 bg-white shrink-0 mr-2" onerror="this.style.display='none'">`;
+                                    else logoHtml = `<div class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0 mr-2"><i data-lucide="store" width="12"></i></div>`;
+                                }
+                            }
+
+                            return `
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer relative drag-card" onclick="window.openDDDetail('${deal.id}')">
+                                <div class="flex items-center mb-1 pr-6">
+                                    ${logoHtml}
+                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${displayTitle}</h4>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-3 truncate"><i data-lucide="map-pin" width="10" class="inline"></i> ${deal.address || 'No Address'}</p>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-[10px] text-slate-500 mb-1 font-medium">
+                                        <span>${completedTasks}/${totalTasks} Tasks</span>
+                                        <span>${progress}%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">DD Status</span>
+                                    <select onclick="event.stopPropagation()" onchange="window.moveDDStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0 font-medium text-slate-700">
+                                        ${DD_STAGES.map(s => `<option value="${s.id}" ${s.id === (deal.ddStatus || 'not_started') ? 'selected' : ''}>${s.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>`;
+                container.appendChild(col);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.moveDDStage = async (id, ddStatus) => {
+             await updateDoc(getDocRef("gc_deals", id), { ddStatus });
+        };
         
         // NEW: Render Franchises Grid
         function renderFranchises() {
@@ -1238,7 +1359,7 @@
              if (window.lucide) lucide.createIcons();
         }
 
-        // NEW: Generate and Download .ics File for Calendar Integration
+        // Generate and Download .ics File for Calendar Integration
         window.downloadICS = (taskId) => {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
@@ -1317,7 +1438,6 @@
                 const taskDate = new Date(y, m - 1, d);
                 const isOverdue = !task.completed && taskDate < today;
                 
-                // ADDED: Create location link dynamically (Map search vs generic URL)
                 let locationHtml = '';
                 if (task.location) {
                     const isUrl = task.location.startsWith('http://') || task.location.startsWith('https://');
@@ -1558,12 +1678,14 @@
                     logDiagnostic(`📥 Loaded ${deals.length} deals.`);
                     
                     try { renderPipeline(); } catch(e) { logDiagnostic(`⚠️ Pipeline Render Failed: ${e.message}`, "error"); console.error(e); }
+                    try { renderDueDiligence(); } catch(e) { logDiagnostic(`⚠️ Due Diligence Render Failed: ${e.message}`, "error"); console.error(e); }
                     try { populateDealSelects(); } catch(e) { logDiagnostic(`⚠️ Selects Failed: ${e.message}`, "error"); }
                     
                     // Force render dashboard regardless of visibility on first load to update counts
                     try { renderDashboard(); } catch(e) { logDiagnostic(`⚠️ Dashboard Render Failed: ${e.message}`, "error"); console.error(e); }
                     
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) window.openDealDetail(currentDealId);
+                    if (currentDealId && !document.getElementById('dd-modal').classList.contains('hidden')) window.openDDDetail(currentDealId);
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
                     logDiagnostic(`❌ Deals Error: ${error.code}`, "error");
@@ -1644,6 +1766,7 @@
             if (viewName === 'dashboard') try { renderDashboard(); } catch(e) {}
             if (viewName === 'pipeline') try { renderPipeline(); } catch(e) {}
             if (viewName === 'franchises') try { renderFranchises(); } catch(e) {}
+            if (viewName === 'duediligence') try { renderDueDiligence(); } catch(e) {}
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -1730,7 +1853,6 @@
                  ];
                  deal.checklist = defaultChecklist;
                  
-                 // Save the backfilled checklist to the database so it's permanently attached
                  updateDoc(getDocRef('gc_deals', id), { checklist: defaultChecklist })
                     .catch(err => console.error("Error backfilling checklist:", err));
             }
@@ -1738,10 +1860,14 @@
             document.getElementById('detail-deal-name').textContent = deal.name;
             document.getElementById('detail-deal-address').textContent = deal.address;
             document.getElementById('detail-deal-value').textContent = deal.value ? `$${deal.value}` : '$0';
+            
             const stageLabel = STAGES.find(s => s.id === deal.stage)?.label || deal.stage;
             document.getElementById('detail-deal-stage').textContent = stageLabel;
             
-            // Render Franchise Info in Deal Detail if present
+            // New DD Status Mapping
+            const ddStageLabel = DD_STAGES.find(s => s.id === (deal.ddStatus || 'not_started'))?.label || 'Not Started';
+            document.getElementById('detail-deal-dd-status').textContent = ddStageLabel;
+            
             const franInfoDiv = document.getElementById('detail-franchise-info');
             const franContentDiv = document.getElementById('detail-franchise-content');
             
@@ -1749,8 +1875,6 @@
                 const fran = franchises.find(f => f.id === deal.franchiseId);
                 if (fran) {
                     franInfoDiv.classList.remove('hidden');
-                    
-                    // Add Logo to Detail View - Changed to object-contain, rounded-lg, added padding
                     const logoHtml = fran.logoUrl 
                         ? `<img src="${fran.logoUrl}" class="w-12 h-12 rounded-lg object-contain border border-purple-200 bg-white mr-3 p-0.5" onerror="this.style.display='none'">` 
                         : `<div class="w-12 h-12 rounded-lg bg-purple-200 text-purple-700 flex items-center justify-center font-bold mr-3"><i data-lucide="store" width="20"></i></div>`;
@@ -1788,8 +1912,16 @@
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
-            renderDealChecklist(deal); // Render the Due Diligence Checklist
             document.getElementById('deal-detail-modal').classList.remove('hidden');
+        }
+        
+        window.openDDDetail = (id) => {
+            currentDealId = id;
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+            document.getElementById('dd-modal-deal-name').textContent = deal.name;
+            renderDealChecklist(deal);
+            document.getElementById('dd-modal').classList.remove('hidden');
         }
 
         window.editCurrentDeal = () => {
@@ -1845,7 +1977,7 @@
 
         // --- Due Diligence Checklist Logic ---
         window.renderDealChecklist = (deal) => {
-            const container = document.getElementById('detail-deal-checklist');
+            const container = document.getElementById('dd-modal-checklist');
             if (!container) return;
             const checklist = deal.checklist || [];
 
@@ -1855,12 +1987,12 @@
             }
 
             container.innerHTML = checklist.map(item => `
-                <div class="flex items-center justify-between group bg-white p-2 rounded border border-slate-100 mb-1 hover:border-emerald-200 transition-colors">
+                <div class="flex items-center justify-between group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm">
                     <label class="flex items-center gap-3 cursor-pointer flex-1">
-                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
-                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'} transition-all">${item.text}</span>
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all">${item.text}</span>
                     </label>
-                    <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-50"><i data-lucide="trash-2" width="14"></i></button>
+                    <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
                 </div>
             `).join('');
             if (window.lucide) lucide.createIcons();
@@ -2292,6 +2424,7 @@
                     await updateDoc(getDocRef('gc_deals', id), dealData);
                 } else {
                     dealData.createdAt = serverTimestamp();
+                    dealData.ddStatus = 'not_started'; // Default stage for DD
                     
                     // NEW: Add default commercial development checklist to brand new deals
                     dealData.checklist = [
