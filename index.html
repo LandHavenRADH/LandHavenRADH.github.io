@@ -692,6 +692,24 @@
                     </div>
                 </div>
 
+                <!-- NEW: Due Diligence Checklist Section -->
+                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Due Diligence Checklist
+                    </h4>
+                    
+                    <div id="detail-deal-checklist" class="space-y-1 mb-3 max-h-48 overflow-y-auto pr-2 no-scrollbar">
+                        <!-- Checklist items populated via JS -->
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2 border-t border-slate-200">
+                        <input type="text" id="new-checklist-item" onkeypress="if(event.key === 'Enter') window.addChecklistItem()" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
+                        <button onclick="window.addChecklistItem()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="plus" width="16"></i> Add
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div class="flex justify-between items-center mb-2">
@@ -1660,6 +1678,7 @@
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
+            renderDealChecklist(deal); // Render the Checklist
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
 
@@ -1709,6 +1728,64 @@
                     ${c.email ? `<div class="text-xs text-slate-400 mt-1 truncate">${c.email}</div>` : ''}
                 </div>
             `).join('');
+        }
+
+        // --- Checklist Logic ---
+        window.renderDealChecklist = (deal) => {
+            const container = document.getElementById('detail-deal-checklist');
+            if (!container) return;
+            const checklist = deal.checklist || [];
+
+            if (checklist.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-sm italic py-1">No checklist items. Add one below.</div>';
+                return;
+            }
+
+            container.innerHTML = checklist.map(item => `
+                <div class="flex items-center justify-between group bg-white p-2 rounded border border-slate-100 mb-1 hover:border-emerald-200 transition-colors">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'} transition-all">${item.text}</span>
+                    </label>
+                    <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-red-50"><i data-lucide="trash-2" width="14"></i></button>
+                </div>
+            `).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.toggleChecklistItem = async (dealId, itemId, isCompleted) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, completed: isCompleted } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
+        }
+
+        window.addChecklistItem = async () => {
+            if (!currentDealId) return;
+            const input = document.getElementById('new-checklist-item');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const deal = deals.find(d => d.id === currentDealId);
+            if (!deal) return;
+            
+            const checklist = deal.checklist || [];
+            // Generate simple unique ID
+            const newItemId = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+            const newItem = { id: newItemId, text, completed: false };
+            const updatedChecklist = [...checklist, newItem];
+            
+            input.value = '';
+            await updateDoc(getDocRef('gc_deals', currentDealId), { checklist: updatedChecklist });
+        }
+
+        window.removeChecklistItem = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.filter(item => item.id !== itemId);
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
         // --- Calculator Logic ---
@@ -2100,6 +2177,16 @@
                 if (id) await updateDoc(getDocRef('gc_deals', id), dealData);
                 else {
                     dealData.createdAt = serverTimestamp();
+                    
+                    // NEW: Add default checklist to brand new deals
+                    dealData.checklist = [
+                        { id: Date.now().toString() + '-1', text: 'Survey', completed: false },
+                        { id: Date.now().toString() + '-2', text: 'Site Clearing', completed: false },
+                        { id: Date.now().toString() + '-3', text: 'Utilities', completed: false },
+                        { id: Date.now().toString() + '-4', text: 'Obtain Zoning', completed: false },
+                        { id: Date.now().toString() + '-5', text: 'Site Work', completed: false }
+                    ];
+
                     await addDoc(getCollectionRef('gc_deals'), dealData);
                 }
                 closeModal('deal-modal');
