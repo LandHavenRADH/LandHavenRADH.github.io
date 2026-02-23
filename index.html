@@ -2049,16 +2049,22 @@
                 html = checklist.map(item => {
                     // Backwards compatibility + Multiple Links Logic
                     let urls = item.documentUrls || [];
-                    if (item.documentUrl && urls.length === 0) urls = [item.documentUrl];
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }];
 
-                    const linksHtml = urls.map((url, idx) => `
-                        <span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px] mb-1">
-                            <a href="${url}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${url}">
-                                <i data-lucide="link" width="12"></i> <span class="truncate">File ${idx + 1}</span>
-                            </a>
-                            <button onclick="event.stopPropagation(); window.removeDDLink('${deal.id}', '${item.id}', ${idx})" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
-                        </span>
-                    `).join('');
+                    const linksHtml = urls.map((fileObj, idx) => {
+                        const isString = typeof fileObj === 'string';
+                        const url = isString ? fileObj : fileObj.url;
+                        const name = isString ? `File ${idx + 1}` : (fileObj.name || `File ${idx + 1}`);
+
+                        return `
+                            <span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px] mb-1">
+                                <a href="${url}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${url}">
+                                    <i data-lucide="link" width="12"></i> <span class="truncate">${name}</span>
+                                </a>
+                                <button onclick="event.stopPropagation(); window.removeDDLink('${deal.id}', '${item.id}', ${idx})" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                            </span>
+                        `;
+                    }).join('');
 
                     return `
                     <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm mb-2 gap-2">
@@ -2083,9 +2089,10 @@
                             
                             <!-- Multiple Links Array -->
                             ${linksHtml}
-                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
-                                <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-24" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
+                                <input type="text" id="dd-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <input type="url" id="dd-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
                             </div>
                             
                             ${item.cost ? 
@@ -2095,8 +2102,8 @@
                                 </span>` :
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
-                                    <input type="text" inputmode="decimal" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
-                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                    <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
                         </div>
@@ -2115,9 +2122,13 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDLink = async (dealId, itemId, inputEl) => {
-            if(!inputEl) return;
-            let url = inputEl.value.trim();
+        window.assignDDLink = async (dealId, itemId) => {
+            const nameInput = document.getElementById(`dd-link-name-${itemId}`);
+            const urlInput = document.getElementById(`dd-link-url-${itemId}`);
+            if(!nameInput || !urlInput) return;
+            
+            let name = nameInput.value.trim() || 'Document';
+            let url = urlInput.value.trim();
             if(!url) return;
             
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -2131,8 +2142,8 @@
             const updatedChecklist = checklist.map(item => {
                 if (item.id === itemId) {
                     let urls = item.documentUrls || [];
-                    if (item.documentUrl && urls.length === 0) urls = [item.documentUrl]; // Fallback
-                    return { ...item, documentUrls: [...urls, url], documentUrl: null }; // Clear old singular field
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }]; // Fallback
+                    return { ...item, documentUrls: [...urls, { name, url }], documentUrl: null }; 
                 }
                 return item;
             });
@@ -2146,7 +2157,7 @@
             const updatedChecklist = checklist.map(item => {
                 if (item.id === itemId) {
                     let urls = item.documentUrls || [];
-                    if (item.documentUrl && urls.length === 0) urls = [item.documentUrl];
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }];
                     
                     const newUrls = urls.filter((_, idx) => idx !== urlIndex);
                     return { ...item, documentUrls: newUrls, documentUrl: null }; 
@@ -2156,7 +2167,8 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
-        window.assignDDCost = async (dealId, itemId, inputEl) => {
+        window.assignDDCost = async (dealId, itemId) => {
+            const inputEl = document.getElementById(`dd-cost-${itemId}`);
             if(!inputEl) return;
             const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
             if(!costStr) return;
@@ -2168,15 +2180,9 @@
             
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, cost } : item);
-            
-            // Feed through to Landlord's Work
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
 
@@ -2191,15 +2197,9 @@
                 }
                 return item;
             });
-            
-            // Feed through to Landlord's Work
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
 
@@ -2250,15 +2250,9 @@
             if (!deal) return;
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.filter(item => item.id !== itemId);
-            
-            // Re-calculate Total Cost in case a priced item is deleted
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
 
@@ -2281,7 +2275,10 @@
             const capRate = params.cap !== undefined ? parseFloat(params.cap) : 6.0;
             const taxes = params.taxes !== undefined ? parseFloat(params.taxes) : 0;
             const insurance = params.insurance !== undefined ? parseFloat(params.insurance) : 0;
-            const landlordWork = params.landlordWork !== undefined ? parseFloat(params.landlordWork) : 0;
+            
+            // DYNAMICALLY PULL LANDLORD WORK FROM CHECKLIST ONLY
+            const landlordWork = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            
             const interestOnly = params.interestOnly || false;
             const useContractRent = params.useContractRent || false;
             const contractRentValue = params.contractRent !== undefined ? parseFloat(params.contractRent) : 0;
@@ -2358,7 +2355,7 @@
             const marketLtv = getRawValue('calc-market-ltv');
             const taxes = getRawValue('calc-taxes');
             const insurance = getRawValue('calc-insurance');
-            const landlordWork = getRawValue('calc-landlord-work');
+            
             const interestOnly = document.getElementById('calc-interest-only').checked;
             
             const useContractRent = document.getElementById('calc-use-contract').checked;
@@ -2383,13 +2380,22 @@
 
             const contractRentValue = getRawValue('calc-contract-rent');
 
+            // Find current deal to force sync the Landlord's Work from DD
+            const deal = deals.find(d => d.id === currentlyLoadedDealForCalc);
+            const landlordWork = deal ? (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0) : getRawValue('calc-landlord-work');
+            
+            const llwInput = document.getElementById('calc-landlord-work');
+            llwInput.value = landlordWork;
+            formatField(llwInput, 'currency');
+
             // Auto-Save
             if (currentlyLoadedDealForCalc) {
                 const paramsToSave = {
                     ltv: purchaseLtv, rate: interestRate, term: amortization, dscr: dscr,
                     cap: capRate, marketLtv: marketLtv, useContractRent: useContractRent,
                     contractRent: contractRentValue, interestOnly: interestOnly,
-                    taxes: taxes, insurance: insurance, landlordWork: landlordWork
+                    taxes: taxes, insurance: insurance 
+                    // LandlordWork is deliberately NOT saved here to avoid duplicating the source of truth
                 };
                 
                 // Now also updates the main deal 'value' (Purchase Price) along with params
@@ -2528,14 +2534,12 @@
                 setVal('calc-cap', params.cap !== undefined ? params.cap : 6.0, 'percent');
                 setVal('calc-market-ltv', params.marketLtv !== undefined ? params.marketLtv : 70, 'percent');
                 
-                // If landlordWork is heavily linked to DD checklist, make sure it reflects
-                // It should already be synced to calcParams, but just in case:
+                // ALWAYS calculate Landlord's Work dynamically from the checklist costs
                 const checklistTotal = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-                const landlordWorkVal = checklistTotal > 0 ? checklistTotal : (params.landlordWork !== undefined ? params.landlordWork : 0);
 
                 setVal('calc-taxes', params.taxes !== undefined ? params.taxes : 0, 'currency');
                 setVal('calc-insurance', params.insurance !== undefined ? params.insurance : 0, 'currency');
-                setVal('calc-landlord-work', landlordWorkVal, 'currency');
+                setVal('calc-landlord-work', checklistTotal, 'currency');
 
                 document.getElementById('calc-interest-only').checked = params.interestOnly || false;
                 document.getElementById('calc-use-contract').checked = params.useContractRent || false;
