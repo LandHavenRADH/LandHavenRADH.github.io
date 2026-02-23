@@ -27,7 +27,9 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .drag-card:hover { transform: translateY(-2px); }
         .fc-event { cursor: pointer; border: none; }
-        .fc-daygrid-event { font-size: 0.85rem; padding: 2px 4px; border-radius: 4px; }
+        .fc-daygrid-event { font-size: 0.85rem; padding: 2px 4px; border-radius: 4px; white-space: normal !important; align-items: flex-start !important; }
+        .fc-event-title { white-space: normal !important; overflow: visible !important; word-break: break-word; line-height: 1.2; }
+        .fc-event-main { white-space: normal !important; }
         .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700; color: #1e293b; }
         .fc-button-primary { background-color: #0f172a !important; border-color: #0f172a !important; }
         .fc-button-primary:hover { background-color: #334155 !important; border-color: #334155 !important; }
@@ -287,10 +289,10 @@
                     </div>
                     <div class="flex gap-2">
                         <div class="bg-white rounded-lg border border-slate-200 p-1 flex mr-2">
-                            <button onclick="switchTaskDisplay('list')" id="btn-task-list" class="px-3 py-1.5 rounded text-sm font-medium bg-emerald-100 text-emerald-700 flex items-center gap-2 transition-colors">
+                            <button onclick="switchTaskDisplay('list')" id="btn-task-list" class="px-3 py-1.5 rounded text-sm font-medium text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
                                 <i data-lucide="list" width="16"></i> List
                             </button>
-                            <button onclick="switchTaskDisplay('calendar')" id="btn-task-calendar" class="px-3 py-1.5 rounded text-sm font-medium text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                            <button onclick="switchTaskDisplay('calendar')" id="btn-task-calendar" class="px-3 py-1.5 rounded text-sm font-medium bg-emerald-100 text-emerald-700 flex items-center gap-2 transition-colors">
                                 <i data-lucide="calendar" width="16"></i> Calendar
                             </button>
                         </div>
@@ -300,7 +302,7 @@
                     </div>
                 </div>
 
-                <div id="task-list-container" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col h-full">
+                <div id="task-list-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col h-full">
                     <div class="overflow-y-auto flex-1 p-0">
                         <table class="w-full text-left border-collapse">
                             <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider sticky top-0 z-10">
@@ -317,7 +319,7 @@
                     </div>
                 </div>
 
-                <div id="task-calendar-container" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 h-full overflow-hidden">
+                <div id="task-calendar-container" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 h-full overflow-hidden">
                     <div id="calendar" class="h-full"></div>
                 </div>
             </div>
@@ -1630,7 +1632,13 @@
             activeBtn.classList.remove('text-slate-300', 'hover:bg-slate-800');
             activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
 
-            if (viewName === 'tasks' && calendar) setTimeout(() => calendar.render(), 100);
+            if (viewName === 'tasks') {
+                const isCalendarActive = !document.getElementById('task-calendar-container').classList.contains('hidden');
+                if (isCalendarActive) {
+                    if (!calendar) setTimeout(() => initCalendar(), 100);
+                    else setTimeout(() => calendar.render(), 100);
+                }
+            }
             
             // Re-render to ensure data is fresh
             if (viewName === 'dashboard') try { renderDashboard(); } catch(e) {}
