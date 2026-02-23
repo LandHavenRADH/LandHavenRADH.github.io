@@ -721,6 +721,29 @@
                     </div>
                 </div>
 
+                <!-- NEW: Due Diligence Checklist Section -->
+                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Due Diligence Checklist
+                        </h4>
+                        <div class="text-xs font-bold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                            Total Est. Cost: <span id="detail-deal-total-cost" class="text-amber-600">$0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="detail-deal-checklist" class="space-y-1 mb-3 max-h-48 overflow-y-auto pr-2 no-scrollbar">
+                        <!-- Checklist items populated via JS -->
+                    </div>
+                    
+                    <div class="flex gap-2 pt-2 border-t border-slate-200">
+                        <input type="text" id="new-checklist-item-detail" onkeypress="if(event.key === 'Enter') window.addChecklistItem('new-checklist-item-detail')" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
+                        <button onclick="window.addChecklistItem('new-checklist-item-detail')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="plus" width="16"></i> Add
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div class="flex justify-between items-center mb-2">
@@ -765,17 +788,22 @@
             
             <div class="p-6 overflow-y-auto bg-slate-50">
                 <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-                        <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Action Items
-                    </h4>
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Action Items
+                        </h4>
+                        <div class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                            Total DD Cost: <span id="dd-modal-total-cost" class="text-amber-600">$0</span>
+                        </div>
+                    </div>
                     
                     <div id="dd-modal-checklist" class="mb-4">
                         <!-- Checklist items populated via JS -->
                     </div>
                     
                     <div class="flex gap-2 pt-3 border-t border-slate-100">
-                        <input type="text" id="new-checklist-item" onkeypress="if(event.key === 'Enter') window.addChecklistItem()" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
-                        <button onclick="window.addChecklistItem()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
+                        <input type="text" id="new-checklist-item-dd" onkeypress="if(event.key === 'Enter') window.addChecklistItem('new-checklist-item-dd')" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
+                        <button onclick="window.addChecklistItem('new-checklist-item-dd')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
                             <i data-lucide="plus" width="16"></i> Add
                         </button>
                     </div>
@@ -1918,6 +1946,7 @@
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
+            renderDealChecklist(deal);
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
         
@@ -1998,58 +2027,85 @@
         };
 
         window.renderDealChecklist = (deal) => {
-            const container = document.getElementById('dd-modal-checklist');
-            if (!container) return;
             const checklist = deal.checklist || [];
+            
+            // Calculate Total Cost
+            const totalCost = checklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const totalCostStr = totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
+            // Update Total cost elements if they exist
+            const ddModalTotal = document.getElementById('dd-modal-total-cost');
+            if (ddModalTotal) ddModalTotal.textContent = totalCostStr;
+            const detailModalTotal = document.getElementById('detail-deal-total-cost');
+            if (detailModalTotal) detailModalTotal.textContent = totalCostStr;
+
+            let html = '';
             if (checklist.length === 0) {
-                container.innerHTML = '<div class="text-slate-400 text-sm italic py-1">No checklist items. Add one below.</div>';
-                return;
-            }
-
-            container.innerHTML = checklist.map(item => `
-                <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm mb-2 gap-2">
-                    <div class="flex items-center justify-between">
-                        <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
-                            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
-                            <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
-                        </label>
-                        <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
-                    </div>
-                    
-                    <div class="flex flex-wrap items-center gap-2 pl-8">
-                        ${item.contactName ? 
-                            `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="${item.contactName}">
-                                <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
-                                <button onclick="event.stopPropagation(); window.removeDDContact('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
-                            </span>` : 
-                            `<button onclick="event.stopPropagation(); window.openContactModalForDD('${deal.id}', '${item.id}')" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-md border border-blue-200 transition flex items-center gap-1 opacity-0 group-hover:opacity-100 whitespace-nowrap shrink-0">
-                                <i data-lucide="user-plus" width="14"></i> Add Contact
-                            </button>`
-                        }
+                html = '<div class="text-slate-400 text-sm italic py-1">No checklist items. Add one below.</div>';
+            } else {
+                html = checklist.map(item => `
+                    <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm mb-2 gap-2">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
+                                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
+                                <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
+                            </label>
+                            <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                        </div>
                         
-                        ${item.documentUrl ?
-                            `<span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]">
-                                <a href="${item.documentUrl}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${item.documentUrl}">
-                                    <i data-lucide="link" width="12"></i> <span class="truncate">Drive File</span>
-                                </a>
-                                <button onclick="event.stopPropagation(); window.removeDDLink('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
-                            </span>` :
-                            `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <input type="url" id="dd-link-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-24" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Save Link"><i data-lucide="check" width="14"></i></button>
-                            </div>`
-                        }
+                        <div class="flex flex-wrap items-center gap-2 pl-8">
+                            ${item.contactName ? 
+                                `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="${item.contactName}">
+                                    <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
+                                    <button onclick="event.stopPropagation(); window.removeDDContact('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                                </span>` : 
+                                `<button onclick="event.stopPropagation(); window.openContactModalForDD('${deal.id}', '${item.id}')" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-md border border-blue-200 transition flex items-center gap-1 opacity-0 group-hover:opacity-100 whitespace-nowrap shrink-0">
+                                    <i data-lucide="user-plus" width="14"></i> Add Contact
+                                </button>`
+                            }
+                            
+                            ${item.documentUrl ?
+                                `<span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]">
+                                    <a href="${item.documentUrl}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${item.documentUrl}">
+                                        <i data-lucide="link" width="12"></i> <span class="truncate">Drive File</span>
+                                    </a>
+                                    <button onclick="event.stopPropagation(); window.removeDDLink('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                                </span>` :
+                                `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-24" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Save Link"><i data-lucide="check" width="14"></i></button>
+                                </div>`
+                            }
+                            
+                            ${item.cost ? 
+                                `<span class="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="Cost: $${item.cost}">
+                                    <i data-lucide="dollar-sign" width="12"></i> <span>${parseFloat(item.cost).toLocaleString('en-US', {maximumFractionDigits:0})}</span>
+                                    <button onclick="event.stopPropagation(); window.removeDDCost('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                                </span>` :
+                                `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
+                                    <input type="text" inputmode="decimal" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                </div>`
+                            }
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+            
+            // Render to whichever container is currently open/available
+            const ddContainer = document.getElementById('dd-modal-checklist');
+            if (ddContainer) ddContainer.innerHTML = html;
+            
+            const detailContainer = document.getElementById('detail-deal-checklist');
+            if (detailContainer) detailContainer.innerHTML = html;
+
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDLink = async (dealId, itemId) => {
-            const input = document.getElementById(`dd-link-${itemId}`);
-            if(!input) return;
-            let url = input.value.trim();
+        window.assignDDLink = async (dealId, itemId, inputEl) => {
+            if(!inputEl) return;
+            let url = inputEl.value.trim();
             if(!url) return;
             
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -2078,6 +2134,53 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
+        window.assignDDCost = async (dealId, itemId, inputEl) => {
+            if(!inputEl) return;
+            const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
+            if(!costStr) return;
+            const cost = parseFloat(costStr);
+            if(isNaN(cost)) return;
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, cost } : item);
+            
+            // Feed through to Landlord's Work
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                checklist: updatedChecklist,
+                calcParams: calcParams
+            });
+        }
+
+        window.removeDDCost = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    const { cost, ...rest } = item;
+                    return rest; 
+                }
+                return item;
+            });
+            
+            // Feed through to Landlord's Work
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                checklist: updatedChecklist,
+                calcParams: calcParams
+            });
+        }
+
         window.removeDDContact = async (dealId, itemId) => {
             const deal = deals.find(d => d.id === dealId);
             if (!deal) return;
@@ -2100,9 +2203,10 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
-        window.addChecklistItem = async () => {
+        window.addChecklistItem = async (inputId) => {
             if (!currentDealId) return;
-            const input = document.getElementById('new-checklist-item');
+            const input = document.getElementById(inputId);
+            if (!input) return;
             const text = input.value.trim();
             if (!text) return;
 
@@ -2124,7 +2228,16 @@
             if (!deal) return;
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.filter(item => item.id !== itemId);
-            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
+            
+            // Re-calculate Total Cost in case a priced item is deleted
+            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const calcParams = deal.calcParams || {};
+            calcParams.landlordWork = totalDDCost;
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                checklist: updatedChecklist,
+                calcParams: calcParams
+            });
         }
 
         // --- Calculator Logic ---
@@ -2392,9 +2505,15 @@
                 document.getElementById('calc-dscr').value = params.dscr !== undefined ? params.dscr : 1.20;
                 setVal('calc-cap', params.cap !== undefined ? params.cap : 6.0, 'percent');
                 setVal('calc-market-ltv', params.marketLtv !== undefined ? params.marketLtv : 70, 'percent');
+                
+                // If landlordWork is heavily linked to DD checklist, make sure it reflects
+                // It should already be synced to calcParams, but just in case:
+                const checklistTotal = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                const landlordWorkVal = checklistTotal > 0 ? checklistTotal : (params.landlordWork !== undefined ? params.landlordWork : 0);
+
                 setVal('calc-taxes', params.taxes !== undefined ? params.taxes : 0, 'currency');
                 setVal('calc-insurance', params.insurance !== undefined ? params.insurance : 0, 'currency');
-                setVal('calc-landlord-work', params.landlordWork !== undefined ? params.landlordWork : 0, 'currency');
+                setVal('calc-landlord-work', landlordWorkVal, 'currency');
 
                 document.getElementById('calc-interest-only').checked = params.interestOnly || false;
                 document.getElementById('calc-use-contract').checked = params.useContractRent || false;
