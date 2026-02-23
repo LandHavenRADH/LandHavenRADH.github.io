@@ -769,7 +769,7 @@
                         <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Action Items
                     </h4>
                     
-                    <div id="dd-modal-checklist" class="space-y-1 mb-4">
+                    <div id="dd-modal-checklist" class="mb-4">
                         <!-- Checklist items populated via JS -->
                     </div>
                     
@@ -2008,12 +2008,16 @@
             }
 
             container.innerHTML = checklist.map(item => `
-                <div class="flex items-center justify-between group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm gap-2">
-                    <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
-                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
-                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
-                    </label>
-                    <div class="flex items-center gap-2 shrink-0">
+                <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm mb-2 gap-2">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
+                            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
+                            <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
+                        </label>
+                        <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2 pl-8">
                         ${item.contactName ? 
                             `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="${item.contactName}">
                                 <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
@@ -2023,11 +2027,55 @@
                                 <i data-lucide="user-plus" width="14"></i> Add Contact
                             </button>`
                         }
-                        <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                        
+                        ${item.documentUrl ?
+                            `<span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]">
+                                <a href="${item.documentUrl}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${item.documentUrl}">
+                                    <i data-lucide="link" width="12"></i> <span class="truncate">Drive File</span>
+                                </a>
+                                <button onclick="event.stopPropagation(); window.removeDDLink('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                            </span>` :
+                            `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <input type="url" id="dd-link-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-24" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Save Link"><i data-lucide="check" width="14"></i></button>
+                            </div>`
+                        }
                     </div>
                 </div>
             `).join('');
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.assignDDLink = async (dealId, itemId) => {
+            const input = document.getElementById(`dd-link-${itemId}`);
+            if(!input) return;
+            let url = input.value.trim();
+            if(!url) return;
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, documentUrl: url } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
+        }
+
+        window.removeDDLink = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    const { documentUrl, ...rest } = item;
+                    return rest; 
+                }
+                return item;
+            });
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
         window.removeDDContact = async (dealId, itemId) => {
