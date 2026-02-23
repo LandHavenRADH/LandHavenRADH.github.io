@@ -309,7 +309,7 @@
                                     <th class="p-4">Task / Action</th>
                                     <th class="p-4">Related Deal</th>
                                     <th class="p-4">Due Date</th>
-                                    <th class="p-4 w-12"></th>
+                                    <th class="p-4 w-24"></th>
                                 </tr>
                             </thead>
                             <tbody id="tasks-table-body" class="divide-y divide-slate-100"></tbody>
@@ -1236,6 +1236,61 @@
              if (window.lucide) lucide.createIcons();
         }
 
+        // NEW: Generate and Download .ics File for Calendar Integration
+        window.downloadICS = (taskId) => {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            const dealName = deals.find(d => d.id === task.dealId)?.name || 'General';
+            
+            // Format dates to YYYYMMDD
+            const dateStr = task.date.replace(/-/g, '');
+            let dtStart, dtEnd;
+            
+            if (task.time) {
+                // If specific time is provided
+                const timeStr = task.time.replace(/:/g, '') + '00';
+                dtStart = `DTSTART:${dateStr}T${timeStr}`;
+                // Set end time 1 hour later
+                const [h, m] = task.time.split(':');
+                let endH = (parseInt(h) + 1).toString().padStart(2, '0');
+                dtEnd = `DTEND:${dateStr}T${endH}${m}00`;
+            } else {
+                // All day event
+                dtStart = `DTSTART;VALUE=DATE:${dateStr}`;
+                const d = new Date(task.date);
+                d.setDate(d.getDate() + 1); // ICS all-day events are exclusive of end date
+                const endStr = d.toISOString().split('T')[0].replace(/-/g, '');
+                dtEnd = `DTEND;VALUE=DATE:${endStr}`;
+            }
+
+            const icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'BEGIN:VEVENT',
+                dtStart,
+                dtEnd,
+                `SUMMARY:${task.title} (${dealName})`,
+                `DESCRIPTION:${task.notes || 'No notes added.'}`,
+                task.location ? `LOCATION:${task.location}` : '',
+                'BEGIN:VALARM',
+                'TRIGGER:-PT15M', // Triggers alarm 15 minutes before
+                'ACTION:DISPLAY',
+                'DESCRIPTION:Reminder',
+                'END:VALARM',
+                'END:VEVENT',
+                'END:VCALENDAR'
+            ].filter(Boolean).join('\\r\\n');
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', `${task.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
         function renderTasks() {
             const tbody = document.getElementById('tasks-table-body');
             if(!tbody) return;
@@ -1280,7 +1335,10 @@
                             </div>
                         </td>
                         <td class="p-4 text-right">
-                            <button onclick="event.stopPropagation(); window.deleteTask('${task.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" width="16"></i></button>
+                            <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="event.stopPropagation(); window.downloadICS('${task.id}')" class="text-slate-400 hover:text-blue-500 transition" title="Add to Calendar"><i data-lucide="calendar-plus" width="16"></i></button>
+                                <button onclick="event.stopPropagation(); window.deleteTask('${task.id}')" class="text-slate-400 hover:text-red-500 transition" title="Delete Task"><i data-lucide="trash-2" width="16"></i></button>
+                            </div>
                         </td>
                     </tr>`;
             }).join('');
@@ -1732,14 +1790,17 @@
             container.innerHTML = relatedTasks.map(t => {
                 const timeString = t.time ? `<span class="text-xs text-slate-400 ml-1">@ ${formatTimeForDisplay(t.time)}</span>` : '';
                 return `
-                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer" onclick="window.editTask('${t.id}')">
+                <div class="bg-white p-3 rounded border border-slate-200 hover:shadow-sm transition flex justify-between items-center cursor-pointer group" onclick="window.editTask('${t.id}')">
                     <div>
                         <div class="font-medium text-sm text-slate-800 ${t.completed ? 'line-through text-slate-400' : ''}">${t.title}</div>
                         <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}${timeString}</div>
                     </div>
-                    <button onclick="event.stopPropagation(); window.toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
-                        ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="event.stopPropagation(); window.downloadICS('${t.id}')" class="text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition" title="Add to Calendar"><i data-lucide="calendar-plus" width="14"></i></button>
+                        <button onclick="event.stopPropagation(); window.toggleTask('${t.id}', ${!t.completed})" class="w-5 h-5 rounded border flex items-center justify-center ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'text-slate-300'}">
+                            ${t.completed ? '<i data-lucide="check" width="12"></i>' : ''}
+                        </button>
+                    </div>
                 </div>
             `}).join('');
             lucide.createIcons();
