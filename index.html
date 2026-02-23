@@ -838,6 +838,11 @@
                         <input type="time" id="task-time" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
                     </div>
                 </div>
+                <!-- ADDED: Location Field -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <input type="text" id="task-location" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. 123 Main St, City, ST or Zoom Link">
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Related Deal</label>
                     <select id="task-deal-id" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
@@ -1031,7 +1036,6 @@
             calendar.render();
         }
 
-        // Add the MISSING setup function here
         function setupFormattedInputs() {
             const inputs = document.querySelectorAll('.calc-input');
             inputs.forEach(el => {
@@ -1246,6 +1250,15 @@
                 const [y, m, d] = task.date.split('-').map(Number);
                 const taskDate = new Date(y, m - 1, d);
                 const isOverdue = !task.completed && taskDate < today;
+                
+                // ADDED: Create location link dynamically (Map search vs generic URL)
+                let locationHtml = '';
+                if (task.location) {
+                    const isUrl = task.location.startsWith('http://') || task.location.startsWith('https://');
+                    const href = isUrl ? task.location : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.location)}`;
+                    locationHtml = `<a href="${href}" target="_blank" onclick="event.stopPropagation()" class="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1 mt-1 w-fit"><i data-lucide="map-pin" width="12"></i> ${task.location}</a>`;
+                }
+
                 return `
                     <tr class="group hover:bg-slate-50 transition cursor-pointer ${task.completed ? 'bg-slate-50/50' : ''}" onclick="window.editTask('${task.id}')">
                         <td class="p-4 text-center">
@@ -1256,6 +1269,7 @@
                         <td class="p-4">
                             <p class="font-medium text-slate-800 ${task.completed ? 'line-through text-slate-400' : ''}">${task.title}</p>
                             <p class="text-xs text-slate-500 mt-1">${task.notes || 'No notes'}</p>
+                            ${locationHtml}
                         </td>
                         <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${dealName}</span></td>
                         <td class="p-4">
@@ -2140,6 +2154,7 @@
             document.getElementById('task-title').value = task.title || '';
             document.getElementById('task-date').value = task.date || '';
             document.getElementById('task-time').value = task.time || '';
+            document.getElementById('task-location').value = task.location || ''; // Added Location
             document.getElementById('task-deal-id').value = task.dealId || '';
             document.getElementById('task-notes').value = task.notes || '';
             document.getElementById('task-modal-title').textContent = 'Edit Task';
@@ -2298,6 +2313,7 @@
                     title: document.getElementById('task-title').value,
                     date: document.getElementById('task-date').value,
                     time: document.getElementById('task-time').value,
+                    location: document.getElementById('task-location').value, // Added Location
                     dealId: document.getElementById('task-deal-id').value,
                     notes: document.getElementById('task-notes').value,
                     completed: false, // Default
@@ -2381,14 +2397,18 @@
             const taskContainer = document.getElementById('dash-upcoming-list');
             if (upcomingTasks.length === 0) taskContainer.innerHTML = '<div class="text-slate-400 text-sm italic">No upcoming tasks.</div>';
             else {
-                taskContainer.innerHTML = upcomingTasks.map(t => `
+                taskContainer.innerHTML = upcomingTasks.map(t => {
+                    const locationHtml = t.location ? `<div class="text-xs text-blue-500 flex items-center gap-1 mt-0.5"><i data-lucide="map-pin" width="10"></i> ${t.location}</div>` : '';
+                    return `
                     <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded border border-transparent hover:border-slate-100 transition cursor-pointer" onclick="window.editTask('${t.id}')">
                         <div class="bg-blue-100 text-blue-600 rounded p-1.5 shrink-0"><i data-lucide="calendar" width="16"></i></div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium text-slate-800 truncate">${t.title}</div>
                             <div class="text-xs text-slate-500">${formatDateForDisplay(t.date)}</div>
+                            ${locationHtml}
                         </div>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
             }
 
             let totalEstProfit = 0, totalEstMarketValue = 0, totalRealizedProfit = 0;
