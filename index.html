@@ -927,6 +927,7 @@
                             <option value="Franchisor">Franchisor</option>
                             <option value="Franchisee">Franchisee</option>
                             <option value="Lender">Lender</option>
+                            <option value="Due Diligence">Due Diligence</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -1489,7 +1490,10 @@
                 (c.email && c.email.toLowerCase().includes(searchVal)) ||
                 (c.role && c.role.toLowerCase().includes(searchVal))
             );
-            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Other': [] };
+            
+            // UPDATED to include Due Diligence group
+            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Due Diligence': [], 'Other': [] };
+            
             filteredContacts.forEach(c => {
                 const category = c.category || 'Other';
                 if (groups[category]) groups[category].push(c); else groups['Other'].push(c);
@@ -1987,15 +1991,77 @@
             }
 
             container.innerHTML = checklist.map(item => `
-                <div class="flex items-center justify-between group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm">
-                    <label class="flex items-center gap-3 cursor-pointer flex-1">
-                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
-                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all">${item.text}</span>
+                <div class="flex items-center justify-between group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm gap-2">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
+                        <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
                     </label>
-                    <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${item.contactName ? 
+                            `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="${item.contactName}">
+                                <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
+                                <button onclick="event.stopPropagation(); window.removeDDContact('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                            </span>` : 
+                            `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <input type="text" id="dd-contact-${item.id}" placeholder="Add Contact..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-emerald-500 w-28" onkeypress="if(event.key === 'Enter') window.assignDDContact('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDContact('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-emerald-600 p-1.5 bg-slate-100 rounded hover:bg-emerald-50 transition border border-slate-200" title="Save Contact"><i data-lucide="check" width="14"></i></button>
+                            </div>`
+                        }
+                        <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                    </div>
                 </div>
             `).join('');
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.assignDDContact = async (dealId, itemId) => {
+            const input = document.getElementById(`dd-contact-${itemId}`);
+            if(!input) return;
+            const contactName = input.value.trim();
+            if(!contactName) return;
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const checklist = deal.checklist || [];
+            const itemToUpdate = checklist.find(i => i.id === itemId);
+            if(!itemToUpdate) return;
+            
+            // 1. Update Checklist Item with Contact Name
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, contactName } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
+            
+            // 2. Automatically Create New Contact in the Contact Book
+            const contactData = {
+                name: contactName,
+                role: itemToUpdate.text, // e.g. "Survey (ALTA/NSPS)"
+                company: '',
+                email: '',
+                phone: '',
+                category: 'Due Diligence',
+                dealIds: [dealId],
+                userId: currentUserId
+            };
+            
+            try {
+                await addDoc(getCollectionRef('gc_contacts'), contactData);
+            } catch (err) {
+                console.error("Error creating auto-contact:", err);
+            }
+        }
+        
+        window.removeDDContact = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    const { contactName, ...rest } = item;
+                    return rest; // Returns item without contactName
+                }
+                return item;
+            });
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
         window.toggleChecklistItem = async (dealId, itemId, isCompleted) => {
