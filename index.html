@@ -2393,14 +2393,23 @@
                         `;
                     }).join('');
 
+                    const assigneeClass = item.assignee ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-500 border-slate-200';
+
                     return `
                     <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-emerald-200 transition-colors shadow-sm mb-2 gap-2">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between gap-2">
                             <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
                                 <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0">
                                 <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
                             </label>
-                            <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <select onchange="window.assignDDTask('${deal.id}', '${item.id}', this.value)" onclick="event.stopPropagation()" class="text-[10px] uppercase tracking-wider ${assigneeClass} rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 font-bold cursor-pointer transition-colors border">
+                                    <option value="" ${!item.assignee ? 'selected' : ''}>Unassigned</option>
+                                    <option value="DH" ${item.assignee === 'DH' ? 'selected' : ''}>DH</option>
+                                    <option value="RA" ${item.assignee === 'RA' ? 'selected' : ''}>RA</option>
+                                </select>
+                                <button onclick="window.removeChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                            </div>
                         </div>
                         
                         <div class="flex flex-wrap items-center gap-2 pl-8">
@@ -2444,6 +2453,14 @@
             if (ddContainer) ddContainer.innerHTML = html;
             
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.assignDDTask = async (dealId, itemId, assignee) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.checklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, assignee } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
         window.assignDDLink = async (dealId, itemId, containerEl) => {
@@ -2632,14 +2649,23 @@
                         `;
                     }).join('');
 
+                    const assigneeClass = item.assignee ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-500 border-slate-200';
+
                     return `
                     <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-amber-200 transition-colors shadow-sm mb-2 gap-2">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between gap-2">
                             <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
                                 <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleDevChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0">
                                 <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
                             </label>
-                            <button onclick="window.removeDevChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <select onchange="window.assignDevTask('${deal.id}', '${item.id}', this.value)" onclick="event.stopPropagation()" class="text-[10px] uppercase tracking-wider ${assigneeClass} rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 font-bold cursor-pointer transition-colors border">
+                                    <option value="" ${!item.assignee ? 'selected' : ''}>Unassigned</option>
+                                    <option value="DH" ${item.assignee === 'DH' ? 'selected' : ''}>DH</option>
+                                    <option value="RA" ${item.assignee === 'RA' ? 'selected' : ''}>RA</option>
+                                </select>
+                                <button onclick="window.removeDevChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                            </div>
                         </div>
                         
                         <div class="flex flex-wrap items-center gap-2 pl-8">
@@ -2682,6 +2708,14 @@
             if (devContainer) devContainer.innerHTML = html;
             
             if (window.lucide) lucide.createIcons();
+        }
+
+        window.assignDevTask = async (dealId, itemId, assignee) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, assignee } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
         }
 
         window.assignDevLink = async (dealId, itemId, containerEl) => {
