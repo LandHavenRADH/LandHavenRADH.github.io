@@ -617,7 +617,7 @@
             </div>
 
         
-  <!-- VIEW: LIBRARY -->
+    <!-- VIEW: LIBRARY -->
   <div id="view-library" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
     <div class="flex justify-between items-center mb-6 shrink-0">
       <div>
@@ -633,26 +633,23 @@
             class="w-56 pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
             oninput="filterLibrary()">
         </div>
-        <button onclick="openModal('library-modal')" 
+        <button onclick="openModal('library-modal')"
           class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
           <i data-lucide="plus" size="18"></i> New Item
         </button>
       </div>
     </div>
-
     <!-- Filters -->
     <div class="bg-white rounded-lg border border-slate-200 p-3 mb-4 flex flex-wrap items-center gap-2">
       <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Filter by Category:</span>
       <div id="library-filter" class="flex flex-wrap gap-2"><!-- Filled by renderLibrary() --></div>
     </div>
-
     <!-- Content -->
     <div id="library-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto pb-4">
       <div class="col-span-full text-center py-12 text-slate-400">Loading library...</div>
     </div>
   </div>
-
-  </main>
+</main>
     </div>
 
     <!-- MODALS -->
@@ -2146,6 +2143,17 @@
                     console.error("Contacts Sync Error:", error);
                     logDiagnostic(`❌ Contacts Error: ${error.code}`, "error");
                 });
+  // LIBRARY
+  logDiagnostic("📡 Connecting to 'gc_library'...");
+  onSnapshot(getCollectionRef("gc_library"), (snapshot) => {
+    libraryItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    logDiagnostic("📥 Loaded " + libraryItems.length + " library items.");
+    try { renderLibrary(); } catch(e) { logDiagnostic("⚠️ Library Render Failed: " + e.message, 'error'); }
+  }, (error) => {
+    console.error('Library Sync Error:', error);
+    logDiagnostic("❌ Library Error: " + error.code, 'error');
+  });
+
                 
             } catch (e) {
                 console.error("Init Error:", e);
@@ -2175,10 +2183,10 @@
             }
             
             // Re-render to ensure data is fresh
-            if (viewName === 'dashboard') try { renderDashboard(); } catch(e) {}
-            if (viewName === 'pipeline') try { renderPipeline(); } catch(e) {}
-            if (viewName === 'franchises') try { renderFranchises(); } catch(e) {}
-            if (viewName === 'duediligence') try { renderDueDiligence(); } catch(e) {}
+            if (viewName === 'dashboard') { try { renderDashboard(); } catch(e) {} }
+            if (viewName === 'pipeline') { try { renderPipeline(); } catch(e) {} }
+            if (viewName === 'franchises') { try { renderFranchises(); } catch(e) {} }
+            if (viewName === 'duediligence') { try { renderDueDiligence(); } catch(e) {} }
             if (viewName === 'development') try { renderDevelopment(); }
   if (viewName === 'library') try { renderLibrary(); } catch(e) {}
  catch(e) {}
@@ -2243,7 +2251,7 @@
                 document.getElementById('franchise-modal-title').textContent = 'Add Franchise';
                 document.getElementById('franchise-submit-btn').textContent = 'Save Franchise Profile';
             }
-                } else if (id === 'library-modal') {
+  else if (id === 'library-modal') {
       document.getElementById('library-form').reset();
       document.getElementById('library-id').value = '';
       document.getElementById('library-modal-title').textContent = 'New Library Item';
@@ -3476,6 +3484,40 @@
      alert('Error deleting library item.');
    }
  };
+
+ // LIBRARY form submit
+ document.getElementById('library-form').addEventListener('submit', async (e) => {
+   e.preventDefault();
+   const btn = document.getElementById('library-submit-btn');
+   btn.disabled = true; btn.textContent = 'Saving...';
+   try {
+     const id = document.getElementById('library-id').value;
+     const title = document.getElementById('lib-title').value.trim();
+     const category = document.getElementById('lib-category').value;
+     const tags = document.getElementById('lib-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+     let url = document.getElementById('lib-url').value.trim();
+     const description = document.getElementById('lib-desc').value.trim();
+     if (url && !/^https?:\/\//i.test(url)) { url = 'https://' + url; }
+     if (!/drive\.google\.com|docs\.google\.com/i.test(url)) {
+       const cont = confirm('This link does not look like a Google Drive URL. Save anyway?');
+       if (!cont) { btn.disabled = false; btn.textContent = id ? 'Update Item' : 'Save Item'; return; }
+     }
+     const payload = { title, category, tags, url, description, userId: currentUserId, updatedAt: serverTimestamp() };
+     if (id) {
+       await updateDoc(getDocRef('gc_library', id), payload);
+     } else {
+       payload.createdAt = serverTimestamp();
+       await addDoc(getCollectionRef('gc_library'), payload);
+     }
+     closeModal('library-modal');
+     switchView('library');
+   } catch (e) {
+     console.error('Library save error:', e);
+     alert('Error saving library item.');
+   } finally {
+     btn.disabled = false; btn.textContent = 'Save Item';
+   }
+ });
 // --- Persistence Logic ---
         
         // DEALS
@@ -3676,43 +3718,7 @@
                         );
                         await updateDoc(getDocRef('gc_deals', dealToUpdate.id), { checklist: updatedChecklist });
 
- // LIBRARY form submit
- document.getElementById('library-form').addEventListener('submit', async (e) => {
-   e.preventDefault();
-   const btn = document.getElementById('library-submit-btn');
-   btn.disabled = true; btn.textContent = 'Saving...';
-   try {
-     const id = document.getElementById('library-id').value;
-     const title = document.getElementById('lib-title').value.trim();
-     const category = document.getElementById('lib-category').value;
-     const tags = document.getElementById('lib-tags').value.split(',').map(s => s.trim()).filter(Boolean);
-     let url = document.getElementById('lib-url').value.trim();
-     const description = document.getElementById('lib-desc').value.trim();
-
-     if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-       url = 'https://' + url;
-     }
-     if (!/drive\.google\.com|docs\.google\.com/i.test(url)) {
-       const cont = confirm('This link does not look like a Google Drive URL. Save anyway?');
-       if (!cont) { btn.disabled = false; btn.textContent = id ? 'Update Item' : 'Save Item'; return; }
-     }
-
-     const payload = { title, category, tags, url, description, userId: currentUserId, updatedAt: serverTimestamp() };
-     if (id) {
-       await updateDoc(getDocRef('gc_library', id), payload);
-     } else {
-       payload.createdAt = serverTimestamp();
-       await addDoc(getCollectionRef('gc_library'), payload);
-     }
-     closeModal('library-modal');
-     switchView('library');
-   } catch (e) {
-     console.error('Library save error:', e);
-     alert('Error saving library item.');
-   } finally {
-     btn.disabled = false; btn.textContent = 'Save Item';
-   }
- });
+ 
 
                     }
                 }
