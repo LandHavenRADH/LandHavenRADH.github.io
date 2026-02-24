@@ -47,11 +47,13 @@
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-8">
                 <div class="flex flex-col items-center mb-6">
+                    <!-- Updated Logo: Replace the src below with your company logo URL -->
                     <img src="https://placehold.co/200x200/e2e8f0/1e293b?text=GLG" 
                          alt="Ground Lease Group" 
                          class="w-20 h-20 rounded-xl object-contain mb-3"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                     
+                    <!-- Fallback Icon (Hidden if logo loads) -->
                     <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3" style="display:none;">
                         <i data-lucide="building" width="24"></i>
                     </div>
@@ -271,7 +273,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: DUE DILIGENCE -->
+            <!-- VIEW: DUE DILIGENCE (NEW) -->
             <div id="view-duediligence" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
@@ -303,7 +305,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: FRANCHISES -->
+            <!-- VIEW: FRANCHISES (NEW) -->
             <div id="view-franchises" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
@@ -1307,11 +1309,13 @@
             if (window.lucide) lucide.createIcons();
         }
 
+        // NEW: Render Due Diligence Tab Board
         function renderDueDiligence() {
             const container = document.getElementById('dd-container');
             if(!container) return;
             container.innerHTML = '';
             
+            // Render all active deals mapped to DD stages
             DD_STAGES.forEach(stage => {
                 const stageDeals = deals.filter(d => (d.ddStatus || 'not_started') === stage.id);
                 const col = document.createElement('div');
@@ -1835,6 +1839,52 @@
                     deals = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                     logDiagnostic(`📥 Loaded ${deals.length} deals.`);
                     
+                    // --- AUTO BACKFILL FOR EXISTING DEALS ---
+                    deals.forEach(deal => {
+                        let needsUpdate = false;
+                        let updatePayload = {};
+
+                        if (deal.checklist === undefined) {
+                            updatePayload.checklist = [
+                                { id: 'dd-1', text: 'Survey (ALTA/NSPS)', completed: false },
+                                { id: 'dd-2', text: 'Environmental Phase I (ESA)', completed: false },
+                                { id: 'dd-3', text: 'Geotechnical/Soils Report', completed: false },
+                                { id: 'dd-4', text: 'Title Commitment & Exception Review', completed: false },
+                                { id: 'dd-5', text: 'Zoning Approval / Entitlements', completed: false },
+                                { id: 'dd-6', text: 'Utility Availability Verification', completed: false },
+                                { id: 'dd-7', text: 'Site Plan Approval', completed: false },
+                                { id: 'dd-8', text: 'Permitting', completed: false },
+                                { id: 'dd-9', text: 'Site Clearing / Demolition', completed: false }
+                            ];
+                            updatePayload.ddStatus = deal.ddStatus || 'not_started';
+                            deal.checklist = updatePayload.checklist; // Optimistic UI update
+                            deal.ddStatus = updatePayload.ddStatus;
+                            needsUpdate = true;
+                        }
+
+                        if (deal.devChecklist === undefined) {
+                            updatePayload.devChecklist = [
+                                { id: 'dev-1', text: 'Site Clearing & Grubbing', completed: false },
+                                { id: 'dev-2', text: 'Rough Grading', completed: false },
+                                { id: 'dev-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
+                                { id: 'dev-4', text: 'Electric & Gas Routing', completed: false },
+                                { id: 'dev-5', text: 'Stormwater / Retention Installation', completed: false },
+                                { id: 'dev-6', text: 'Driveway & Curb Cut Installation', completed: false },
+                                { id: 'dev-7', text: 'Final Pad Grading', completed: false }
+                            ];
+                            updatePayload.devStatus = deal.devStatus || 'not_started';
+                            deal.devChecklist = updatePayload.devChecklist; // Optimistic UI update
+                            deal.devStatus = updatePayload.devStatus;
+                            needsUpdate = true;
+                        }
+
+                        if (needsUpdate) {
+                            updateDoc(getDocRef('gc_deals', deal.id), updatePayload)
+                                .catch(err => console.error("Auto-migration failed:", err));
+                        }
+                    });
+                    // ----------------------------------------
+                    
                     try { renderPipeline(); } catch(e) { logDiagnostic(`⚠️ Pipeline Render Failed: ${e.message}`, "error"); console.error(e); }
                     try { renderDueDiligence(); } catch(e) { logDiagnostic(`⚠️ Due Diligence Render Failed: ${e.message}`, "error"); console.error(e); }
                     try { renderDevelopment(); } catch(e) { logDiagnostic(`⚠️ Development Render Failed: ${e.message}`, "error"); console.error(e); }
@@ -1975,6 +2025,7 @@
                 document.getElementById('contact-form').reset();
                 document.getElementById('contact-id').value = ''; 
                 document.getElementById('contact-dd-item-id').value = ''; // IMPORTANT: Clear DD state for normal opens
+                document.getElementById('contact-dev-item-id').value = ''; // IMPORTANT: Clear Dev state for normal opens
                 document.getElementById('contact-modal-title').textContent = 'Add Contact';
                 document.getElementById('contact-submit-btn').textContent = 'Save Contact';
                 populateDealSelects();
@@ -1999,43 +2050,6 @@
             currentDealId = id;
             const deal = deals.find(d => d.id === id);
             if (!deal) return;
-
-            // AUTO-BACKFILL CHECKLIST FOR EXISTING DEALS
-            if (deal.checklist === undefined) {
-                 const defaultChecklist = [
-                     { id: Date.now().toString() + '-1', text: 'Survey (ALTA/NSPS)', completed: false },
-                     { id: Date.now().toString() + '-2', text: 'Environmental Phase I (ESA)', completed: false },
-                     { id: Date.now().toString() + '-3', text: 'Geotechnical/Soils Report', completed: false },
-                     { id: Date.now().toString() + '-4', text: 'Title Commitment & Exception Review', completed: false },
-                     { id: Date.now().toString() + '-5', text: 'Zoning Approval / Entitlements', completed: false },
-                     { id: Date.now().toString() + '-6', text: 'Utility Availability Verification', completed: false },
-                     { id: Date.now().toString() + '-7', text: 'Site Plan Approval', completed: false },
-                     { id: Date.now().toString() + '-8', text: 'Permitting', completed: false },
-                     { id: Date.now().toString() + '-9', text: 'Site Clearing / Demolition', completed: false }
-                 ];
-                 deal.checklist = defaultChecklist;
-                 
-                 updateDoc(getDocRef('gc_deals', id), { checklist: defaultChecklist })
-                    .catch(err => console.error("Error backfilling checklist:", err));
-            }
-
-            // AUTO-BACKFILL DEVELOPMENT CHECKLIST FOR EXISTING DEALS
-            if (deal.devChecklist === undefined) {
-                 const defaultDevChecklist = [
-                     { id: Date.now().toString() + 'd-1', text: 'Site Clearing & Grubbing', completed: false },
-                     { id: Date.now().toString() + 'd-2', text: 'Rough Grading', completed: false },
-                     { id: Date.now().toString() + 'd-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
-                     { id: Date.now().toString() + 'd-4', text: 'Electric & Gas Routing', completed: false },
-                     { id: Date.now().toString() + 'd-5', text: 'Stormwater / Retention Installation', completed: false },
-                     { id: Date.now().toString() + 'd-6', text: 'Driveway & Curb Cut Installation', completed: false },
-                     { id: Date.now().toString() + 'd-7', text: 'Final Pad Grading', completed: false }
-                 ];
-                 deal.devChecklist = defaultDevChecklist;
-                 deal.devStatus = 'not_started';
-                 
-                 updateDoc(getDocRef('gc_deals', id), { devChecklist: defaultDevChecklist, devStatus: 'not_started' })
-                    .catch(err => console.error("Error backfilling dev checklist:", err));
-            }
 
             document.getElementById('detail-deal-name').textContent = deal.name;
             document.getElementById('detail-deal-address').textContent = deal.address;
@@ -2385,7 +2399,7 @@
             
             const checklist = deal.checklist || [];
             // Generate simple unique ID
-            const newItemId = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+            const newItemId = Date.now().toString() + '-' + Math.random().toString(36).substring(2, 5);
             const newItem = { id: newItemId, text, completed: false };
             const updatedChecklist = [...checklist, newItem];
             
@@ -3063,25 +3077,25 @@
                     dealData.devStatus = 'not_started'; 
                     
                     dealData.checklist = [
-                        { id: Date.now().toString() + '-1', text: 'Survey (ALTA/NSPS)', completed: false },
-                        { id: Date.now().toString() + '-2', text: 'Environmental Phase I (ESA)', completed: false },
-                        { id: Date.now().toString() + '-3', text: 'Geotechnical/Soils Report', completed: false },
-                        { id: Date.now().toString() + '-4', text: 'Title Commitment & Exception Review', completed: false },
-                        { id: Date.now().toString() + '-5', text: 'Zoning Approval / Entitlements', completed: false },
-                        { id: Date.now().toString() + '-6', text: 'Utility Availability Verification', completed: false },
-                        { id: Date.now().toString() + '-7', text: 'Site Plan Approval', completed: false },
-                        { id: Date.now().toString() + '-8', text: 'Permitting', completed: false },
-                        { id: Date.now().toString() + '-9', text: 'Site Clearing / Demolition', completed: false }
+                        { id: 'dd-1', text: 'Survey (ALTA/NSPS)', completed: false },
+                        { id: 'dd-2', text: 'Environmental Phase I (ESA)', completed: false },
+                        { id: 'dd-3', text: 'Geotechnical/Soils Report', completed: false },
+                        { id: 'dd-4', text: 'Title Commitment & Exception Review', completed: false },
+                        { id: 'dd-5', text: 'Zoning Approval / Entitlements', completed: false },
+                        { id: 'dd-6', text: 'Utility Availability Verification', completed: false },
+                        { id: 'dd-7', text: 'Site Plan Approval', completed: false },
+                        { id: 'dd-8', text: 'Permitting', completed: false },
+                        { id: 'dd-9', text: 'Site Clearing / Demolition', completed: false }
                     ];
 
                     dealData.devChecklist = [
-                        { id: Date.now().toString() + 'd-1', text: 'Site Clearing & Grubbing', completed: false },
-                        { id: Date.now().toString() + 'd-2', text: 'Rough Grading', completed: false },
-                        { id: Date.now().toString() + 'd-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
-                        { id: Date.now().toString() + 'd-4', text: 'Electric & Gas Routing', completed: false },
-                        { id: Date.now().toString() + 'd-5', text: 'Stormwater / Retention Installation', completed: false },
-                        { id: Date.now().toString() + 'd-6', text: 'Driveway & Curb Cut Installation', completed: false },
-                        { id: Date.now().toString() + 'd-7', text: 'Final Pad Grading', completed: false }
+                        { id: 'dev-1', text: 'Site Clearing & Grubbing', completed: false },
+                        { id: 'dev-2', text: 'Rough Grading', completed: false },
+                        { id: 'dev-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
+                        { id: 'dev-4', text: 'Electric & Gas Routing', completed: false },
+                        { id: 'dev-5', text: 'Stormwater / Retention Installation', completed: false },
+                        { id: 'dev-6', text: 'Driveway & Curb Cut Installation', completed: false },
+                        { id: 'dev-7', text: 'Final Pad Grading', completed: false }
                     ];
 
                     await addDoc(getCollectionRef('gc_deals'), dealData);
