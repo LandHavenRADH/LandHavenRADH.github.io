@@ -724,29 +724,6 @@
                     </div>
                 </div>
 
-                <!-- NEW: Due Diligence Checklist Section -->
-                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="list-checks" class="text-emerald-600" width="18"></i> Due Diligence Checklist
-                        </h4>
-                        <div class="text-xs font-bold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-                            Total Est. Cost: <span id="detail-deal-total-cost" class="text-amber-600">$0</span>
-                        </div>
-                    </div>
-                    
-                    <div id="detail-deal-checklist" class="space-y-1 mb-3 max-h-48 overflow-y-auto pr-2 no-scrollbar">
-                        <!-- Checklist items populated via JS -->
-                    </div>
-                    
-                    <div class="flex gap-2 pt-2 border-t border-slate-200">
-                        <input type="text" id="new-checklist-item-detail" onkeypress="if(event.key === 'Enter') window.addChecklistItem('new-checklist-item-detail')" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
-                        <button onclick="window.addChecklistItem('new-checklist-item-detail')" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
-                            <i data-lucide="plus" width="16"></i> Add
-                        </button>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <div class="flex justify-between items-center mb-2">
@@ -782,7 +759,7 @@
                     <p class="text-sm text-slate-500">Due Diligence Checklist</p>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <button onclick="window.openDealDetail(currentDealId); window.switchView('pipeline'); closeModal('dd-modal')" class="flex items-center gap-1 text-xs font-bold bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-50 transition text-slate-700">
+                    <button onclick="window.closeModal('dd-modal'); window.switchView('pipeline'); window.openDealDetail(currentDealId);" class="flex items-center gap-1 text-xs font-bold bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-50 transition text-slate-700">
                         <i data-lucide="external-link" width="14"></i> Deal Details
                     </button>
                     <button onclick="closeModal('dd-modal')" class="text-slate-400 hover:text-red-500 ml-2"><i data-lucide="x" width="24"></i></button>
@@ -1949,7 +1926,6 @@
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
-            renderDealChecklist(deal);
             document.getElementById('deal-detail-modal').classList.remove('hidden');
         }
         
@@ -2102,7 +2078,7 @@
                                 </span>` :
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
-                                    <input type="text" inputmode="decimal" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
                                     <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
@@ -2116,9 +2092,6 @@
             const ddContainer = document.getElementById('dd-modal-checklist');
             if (ddContainer) ddContainer.innerHTML = html;
             
-            const detailContainer = document.getElementById('detail-deal-checklist');
-            if (detailContainer) detailContainer.innerHTML = html;
-
             if (window.lucide) lucide.createIcons();
         }
 
