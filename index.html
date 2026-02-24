@@ -2181,13 +2181,12 @@
             }
             
             // Re-render to ensure data is fresh
-            if (viewName === 'dashboard') { try { renderDashboard(); } catch(e) {} } catch(e) {}
-            if (viewName === 'pipeline') { try { renderPipeline(); } catch(e) {} } catch(e) {}
-            if (viewName === 'franchises') { try { renderFranchises(); } catch(e) {} } catch(e) {}
-            if (viewName === 'duediligence') { try { renderDueDiligence(); } catch(e) {} } catch(e) {}
+            if (viewName === 'dashboard') { try { renderDashboard(); } catch(e) {} }
+            if (viewName === 'pipeline') { try { renderPipeline(); } catch(e) {} }
+            if (viewName === 'franchises') { try { renderFranchises(); } catch(e) {} }
+            if (viewName === 'duediligence') { try { renderDueDiligence(); } catch(e) {} }
             if (viewName === 'development') { try { renderDevelopment(); } catch(e) {} }
-  if (viewName === 'library') { try { renderLibrary(); } catch(e) {} } catch(e) {}
- catch(e) {}
+  if (viewName === 'library') { try { renderLibrary(); } catch(e) {} }
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -2249,7 +2248,7 @@
                 document.getElementById('franchise-modal-title').textContent = 'Add Franchise';
                 document.getElementById('franchise-submit-btn').textContent = 'Save Franchise Profile';
             }
-                } else if (id === 'library-modal') {
+  else if (id === 'library-modal') {
       document.getElementById('library-form').reset();
       document.getElementById('library-id').value = '';
       document.getElementById('library-modal-title').textContent = 'New Library Item';
@@ -3482,6 +3481,32 @@
      alert('Error deleting library item.');
    }
  };
+
+ // LIBRARY form submit
+ document.getElementById('library-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('library-submit-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const id = document.getElementById('library-id').value;
+    const title = document.getElementById('lib-title').value.trim();
+    const category = document.getElementById('lib-category').value;
+    const tags = document.getElementById('lib-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+    let url = document.getElementById('lib-url').value.trim();
+    const description = document.getElementById('lib-desc').value.trim();
+    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    if (!/drive\.google\.com|docs\.google\.com/i.test(url)) {
+      const cont = confirm('This link does not look like a Google Drive URL. Save anyway?');
+      if (!cont) { btn.disabled = false; btn.textContent = id ? 'Update Item' : 'Save Item'; return; }
+    }
+    const payload = { title, category, tags, url, description, userId: currentUserId, updatedAt: serverTimestamp() };
+    if (id) await updateDoc(getDocRef('gc_library', id), payload);
+    else { payload.createdAt = serverTimestamp(); await addDoc(getCollectionRef('gc_library'), payload); }
+    closeModal('library-modal');
+    switchView('library');
+  } catch (e) { console.error('Library save error:', e); alert('Error saving library item.'); }
+  finally { btn.disabled = false; btn.textContent = 'Save Item'; }
+ });
 // --- Persistence Logic ---
         
         // DEALS
