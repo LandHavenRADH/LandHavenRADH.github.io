@@ -751,6 +751,16 @@
                         <div class="text-right pt-2 border-t border-blue-200" id="summary-finance">Checking...</div>
                     </div>
                 </div>
+                
+                <!-- NEW: Deal Documents Section -->
+                <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="folder" class="text-purple-600" width="18"></i> Deal Documents
+                    </h4>
+                    <div id="detail-deal-documents-container" class="flex flex-col gap-2">
+                        <!-- Javascript fills this -->
+                    </div>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -1446,6 +1456,65 @@
         window.moveDevStage = async (id, devStatus) => {
              await updateDoc(getDocRef("gc_deals", id), { devStatus });
         };
+
+        // NEW GLOBAL DEAL/FRANCHISE FILE LINKS 
+        window.assignDealLink = async (dealId, containerEl) => {
+            if(!containerEl) return;
+            const nameInput = containerEl.querySelector('input[type="text"]');
+            const urlInput = containerEl.querySelector('input[type="url"]');
+            if(!nameInput || !urlInput) return;
+            
+            let name = nameInput.value.trim() || 'Document';
+            let url = urlInput.value.trim();
+            if(!url) return;
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const urls = deal.documentUrls || [];
+            await updateDoc(getDocRef('gc_deals', dealId), { documentUrls: [...urls, { name, url }] });
+        }
+
+        window.removeDealLink = async (dealId, urlIndex) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const urls = deal.documentUrls || [];
+            const newUrls = urls.filter((_, idx) => idx !== urlIndex);
+            await updateDoc(getDocRef('gc_deals', dealId), { documentUrls: newUrls });
+        }
+
+        window.assignFranchiseLink = async (franchiseId, containerEl) => {
+            if(!containerEl) return;
+            const nameInput = containerEl.querySelector('input[type="text"]');
+            const urlInput = containerEl.querySelector('input[type="url"]');
+            if(!nameInput || !urlInput) return;
+            
+            let name = nameInput.value.trim() || 'Document';
+            let url = urlInput.value.trim();
+            if(!url) return;
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const franchise = franchises.find(f => f.id === franchiseId);
+            if (!franchise) return;
+            
+            const urls = franchise.documentUrls || [];
+            await updateDoc(getDocRef('gc_franchises', franchiseId), { documentUrls: [...urls, { name, url }] });
+        }
+
+        window.removeFranchiseLink = async (franchiseId, urlIndex) => {
+            const franchise = franchises.find(f => f.id === franchiseId);
+            if (!franchise) return;
+            const urls = franchise.documentUrls || [];
+            const newUrls = urls.filter((_, idx) => idx !== urlIndex);
+            await updateDoc(getDocRef('gc_franchises', franchiseId), { documentUrls: newUrls });
+        }
         
         // NEW: Render Franchises Grid
         function renderFranchises() {
@@ -1466,6 +1535,15 @@
                     : `<div class="w-20 h-20 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-3xl shrink-0 shadow-sm">
                             <i data-lucide="store" width="32"></i>
                        </div>`;
+
+                let docsHtml = (f.documentUrls || []).map((fileObj, idx) => `
+                    <span class="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1.5 rounded-md flex items-center gap-1 mb-1 max-w-full">
+                        <a href="${fileObj.url}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline font-medium truncate w-full">
+                            <i data-lucide="link" width="12" class="shrink-0"></i> <span class="truncate">${fileObj.name}</span>
+                        </a>
+                        <button onclick="event.stopPropagation(); window.removeFranchiseLink('${f.id}', ${idx})" class="hover:text-red-500 ml-1 shrink-0"><i data-lucide="x" width="12"></i></button>
+                    </span>
+                `).join('');
 
                 return `
                 <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition group relative cursor-pointer flex flex-col h-full" onclick="window.editFranchise('${f.id}')">
@@ -1508,11 +1586,26 @@
                         <p class="text-sm text-slate-700 leading-snug bg-white p-1 rounded border border-transparent">${f.markets}</p>
                     </div>` : ''}
                     
-                    ${f.notes ? `
-                    <div class="mt-auto border-t border-slate-100 pt-2">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">Notes</span>
-                        <p class="text-xs text-slate-500 italic leading-relaxed">"${f.notes}"</p>
-                    </div>` : ''}
+                    <div class="mt-auto pt-3 border-t border-slate-100">
+                        ${f.notes ? `
+                        <div class="mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1">Notes</span>
+                            <p class="text-xs text-slate-500 italic leading-relaxed">"${f.notes}"</p>
+                        </div>` : ''}
+                        
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-2">Franchise Documents</span>
+                            <div class="flex flex-col gap-1 w-full">
+                                ${docsHtml}
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity w-full">
+                                <input type="text" placeholder="Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 flex-1 min-w-[70px]" onclick="event.stopPropagation()" onkeypress="if(event.key === 'Enter') window.assignFranchiseLink('${f.id}', this.parentElement)">
+                                <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 flex-[2] min-w-[100px]" onclick="event.stopPropagation()" onkeypress="if(event.key === 'Enter') window.assignFranchiseLink('${f.id}', this.parentElement)">
+                                <button onclick="event.stopPropagation(); window.assignFranchiseLink('${f.id}', this.parentElement)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200 shrink-0" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             `}).join('');
              if (window.lucide) lucide.createIcons();
@@ -2051,6 +2144,43 @@
             const deal = deals.find(d => d.id === id);
             if (!deal) return;
 
+            // AUTO-BACKFILL CHECKLIST FOR EXISTING DEALS
+            if (deal.checklist === undefined) {
+                 const defaultChecklist = [
+                     { id: Date.now().toString() + '-1', text: 'Survey (ALTA/NSPS)', completed: false },
+                     { id: Date.now().toString() + '-2', text: 'Environmental Phase I (ESA)', completed: false },
+                     { id: Date.now().toString() + '-3', text: 'Geotechnical/Soils Report', completed: false },
+                     { id: Date.now().toString() + '-4', text: 'Title Commitment & Exception Review', completed: false },
+                     { id: Date.now().toString() + '-5', text: 'Zoning Approval / Entitlements', completed: false },
+                     { id: Date.now().toString() + '-6', text: 'Utility Availability Verification', completed: false },
+                     { id: Date.now().toString() + '-7', text: 'Site Plan Approval', completed: false },
+                     { id: Date.now().toString() + '-8', text: 'Permitting', completed: false },
+                     { id: Date.now().toString() + '-9', text: 'Site Clearing / Demolition', completed: false }
+                 ];
+                 deal.checklist = defaultChecklist;
+                 
+                 updateDoc(getDocRef('gc_deals', id), { checklist: defaultChecklist })
+                    .catch(err => console.error("Error backfilling checklist:", err));
+            }
+
+            // AUTO-BACKFILL DEVELOPMENT CHECKLIST FOR EXISTING DEALS
+            if (deal.devChecklist === undefined) {
+                 const defaultDevChecklist = [
+                     { id: Date.now().toString() + 'd-1', text: 'Site Clearing & Grubbing', completed: false },
+                     { id: Date.now().toString() + 'd-2', text: 'Rough Grading', completed: false },
+                     { id: Date.now().toString() + 'd-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
+                     { id: Date.now().toString() + 'd-4', text: 'Electric & Gas Routing', completed: false },
+                     { id: Date.now().toString() + 'd-5', text: 'Stormwater / Retention Installation', completed: false },
+                     { id: Date.now().toString() + 'd-6', text: 'Driveway & Curb Cut Installation', completed: false },
+                     { id: Date.now().toString() + 'd-7', text: 'Final Pad Grading', completed: false }
+                 ];
+                 deal.devChecklist = defaultDevChecklist;
+                 deal.devStatus = 'not_started';
+                 
+                 updateDoc(getDocRef('gc_deals', id), { devChecklist: defaultDevChecklist, devStatus: 'not_started' })
+                    .catch(err => console.error("Error backfilling dev checklist:", err));
+            }
+
             document.getElementById('detail-deal-name').textContent = deal.name;
             document.getElementById('detail-deal-address').textContent = deal.address;
             document.getElementById('detail-deal-value').textContent = deal.value ? `$${deal.value}` : '$0';
@@ -2107,10 +2237,41 @@
                 franInfoDiv.classList.add('hidden');
             }
 
+            // POPULATE NEW DEAL DOCUMENTS SECTION
+            const docsContainer = document.getElementById('detail-deal-documents-container');
+            if (docsContainer) {
+                let docsHtml = (deal.documentUrls || []).map((fileObj, idx) => {
+                    const isString = typeof fileObj === 'string';
+                    const url = isString ? fileObj : fileObj.url;
+                    const name = isString ? `File ${idx + 1}` : (fileObj.name || `File ${idx + 1}`);
+
+                    return `
+                    <span class="text-sm bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg flex items-center justify-between gap-2 mb-2">
+                        <a href="${url}" target="_blank" class="flex items-center gap-2 hover:underline font-medium truncate">
+                            <i data-lucide="link" width="14" class="shrink-0"></i> <span class="truncate">${name}</span>
+                        </a>
+                        <button onclick="window.removeDealLink('${deal.id}', ${idx})" class="hover:text-red-500 ml-2 shrink-0"><i data-lucide="x" width="14"></i></button>
+                    </span>
+                    `;
+                }).join('');
+
+                docsHtml += `
+                    <div class="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-slate-100 w-full">
+                        <input type="text" placeholder="File Name..." class="text-sm p-2 border border-slate-200 rounded-md outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDealLink('${deal.id}', this.parentElement)">
+                        <input type="url" placeholder="Drive URL..." class="flex-1 text-sm p-2 border border-slate-200 rounded-md outline-none focus:border-purple-500 min-w-[200px]" onkeypress="if(event.key === 'Enter') window.assignDealLink('${deal.id}', this.parentElement)">
+                        <button onclick="window.assignDealLink('${deal.id}', this.parentElement)" class="text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-md font-medium transition flex items-center gap-1 border border-purple-200 shrink-0">
+                            <i data-lucide="plus" width="16"></i> Add
+                        </button>
+                    </div>
+                `;
+                docsContainer.innerHTML = docsHtml;
+            }
+
             renderRelatedTasks(id);
             renderRelatedContacts(id);
             renderDealSummary(deal);
             document.getElementById('deal-detail-modal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
         }
         
         window.openDDDetail = (id) => {
@@ -2256,9 +2417,9 @@
                             <!-- Multiple Links Array -->
                             ${linksHtml}
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
-                                <input type="text" id="dd-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <input type="url" id="dd-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                                <input type="text" id="dd-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <input type="url" id="dd-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
                             </div>
                             
                             ${item.cost ? 
@@ -2268,8 +2429,8 @@
                                 </span>` :
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
-                                    <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                    <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
                         </div>
@@ -2278,15 +2439,17 @@
                 }).join('');
             }
             
+            // Render to whichever container is currently open/available
             const ddContainer = document.getElementById('dd-modal-checklist');
             if (ddContainer) ddContainer.innerHTML = html;
             
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDLink = async (dealId, itemId) => {
-            const nameInput = document.getElementById(`dd-link-name-${itemId}`);
-            const urlInput = document.getElementById(`dd-link-url-${itemId}`);
+        window.assignDDLink = async (dealId, itemId, containerEl) => {
+            if(!containerEl) return;
+            const nameInput = containerEl.querySelector('input[type="text"]');
+            const urlInput = containerEl.querySelector('input[type="url"]');
             if(!nameInput || !urlInput) return;
             
             let name = nameInput.value.trim() || 'Document';
@@ -2329,8 +2492,7 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
-        window.assignDDCost = async (dealId, itemId) => {
-            const inputEl = document.getElementById(`dd-cost-${itemId}`);
+        window.assignDDCost = async (dealId, itemId, inputEl) => {
             if(!inputEl) return;
             const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
             if(!costStr) return;
@@ -2494,9 +2656,9 @@
                             <!-- Multiple Links Array -->
                             ${linksHtml}
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
-                                <input type="text" id="dev-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <input type="url" id="dev-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDevLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                                <input type="text" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDevLink('${deal.id}', '${item.id}', this.parentElement)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
                             </div>
                             
                             ${item.cost ? 
@@ -2506,8 +2668,8 @@
                                 </span>` :
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
-                                    <input type="text" inputmode="decimal" id="dev-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                    <button onclick="event.stopPropagation(); window.assignDevCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                    <input type="text" inputmode="decimal" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevCost('${deal.id}', '${item.id}', this)" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDevCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
                         </div>
@@ -2522,9 +2684,10 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDevLink = async (dealId, itemId) => {
-            const nameInput = document.getElementById(`dev-link-name-${itemId}`);
-            const urlInput = document.getElementById(`dev-link-url-${itemId}`);
+        window.assignDevLink = async (dealId, itemId, containerEl) => {
+            if(!containerEl) return;
+            const nameInput = containerEl.querySelector('input[type="text"]');
+            const urlInput = containerEl.querySelector('input[type="url"]');
             if(!nameInput || !urlInput) return;
             
             let name = nameInput.value.trim() || 'Document';
@@ -2567,8 +2730,7 @@
             await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
         }
 
-        window.assignDevCost = async (dealId, itemId) => {
-            const inputEl = document.getElementById(`dev-cost-${itemId}`);
+        window.assignDevCost = async (dealId, itemId, inputEl) => {
             if(!inputEl) return;
             const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
             if(!costStr) return;
