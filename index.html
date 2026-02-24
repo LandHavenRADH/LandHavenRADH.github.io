@@ -47,13 +47,11 @@
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-8">
                 <div class="flex flex-col items-center mb-6">
-                    <!-- Updated Logo: Replace the src below with your company logo URL -->
                     <img src="https://placehold.co/200x200/e2e8f0/1e293b?text=GLG" 
                          alt="Ground Lease Group" 
                          class="w-20 h-20 rounded-xl object-contain mb-3"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                     
-                    <!-- Fallback Icon (Hidden if logo loads) -->
                     <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3" style="display:none;">
                         <i data-lucide="building" width="24"></i>
                     </div>
@@ -91,7 +89,7 @@
                 </div>
             </div>
             <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.43 • Full System</p>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">v2.44 • Full System</p>
             </div>
         </div>
     </div>
@@ -147,6 +145,11 @@
                 <i data-lucide="list-checks" size="20"></i>
                 <span class="font-medium">Due Diligence</span>
             </button>
+            <!-- NEW DEVELOPMENT TAB -->
+            <button onclick="switchView('development'); toggleSidebar()" id="nav-development" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+                <i data-lucide="hard-hat" size="20"></i>
+                <span class="font-medium">Development</span>
+            </button>
             <!-- NEW FRANCHISE TAB -->
             <button onclick="switchView('franchises'); toggleSidebar()" id="nav-franchises" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
                 <i data-lucide="store" size="20"></i>
@@ -166,7 +169,7 @@
             </button>
         </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
-            v2.43.0
+            v2.44.0
         </div>
     </div>
 
@@ -268,7 +271,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: DUE DILIGENCE (NEW) -->
+            <!-- VIEW: DUE DILIGENCE -->
             <div id="view-duediligence" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
@@ -284,7 +287,23 @@
                 </div>
             </div>
 
-            <!-- VIEW: FRANCHISES (NEW) -->
+            <!-- VIEW: DEVELOPMENT (NEW) -->
+            <div id="view-development" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Site Development</h2>
+                        <p class="text-slate-500 text-sm">Manage construction and "pad ready" tasks per deal.</p>
+                    </div>
+                </div>
+                
+                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+                    <div class="flex gap-6 min-w-max h-full" id="dev-container">
+                        <div class="flex items-center justify-center h-full w-full text-slate-400">Loading Development...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: FRANCHISES -->
             <div id="view-franchises" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <div>
@@ -451,7 +470,7 @@
                                 <div class="mt-3">
                                      <div class="flex justify-between items-end mb-1.5">
                                          <label class="text-xs font-semibold text-slate-500 block">Landlord's Work ($)</label>
-                                         <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-wider">From DD</span>
+                                         <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-wider">From DD & Dev</span>
                                      </div>
                                      <input type="text" inputmode="decimal" id="calc-landlord-work" value="0" data-type="currency" class="calc-input block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-sm cursor-not-allowed font-medium disabled:bg-slate-100 disabled:text-slate-500" disabled>
                                  </div>
@@ -631,6 +650,7 @@
                             <option value="loi">LOI / Offer</option>
                             <option value="dd">Due Diligence</option>
                             <option value="closing">Closing</option>
+                            <option value="development">Development</option>
                             <option value="leased">Active Lease</option>
                             <option value="sold">Properties Sold</option>
                         </select>
@@ -665,7 +685,7 @@
 
     <!-- Deal Detail Modal -->
     <div id="deal-detail-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center p-4 border-b bg-slate-50 shrink-0">
                 <div>
                     <h3 class="text-lg font-bold text-slate-800" id="detail-deal-name">Deal Name</h3>
@@ -687,7 +707,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                         <span class="text-xs text-slate-500 uppercase font-bold">Value</span>
                         <div class="text-lg font-bold text-slate-800 truncate" id="detail-deal-value">$0</div>
@@ -701,6 +721,12 @@
                             Due Diligence <i data-lucide="arrow-right" width="12" class="text-slate-300 group-hover:text-blue-500 transition"></i>
                         </span>
                         <div class="text-lg font-bold text-blue-600 truncate" id="detail-deal-dd-status">Not Started</div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition shadow-sm group" onclick="window.switchView('development'); window.openDevDetail(currentDealId); closeModal('deal-detail-modal');">
+                        <span class="text-xs text-slate-500 uppercase font-bold flex justify-between items-center">
+                            Development <i data-lucide="arrow-right" width="12" class="text-slate-300 group-hover:text-amber-500 transition"></i>
+                        </span>
+                        <div class="text-lg font-bold text-amber-600 truncate" id="detail-deal-dev-status">Not Started</div>
                     </div>
                 </div>
                 
@@ -784,6 +810,48 @@
                     <div class="flex gap-2 pt-3 border-t border-slate-100">
                         <input type="text" id="new-checklist-item-dd" onkeypress="if(event.key === 'Enter') window.addChecklistItem('new-checklist-item-dd')" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Add custom task...">
                         <button onclick="window.addChecklistItem('new-checklist-item-dd')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
+                            <i data-lucide="plus" width="16"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEVELOPMENT Detail Modal (Checklist) -->
+    <div id="dev-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b bg-slate-50 shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800" id="dev-modal-deal-name">Deal Name</h3>
+                    <p class="text-sm text-slate-500">Site Development Checklist</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <button onclick="window.closeModal('dev-modal'); window.switchView('pipeline'); window.openDealDetail(currentDealId);" class="flex items-center gap-1 text-xs font-bold bg-white border border-slate-300 px-3 py-1.5 rounded hover:bg-slate-50 transition text-slate-700">
+                        <i data-lucide="external-link" width="14"></i> Deal Details
+                    </button>
+                    <button onclick="closeModal('dev-modal')" class="text-slate-400 hover:text-red-500 ml-2"><i data-lucide="x" width="24"></i></button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto bg-slate-50">
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="hard-hat" class="text-amber-600" width="18"></i> Pad Ready Items
+                        </h4>
+                        <div class="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                            Total Dev Cost: <span id="dev-modal-total-cost" class="text-amber-600">$0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="dev-modal-checklist" class="mb-4">
+                        <!-- Checklist items populated via JS -->
+                    </div>
+                    
+                    <div class="flex gap-2 pt-3 border-t border-slate-100">
+                        <input type="text" id="new-checklist-item-dev" onkeypress="if(event.key === 'Enter') window.addDevChecklistItem('new-checklist-item-dev')" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500" placeholder="Add custom construction task...">
+                        <button onclick="window.addDevChecklistItem('new-checklist-item-dev')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition flex items-center gap-1">
                             <i data-lucide="plus" width="16"></i> Add
                         </button>
                     </div>
@@ -924,6 +992,7 @@
             <form id="contact-form" class="p-6 space-y-4">
                 <input type="hidden" id="contact-id">
                 <input type="hidden" id="contact-dd-item-id">
+                <input type="hidden" id="contact-dev-item-id">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input type="text" id="contact-name" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" required>
@@ -937,6 +1006,7 @@
                             <option value="Franchisee">Franchisee</option>
                             <option value="Lender">Lender</option>
                             <option value="Due Diligence">Due Diligence</option>
+                            <option value="Development">Development</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -1120,6 +1190,7 @@
             { id: 'loi', label: 'LOI / Offer', color: 'border-yellow-500' },
             { id: 'dd', label: 'Due Diligence', color: 'border-orange-500' },
             { id: 'closing', label: 'Closing', color: 'border-purple-500' },
+            { id: 'development', label: 'Development', color: 'border-teal-500' },
             { id: 'leased', label: 'Active Lease', color: 'border-emerald-500' },
             { id: 'sold', label: 'Properties Sold', color: 'border-slate-500' }
         ];
@@ -1128,6 +1199,13 @@
         const DD_STAGES = [
             { id: 'not_started', label: 'Not Started', color: 'border-slate-400' },
             { id: 'in_progress', label: 'In Progress', color: 'border-blue-500' },
+            { id: 'completed', label: 'Completed', color: 'border-emerald-500' }
+        ];
+
+        // NEW: DEV STAGES for Kanban Board
+        const DEV_STAGES = [
+            { id: 'not_started', label: 'Not Started', color: 'border-slate-400' },
+            { id: 'in_progress', label: 'In Progress', color: 'border-amber-500' },
             { id: 'completed', label: 'Completed', color: 'border-emerald-500' }
         ];
 
@@ -1229,13 +1307,11 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        // NEW: Render Due Diligence Tab Board
         function renderDueDiligence() {
             const container = document.getElementById('dd-container');
             if(!container) return;
             container.innerHTML = '';
             
-            // Render all active deals mapped to DD stages
             DD_STAGES.forEach(stage => {
                 const stageDeals = deals.filter(d => (d.ddStatus || 'not_started') === stage.id);
                 const col = document.createElement('div');
@@ -1294,8 +1370,77 @@
             if (window.lucide) lucide.createIcons();
         }
 
+        // NEW: Render Development Tab Board
+        function renderDevelopment() {
+            const container = document.getElementById('dev-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            // Render all active deals mapped to Dev stages
+            DEV_STAGES.forEach(stage => {
+                const stageDeals = deals.filter(d => (d.devStatus || 'not_started') === stage.id);
+                const col = document.createElement('div');
+                col.className = 'w-80 flex flex-col h-full shrink-0';
+                col.innerHTML = `
+                    <div class="flex items-center gap-2 mb-3 pb-2 border-b-2 ${stage.color} font-semibold text-slate-700">
+                        <span class="flex-1">${stage.label}</span>
+                        <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">${stageDeals.length}</span>
+                    </div>
+                    <div class="flex-1 bg-slate-200/50 rounded-lg p-2 space-y-3 overflow-y-auto no-scrollbar">
+                        ${stageDeals.map(deal => {
+                            const totalTasks = deal.devChecklist ? deal.devChecklist.length : 0;
+                            const completedTasks = deal.devChecklist ? deal.devChecklist.filter(t => t.completed).length : 0;
+                            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                            let displayTitle = deal.name;
+                            let logoHtml = '';
+                            if(deal.franchiseId) {
+                                const fran = franchises.find(f => f.id === deal.franchiseId);
+                                if(fran) {
+                                    displayTitle = fran.name;
+                                    if (fran.logoUrl) logoHtml = `<img src="${fran.logoUrl}" class="w-6 h-6 rounded-full object-contain border border-slate-200 bg-white shrink-0 mr-2" onerror="this.style.display='none'">`;
+                                    else logoHtml = `<div class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0 mr-2"><i data-lucide="store" width="12"></i></div>`;
+                                }
+                            }
+
+                            return `
+                            <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer relative drag-card" onclick="window.openDevDetail('${deal.id}')">
+                                <div class="flex items-center mb-1 pr-6">
+                                    ${logoHtml}
+                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${displayTitle}</h4>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-3 truncate"><i data-lucide="map-pin" width="10" class="inline"></i> ${deal.address || 'No Address'}</p>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-[10px] text-slate-500 mb-1 font-medium">
+                                        <span>${completedTasks}/${totalTasks} Tasks</span>
+                                        <span>${progress}%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Dev Status</span>
+                                    <select onclick="event.stopPropagation()" onchange="window.moveDevStage('${deal.id}', this.value)" class="text-xs bg-slate-100 border-none rounded px-2 py-1 cursor-pointer hover:bg-slate-200 focus:ring-0 font-medium text-slate-700">
+                                        ${DEV_STAGES.map(s => `<option value="${s.id}" ${s.id === (deal.devStatus || 'not_started') ? 'selected' : ''}>${s.label}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `}).join('')}
+                    </div>`;
+                container.appendChild(col);
+            });
+            if (window.lucide) lucide.createIcons();
+        }
+
         window.moveDDStage = async (id, ddStatus) => {
              await updateDoc(getDocRef("gc_deals", id), { ddStatus });
+        };
+
+        window.moveDevStage = async (id, devStatus) => {
+             await updateDoc(getDocRef("gc_deals", id), { devStatus });
         };
         
         // NEW: Render Franchises Grid
@@ -1500,8 +1645,8 @@
                 (c.role && c.role.toLowerCase().includes(searchVal))
             );
             
-            // UPDATED to include Due Diligence group
-            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Due Diligence': [], 'Other': [] };
+            // UPDATED to include Due Diligence & Development groups
+            const groups = { 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Due Diligence': [], 'Development': [], 'Other': [] };
             
             filteredContacts.forEach(c => {
                 const category = c.category || 'Other';
@@ -1692,6 +1837,7 @@
                     
                     try { renderPipeline(); } catch(e) { logDiagnostic(`⚠️ Pipeline Render Failed: ${e.message}`, "error"); console.error(e); }
                     try { renderDueDiligence(); } catch(e) { logDiagnostic(`⚠️ Due Diligence Render Failed: ${e.message}`, "error"); console.error(e); }
+                    try { renderDevelopment(); } catch(e) { logDiagnostic(`⚠️ Development Render Failed: ${e.message}`, "error"); console.error(e); }
                     try { populateDealSelects(); } catch(e) { logDiagnostic(`⚠️ Selects Failed: ${e.message}`, "error"); }
                     
                     // Force render dashboard regardless of visibility on first load to update counts
@@ -1699,6 +1845,7 @@
                     
                     if (currentDealId && !document.getElementById('deal-detail-modal').classList.contains('hidden')) window.openDealDetail(currentDealId);
                     if (currentDealId && !document.getElementById('dd-modal').classList.contains('hidden')) window.openDDDetail(currentDealId);
+                    if (currentDealId && !document.getElementById('dev-modal').classList.contains('hidden')) window.openDevDetail(currentDealId);
                 }, (error) => {
                     console.error("Deal Sync Error:", error);
                     logDiagnostic(`❌ Deals Error: ${error.code}`, "error");
@@ -1780,6 +1927,7 @@
             if (viewName === 'pipeline') try { renderPipeline(); } catch(e) {}
             if (viewName === 'franchises') try { renderFranchises(); } catch(e) {}
             if (viewName === 'duediligence') try { renderDueDiligence(); } catch(e) {}
+            if (viewName === 'development') try { renderDevelopment(); } catch(e) {}
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -1871,6 +2019,24 @@
                     .catch(err => console.error("Error backfilling checklist:", err));
             }
 
+            // AUTO-BACKFILL DEVELOPMENT CHECKLIST FOR EXISTING DEALS
+            if (deal.devChecklist === undefined) {
+                 const defaultDevChecklist = [
+                     { id: Date.now().toString() + 'd-1', text: 'Site Clearing & Grubbing', completed: false },
+                     { id: Date.now().toString() + 'd-2', text: 'Rough Grading', completed: false },
+                     { id: Date.now().toString() + 'd-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
+                     { id: Date.now().toString() + 'd-4', text: 'Electric & Gas Routing', completed: false },
+                     { id: Date.now().toString() + 'd-5', text: 'Stormwater / Retention Installation', completed: false },
+                     { id: Date.now().toString() + 'd-6', text: 'Driveway & Curb Cut Installation', completed: false },
+                     { id: Date.now().toString() + 'd-7', text: 'Final Pad Grading', completed: false }
+                 ];
+                 deal.devChecklist = defaultDevChecklist;
+                 deal.devStatus = 'not_started';
+                 
+                 updateDoc(getDocRef('gc_deals', id), { devChecklist: defaultDevChecklist, devStatus: 'not_started' })
+                    .catch(err => console.error("Error backfilling dev checklist:", err));
+            }
+
             document.getElementById('detail-deal-name').textContent = deal.name;
             document.getElementById('detail-deal-address').textContent = deal.address;
             document.getElementById('detail-deal-value').textContent = deal.value ? `$${deal.value}` : '$0';
@@ -1881,6 +2047,10 @@
             // New DD Status Mapping
             const ddStageLabel = DD_STAGES.find(s => s.id === (deal.ddStatus || 'not_started'))?.label || 'Not Started';
             document.getElementById('detail-deal-dd-status').textContent = ddStageLabel;
+
+            // New Dev Status Mapping
+            const devStageLabel = DEV_STAGES.find(s => s.id === (deal.devStatus || 'not_started'))?.label || 'Not Started';
+            document.getElementById('detail-deal-dev-status').textContent = devStageLabel;
             
             const franInfoDiv = document.getElementById('detail-franchise-info');
             const franContentDiv = document.getElementById('detail-franchise-content');
@@ -1938,6 +2108,15 @@
             document.getElementById('dd-modal').classList.remove('hidden');
         }
 
+        window.openDevDetail = (id) => {
+            currentDealId = id;
+            const deal = deals.find(d => d.id === id);
+            if (!deal) return;
+            document.getElementById('dev-modal-deal-name').textContent = deal.name;
+            renderDevChecklist(deal);
+            document.getElementById('dev-modal').classList.remove('hidden');
+        }
+
         window.editCurrentDeal = () => {
             window.closeModal('deal-detail-modal');
             window.editDeal(currentDealId);
@@ -1991,7 +2170,6 @@
 
         // --- Due Diligence Checklist Logic ---
         
-        // NEW: Open specific Contact Modal for a DD Item
         window.openContactModalForDD = (dealId, itemId) => {
             window.openModal('contact-modal', dealId); // Opens the modal and selects the deal
             
@@ -2015,8 +2193,6 @@
             // Update Total cost elements if they exist
             const ddModalTotal = document.getElementById('dd-modal-total-cost');
             if (ddModalTotal) ddModalTotal.textContent = totalCostStr;
-            const detailModalTotal = document.getElementById('detail-deal-total-cost');
-            if (detailModalTotal) detailModalTotal.textContent = totalCostStr;
 
             let html = '';
             if (checklist.length === 0) {
@@ -2066,9 +2242,9 @@
                             <!-- Multiple Links Array -->
                             ${linksHtml}
                             <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
-                                <input type="text" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
-                                <input type="url" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" onclick="event.stopPropagation()">
-                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}', this.parentElement)" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                                <input type="text" id="dd-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <input type="url" id="dd-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDDLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDDLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
                             </div>
                             
                             ${item.cost ? 
@@ -2079,7 +2255,7 @@
                                 `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
                                     <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
                                     <input type="text" inputmode="decimal" id="dd-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDDCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
-                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}', this.previousElementSibling)" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                    <button onclick="event.stopPropagation(); window.assignDDCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
                                 </div>`
                             }
                         </div>
@@ -2088,17 +2264,15 @@
                 }).join('');
             }
             
-            // Render to whichever container is currently open/available
             const ddContainer = document.getElementById('dd-modal-checklist');
             if (ddContainer) ddContainer.innerHTML = html;
             
             if (window.lucide) lucide.createIcons();
         }
 
-        window.assignDDLink = async (dealId, itemId, containerEl) => {
-            if(!containerEl) return;
-            const nameInput = containerEl.querySelector('input[type="text"]');
-            const urlInput = containerEl.querySelector('input[type="url"]');
+        window.assignDDLink = async (dealId, itemId) => {
+            const nameInput = document.getElementById(`dd-link-name-${itemId}`);
+            const urlInput = document.getElementById(`dd-link-url-${itemId}`);
             if(!nameInput || !urlInput) return;
             
             let name = nameInput.value.trim() || 'Document';
@@ -2141,7 +2315,8 @@
             await updateDoc(getDocRef('gc_deals', dealId), { checklist: updatedChecklist });
         }
 
-        window.assignDDCost = async (dealId, itemId, inputEl) => {
+        window.assignDDCost = async (dealId, itemId) => {
+            const inputEl = document.getElementById(`dd-cost-${itemId}`);
             if(!inputEl) return;
             const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
             if(!costStr) return;
@@ -2153,15 +2328,9 @@
             
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, cost } : item);
-            
-            // Feed through to Landlord's Work
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
 
@@ -2176,15 +2345,9 @@
                 }
                 return item;
             });
-            
-            // Feed through to Landlord's Work
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
 
@@ -2235,17 +2398,250 @@
             if (!deal) return;
             const checklist = deal.checklist || [];
             const updatedChecklist = checklist.filter(item => item.id !== itemId);
-            
-            // Re-calculate Total Cost in case a priced item is deleted
-            const totalDDCost = updatedChecklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
-            const calcParams = deal.calcParams || {};
-            calcParams.landlordWork = totalDDCost;
 
             await updateDoc(getDocRef('gc_deals', dealId), { 
-                checklist: updatedChecklist,
-                calcParams: calcParams
+                checklist: updatedChecklist
             });
         }
+
+
+        // --- Development Checklist Logic ---
+        
+        window.openContactModalForDev = (dealId, itemId) => {
+            window.openModal('contact-modal', dealId); // Opens the modal and selects the deal
+            
+            const deal = deals.find(d => d.id === dealId);
+            const item = deal?.devChecklist?.find(i => i.id === itemId);
+            
+            if (item) {
+                // We use a different hidden field or reuse the same logic
+                // But we must pass flag that it is DEV, not DD
+                document.getElementById('contact-dev-item-id').value = itemId; 
+                document.getElementById('contact-category').value = 'Development'; 
+                document.getElementById('contact-role').value = item.text; 
+            }
+        };
+
+        window.renderDevChecklist = (deal) => {
+            const checklist = deal.devChecklist || [];
+            
+            // Calculate Total Cost
+            const totalCost = checklist.reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const totalCostStr = totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+            // Update Total cost elements if they exist
+            const devModalTotal = document.getElementById('dev-modal-total-cost');
+            if (devModalTotal) devModalTotal.textContent = totalCostStr;
+
+            let html = '';
+            if (checklist.length === 0) {
+                html = '<div class="text-slate-400 text-sm italic py-1">No construction items. Add one below.</div>';
+            } else {
+                html = checklist.map(item => {
+                    let urls = item.documentUrls || [];
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }];
+
+                    const linksHtml = urls.map((fileObj, idx) => {
+                        const isString = typeof fileObj === 'string';
+                        const url = isString ? fileObj : fileObj.url;
+                        const name = isString ? `File ${idx + 1}` : (fileObj.name || `File ${idx + 1}`);
+
+                        return `
+                            <span class="text-xs bg-purple-50 text-purple-600 border border-purple-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px] mb-1">
+                                <a href="${url}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 hover:underline truncate" title="${url}">
+                                    <i data-lucide="link" width="12"></i> <span class="truncate">${name}</span>
+                                </a>
+                                <button onclick="event.stopPropagation(); window.removeDevLink('${deal.id}', '${item.id}', ${idx})" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                            </span>
+                        `;
+                    }).join('');
+
+                    return `
+                    <div class="flex flex-col group bg-white p-3 rounded-lg border border-slate-100 hover:border-amber-200 transition-colors shadow-sm mb-2 gap-2">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-2">
+                                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="window.toggleDevChecklistItem('${deal.id}', '${item.id}', this.checked)" class="w-5 h-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0">
+                                <span class="text-sm ${item.completed ? 'line-through text-slate-400' : 'text-slate-800 font-medium'} transition-all truncate">${item.text}</span>
+                            </label>
+                            <button onclick="window.removeDevChecklistItem('${deal.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-1.5 rounded hover:bg-red-50"><i data-lucide="trash-2" width="16"></i></button>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center gap-2 pl-8">
+                            ${item.contactName ? 
+                                `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="${item.contactName}">
+                                    <i data-lucide="user" width="12"></i> <span class="truncate">${item.contactName}</span>
+                                    <button onclick="event.stopPropagation(); window.removeDevContact('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                                </span>` : 
+                                `<button onclick="event.stopPropagation(); window.openContactModalForDev('${deal.id}', '${item.id}')" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-md border border-blue-200 transition flex items-center gap-1 opacity-0 group-hover:opacity-100 whitespace-nowrap shrink-0">
+                                    <i data-lucide="user-plus" width="14"></i> Add Contact
+                                </button>`
+                            }
+                            
+                            <!-- Multiple Links Array -->
+                            ${linksHtml}
+                            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1 flex-wrap">
+                                <input type="text" id="dev-link-name-${item.id}" placeholder="File Name..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <input type="url" id="dev-link-url-${item.id}" placeholder="Drive URL..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-purple-500 w-32" onkeypress="if(event.key === 'Enter') window.assignDevLink('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                <button onclick="event.stopPropagation(); window.assignDevLink('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-purple-600 p-1.5 bg-slate-100 rounded hover:bg-purple-50 transition border border-slate-200" title="Add Link"><i data-lucide="plus" width="14"></i></button>
+                            </div>
+                            
+                            ${item.cost ? 
+                                `<span class="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-2 py-1.5 rounded-md flex items-center gap-1 max-w-[140px]" title="Cost: $${item.cost}">
+                                    <i data-lucide="dollar-sign" width="12"></i> <span>${parseFloat(item.cost).toLocaleString('en-US', {maximumFractionDigits:0})}</span>
+                                    <button onclick="event.stopPropagation(); window.removeDevCost('${deal.id}', '${item.id}')" class="hover:text-red-500 ml-1"><i data-lucide="x" width="10"></i></button>
+                                </span>` :
+                                `<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
+                                    <i data-lucide="dollar-sign" width="14" class="text-slate-400"></i>
+                                    <input type="text" inputmode="decimal" id="dev-cost-${item.id}" placeholder="Cost..." class="text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-amber-500 w-20" onkeypress="if(event.key === 'Enter') window.assignDevCost('${deal.id}', '${item.id}')" onclick="event.stopPropagation()">
+                                    <button onclick="event.stopPropagation(); window.assignDevCost('${deal.id}', '${item.id}')" class="text-slate-500 hover:text-amber-600 p-1.5 bg-slate-100 rounded hover:bg-amber-50 transition border border-slate-200" title="Save Cost"><i data-lucide="check" width="14"></i></button>
+                                </div>`
+                            }
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            }
+            
+            const devContainer = document.getElementById('dev-modal-checklist');
+            if (devContainer) devContainer.innerHTML = html;
+            
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.assignDevLink = async (dealId, itemId) => {
+            const nameInput = document.getElementById(`dev-link-name-${itemId}`);
+            const urlInput = document.getElementById(`dev-link-url-${itemId}`);
+            if(!nameInput || !urlInput) return;
+            
+            let name = nameInput.value.trim() || 'Document';
+            let url = urlInput.value.trim();
+            if(!url) return;
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    let urls = item.documentUrls || [];
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }]; // Fallback
+                    return { ...item, documentUrls: [...urls, { name, url }], documentUrl: null }; 
+                }
+                return item;
+            });
+            await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
+        }
+
+        window.removeDevLink = async (dealId, itemId, urlIndex) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    let urls = item.documentUrls || [];
+                    if (item.documentUrl && urls.length === 0) urls = [{ name: 'Document', url: item.documentUrl }];
+                    
+                    const newUrls = urls.filter((_, idx) => idx !== urlIndex);
+                    return { ...item, documentUrls: newUrls, documentUrl: null }; 
+                }
+                return item;
+            });
+            await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
+        }
+
+        window.assignDevCost = async (dealId, itemId) => {
+            const inputEl = document.getElementById(`dev-cost-${itemId}`);
+            if(!inputEl) return;
+            const costStr = inputEl.value.replace(/[^0-9.-]+/g,"");
+            if(!costStr) return;
+            const cost = parseFloat(costStr);
+            if(isNaN(cost)) return;
+
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, cost } : item);
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                devChecklist: updatedChecklist
+            });
+        }
+
+        window.removeDevCost = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    const { cost, ...rest } = item;
+                    return rest; 
+                }
+                return item;
+            });
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                devChecklist: updatedChecklist
+            });
+        }
+
+        window.removeDevContact = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => {
+                if (item.id === itemId) {
+                    const { contactName, ...rest } = item;
+                    return rest; // Returns item without contactName
+                }
+                return item;
+            });
+            await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
+        }
+
+        window.toggleDevChecklistItem = async (dealId, itemId, isCompleted) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.map(item => item.id === itemId ? { ...item, completed: isCompleted } : item);
+            await updateDoc(getDocRef('gc_deals', dealId), { devChecklist: updatedChecklist });
+        }
+
+        window.addDevChecklistItem = async (inputId) => {
+            if (!currentDealId) return;
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+
+            const deal = deals.find(d => d.id === currentDealId);
+            if (!deal) return;
+            
+            const checklist = deal.devChecklist || [];
+            // Generate simple unique ID
+            const newItemId = Date.now().toString() + 'd-' + Math.random().toString(36).substring(2, 5);
+            const newItem = { id: newItemId, text, completed: false };
+            const updatedChecklist = [...checklist, newItem];
+            
+            input.value = '';
+            await updateDoc(getDocRef('gc_deals', currentDealId), { devChecklist: updatedChecklist });
+        }
+
+        window.removeDevChecklistItem = async (dealId, itemId) => {
+            const deal = deals.find(d => d.id === dealId);
+            if (!deal) return;
+            const checklist = deal.devChecklist || [];
+            const updatedChecklist = checklist.filter(item => item.id !== itemId);
+
+            await updateDoc(getDocRef('gc_deals', dealId), { 
+                devChecklist: updatedChecklist
+            });
+        }
+
 
         // --- Calculator Logic ---
         function calculateDealFinancials(deal) {
@@ -2267,8 +2663,10 @@
             const taxes = params.taxes !== undefined ? parseFloat(params.taxes) : 0;
             const insurance = params.insurance !== undefined ? parseFloat(params.insurance) : 0;
             
-            // DYNAMICALLY PULL LANDLORD WORK FROM CHECKLIST ONLY
-            const landlordWork = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            // DYNAMICALLY PULL LANDLORD WORK FROM CHECKLISTS ONLY
+            const ddCost = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const devCost = (deal.devChecklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+            const landlordWork = ddCost + devCost;
             
             const interestOnly = params.interestOnly || false;
             const useContractRent = params.useContractRent || false;
@@ -2371,9 +2769,14 @@
 
             const contractRentValue = getRawValue('calc-contract-rent');
 
-            // Find current deal to force sync the Landlord's Work from DD
+            // Find current deal to force sync the Landlord's Work from DD & Dev Checklists ONLY
             const deal = deals.find(d => d.id === currentlyLoadedDealForCalc);
-            const landlordWork = deal ? (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0) : getRawValue('calc-landlord-work');
+            let landlordWork = 0;
+            if (deal) {
+                const ddCost = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                const devCost = (deal.devChecklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                landlordWork = ddCost + devCost;
+            }
             
             const llwInput = document.getElementById('calc-landlord-work');
             llwInput.value = landlordWork;
@@ -2526,7 +2929,9 @@
                 setVal('calc-market-ltv', params.marketLtv !== undefined ? params.marketLtv : 70, 'percent');
                 
                 // ALWAYS calculate Landlord's Work dynamically from the checklist costs
-                const checklistTotal = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                const ddCost = (deal.checklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                const devCost = (deal.devChecklist || []).reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0);
+                const checklistTotal = ddCost + devCost;
 
                 setVal('calc-taxes', params.taxes !== undefined ? params.taxes : 0, 'currency');
                 setVal('calc-insurance', params.insurance !== undefined ? params.insurance : 0, 'currency');
@@ -2654,9 +3059,9 @@
                     await updateDoc(getDocRef('gc_deals', id), dealData);
                 } else {
                     dealData.createdAt = serverTimestamp();
-                    dealData.ddStatus = 'not_started'; // Default stage for DD
+                    dealData.ddStatus = 'not_started'; 
+                    dealData.devStatus = 'not_started'; 
                     
-                    // NEW: Add default commercial development checklist to brand new deals
                     dealData.checklist = [
                         { id: Date.now().toString() + '-1', text: 'Survey (ALTA/NSPS)', completed: false },
                         { id: Date.now().toString() + '-2', text: 'Environmental Phase I (ESA)', completed: false },
@@ -2669,10 +3074,19 @@
                         { id: Date.now().toString() + '-9', text: 'Site Clearing / Demolition', completed: false }
                     ];
 
+                    dealData.devChecklist = [
+                        { id: Date.now().toString() + 'd-1', text: 'Site Clearing & Grubbing', completed: false },
+                        { id: Date.now().toString() + 'd-2', text: 'Rough Grading', completed: false },
+                        { id: Date.now().toString() + 'd-3', text: 'Utility Main Extensions (Water/Sewer)', completed: false },
+                        { id: Date.now().toString() + 'd-4', text: 'Electric & Gas Routing', completed: false },
+                        { id: Date.now().toString() + 'd-5', text: 'Stormwater / Retention Installation', completed: false },
+                        { id: Date.now().toString() + 'd-6', text: 'Driveway & Curb Cut Installation', completed: false },
+                        { id: Date.now().toString() + 'd-7', text: 'Final Pad Grading', completed: false }
+                    ];
+
                     await addDoc(getCollectionRef('gc_deals'), dealData);
                 }
                 closeModal('deal-modal');
-                // Force switch to pipeline to see new deal
                 switchView('pipeline');
             } catch (error) {
                 console.error("Deal save error:", error);
@@ -2789,6 +3203,7 @@
             try {
                 const id = document.getElementById('contact-id').value;
                 const ddItemId = document.getElementById('contact-dd-item-id').value; // Check if it's a DD attachment
+                const devItemId = document.getElementById('contact-dev-item-id').value; // Check if it's a Dev attachment
                 
                 // Get selected deal IDs
                 const selectedDeals = [];
@@ -2818,11 +3233,22 @@
                         await updateDoc(getDocRef('gc_deals', dealToUpdate.id), { checklist: updatedChecklist });
                     }
                 }
+
+                // If it was a Dev contact, update the checklist item
+                if (devItemId) {
+                    const dealToUpdate = deals.find(d => d.devChecklist && d.devChecklist.some(i => i.id === devItemId));
+                    if (dealToUpdate) {
+                        const updatedChecklist = dealToUpdate.devChecklist.map(item => 
+                            item.id === devItemId ? { ...item, contactName: contactData.name } : item
+                        );
+                        await updateDoc(getDocRef('gc_deals', dealToUpdate.id), { devChecklist: updatedChecklist });
+                    }
+                }
                 
                 closeModal('contact-modal');
                 
-                // Only switch to contacts view if we are NOT currently looking at the DD modal or Deal Detail
-                if (!ddItemId && document.getElementById('dd-modal').classList.contains('hidden') && document.getElementById('deal-detail-modal').classList.contains('hidden')) {
+                // Only switch to contacts view if we are NOT currently looking at the DD/Dev modal or Deal Detail
+                if (!ddItemId && !devItemId && document.getElementById('dd-modal').classList.contains('hidden') && document.getElementById('dev-modal').classList.contains('hidden') && document.getElementById('deal-detail-modal').classList.contains('hidden')) {
                     switchView('contacts');
                 }
                 
