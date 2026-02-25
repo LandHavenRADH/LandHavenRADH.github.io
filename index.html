@@ -171,11 +171,15 @@
             </button>
         
     <!-- NEW: LIBRARY TAB -->
-    <button onclick="switchView('library'); toggleSidebar()" id="nav-library"
-      class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
-      <i data-lucide="folder" size="20"></i>
-      <span class="font-medium">Library</span>
-    </button>
+      <!-- NEW: ARCHIVE TAB -->
+  <button onclick="switchView('archive'); toggleSidebar()" id="nav-archive" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+    <i data-lucide="archive" size="20"></i>
+    <span class="font-medium">Archive</span>
+  </button>
+  <button onclick="switchView('library'); toggleSidebar()" id="nav-library" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+    <i data-lucide="folder" size="20"></i>
+    <span class="font-medium">Library</span>
+  </button>
  </nav>
         <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
             v2.44.0
@@ -617,7 +621,30 @@
             </div>
 
         
-    <!-- VIEW: LIBRARY -->
+      <!-- VIEW: ARCHIVE -->
+  <div id="view-archive" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden overflow-y-auto">
+    <div class="flex justify-between items-center mb-6 shrink-0">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">Archive</h2>
+        <p class="text-slate-500 text-sm">Cancelled and sold deals.</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-semibold text-lg mb-3 text-slate-700">Cancelled Deals</h3>
+        <div id="archive-cancelled" class="space-y-4">
+          <div class="text-slate-400 italic">No cancelled deals.</div>
+        </div>
+      </div>
+      <div>
+        <h3 class="font-semibold text-lg mb-3 text-slate-700">Properties Sold</h3>
+        <div id="archive-sold" class="space-y-4">
+          <div class="text-slate-400 italic">No sold properties.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- VIEW: LIBRARY -->
   <div id="view-library" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
     <div class="flex justify-between items-center mb-6 shrink-0">
       <div>
@@ -1328,28 +1355,14 @@
         ];
 
         function populateDealSelects() {
-            const selects = [
-                document.getElementById('task-deal-id'),
-                document.getElementById('calc-deal-select')
-            ];
-            const contactContainer = document.getElementById('contact-deal-container');
-
-            const optionsHTML = '<option value="">-- Select a Deal --</option>' + 
-                deals.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-
-            selects.forEach(sel => { if(sel) sel.innerHTML = optionsHTML; });
-
-            if(contactContainer) {
-                contactContainer.innerHTML = deals.map(d => `
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                        <label for="contact-deal-${d.id}" class="text-sm text-slate-700">${d.name}</label>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function populateFranchiseSelects() {
+  const taskSel = document.getElementById('task-deal-id');
+  const calcSel = document.getElementById('calc-deal-select');
+  const contactContainer = document.getElementById('contact-deal-container');
+  // Tasks: all deals
+  if (taskSel) {
+    const taskOptions = '<option value=>-- Select a Deal --</option>' +
+      (Array.isArray(deals) ? deals : []).map(d => `
+ <option value="${d.id}function populateFranchiseSelects() {
             const franSelect = document.getElementById('deal-franchise-id');
             if(!franSelect) return;
             
@@ -2189,6 +2202,7 @@
             if (viewName === 'duediligence') { try { renderDueDiligence(); } catch(e) {} }
             if (viewName === 'development') { try { renderDevelopment(); } catch(e) {} }
   if (viewName === 'library') { try { renderLibrary(); } catch(e) {} }
+ if (viewName === 'archive') { try { renderArchive(); } catch(e) {} }
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -3383,6 +3397,29 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
    return el ? el.dataset.category : 'All';
  }
 
+function openSaleSummary(dealId) {
+  const deal = (Array.isArray(deals) ? deals : []).find(d => d.id === dealId);
+  if (!deal) return;
+  const fmt = (n) => { try { const x = parseFloat((n||0).toString().replace(/[^0-9.-]+/g, '') )||0; return x.toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}); } catch(e){ return '$0'; } };
+  const m = document.getElementById('sale-summary-modal'); if (!m) return;
+  const ss = deal.saleSummary || {};
+  document.getElementById('ssm-deal-name').textContent = deal.name || '';
+  document.getElementById('ssm-deal-address').textContent = deal.address || '';
+  document.getElementById('ssm-purchase').textContent = fmt(ss.purchasePrice);
+  document.getElementById('ssm-llwork').textContent = fmt(ss.landlordWork);
+  document.getElementById('ssm-annualdebt').textContent = fmt(ss.annualDebt);
+  document.getElementById('ssm-taxes').textContent = fmt(ss.taxes);
+  document.getElementById('ssm-insurance').textContent = fmt(ss.insurance);
+  document.getElementById('ssm-rent').textContent = fmt(ss.rentalRate);
+  document.getElementById('ssm-mkt').textContent = fmt(ss.marketValue);
+  document.getElementById('ssm-costs').textContent = fmt(ss.totalCosts);
+  document.getElementById('ssm-saleprice').textContent = fmt(deal.salePrice);
+  document.getElementById('ssm-saledate').textContent = deal.saleDate || '';
+  document.getElementById('ssm-profit').textContent = fmt(ss.realizedProfit);
+  document.getElementById('ssm-roi').textContent = (ss.roiPct != null ? Math.round(ss.roiPct) + '%' : '-');
+  m.classList.remove('hidden');
+}
+
  window.filterLibrary = () => renderLibrary();
 
  function renderLibrary() {
@@ -3856,5 +3893,60 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         // Start System
         setupAuthListeners();
     </script>
+
+<!-- SOLD CONFIRMATION MODAL -->
+<div id="sold-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+      <h3 class="text-lg font-bold text-slate-800">Confirm Sale</h3>
+      <button onclick="document.getElementById('sold-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Price ($)</label>
+        <input type="text" inputmode="decimal" id="sold-price" data-type="currency" class="calc-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Date</label>
+        <input type="date" id="sold-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="document.getElementById('sold-modal').classList.add('hidden')" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm">Cancel</button>
+        <button onclick="confirmSold()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Confirm Sale</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SALE SUMMARY MODAL -->
+<div id="sale-summary-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
+    <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+      <h3 class="text-lg font-bold text-slate-800">Sale Summary</h3>
+      <button onclick="document.getElementById('sale-summary-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div><span class="text-slate-500">Deal:</span> <span id="ssm-deal-name" class="font-semibold"></span></div>
+        <div><span class="text-slate-500">Address:</span> <span id="ssm-deal-address" class="font-medium"></span></div>
+        <div><span class="text-slate-500">Purchase Price:</span> <span id="ssm-purchase" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Landlord's Work:</span> <span id="ssm-llwork" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Annual Debt:</span> <span id="ssm-annualdebt" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Taxes:</span> <span id="ssm-taxes" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Insurance:</span> <span id="ssm-insurance" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Required Rent:</span> <span id="ssm-rent" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Market Value:</span> <span id="ssm-mkt" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Total Costs:</span> <span id="ssm-costs" class="font-bold"></span></div>
+        <div><span class="text-slate-500">Sale Price:</span> <span id="ssm-saleprice" class="font-bold text-emerald-700"></span></div>
+        <div><span class="text-slate-500">Sale Date:</span> <span id="ssm-saledate" class="font-medium"></span></div>
+      </div>
+      <div class="mt-2 p-3 rounded bg-blue-50 border border-blue-100 flex items-center justify-between">
+        <div class="text-blue-700">Realized Profit</div>
+        <div id="ssm-profit" class="text-blue-800 font-extrabold text-lg"></div>
+      </div>
+      <div class="text-right text-sm"><span class="text-slate-500">ROI:</span> <span id="ssm-roi" class="font-bold"></span></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
