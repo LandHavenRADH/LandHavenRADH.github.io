@@ -51,7 +51,7 @@
           </button>
         </div>
       </div>
-      <div class="bg-slate-50 p-3 text-center text-[10px] text-slate-400">Auth-First Clean Build (FULL v3)</div>
+      <div class="bg-slate-50 p-3 text-center text-[10px] text-slate-400">Auth-First Clean Build (FULL v4)</div>
     </div>
   </div>
 
@@ -81,7 +81,7 @@
         <button id="nav-tasks"        class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="calendar" width="18"></i> <span>Tasks</span></button>
         <button id="nav-library"      class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="folder" width="18"></i> <span>Library</span></button>
       </nav>
-      <div class="p-4 text-xs text-slate-400 border-t border-slate-800">Clean Full v3</div>
+      <div class="p-4 text-xs text-slate-400 border-t border-slate-800">Clean Full v4</div>
     </aside>
 
     <!-- Main -->
@@ -89,60 +89,71 @@
       <!-- Simple views (placeholders) -->
       <section id="view-dashboard" class="view-section">
         <h2 class="text-2xl font-bold mb-2">Dashboard</h2>
-        <p class="text-slate-600">Signed-in users will see data here. This is a clean, safe baseline.</p>
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <p class="text-slate-600">Signed-in users will see live counts below.</p>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
-            <div class="text-xs text-slate-500">Total Properties</div>
-            <div class="text-xl font-bold">0</div>
+            <div class="text-xs text-slate-500">Total Deals</div>
+            <div id="dash-total-deals" class="text-xl font-bold">0</div>
           </div>
           <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
             <div class="text-xs text-slate-500">Active Leases</div>
-            <div class="text-xl font-bold">0</div>
+            <div id="dash-active-leases" class="text-xl font-bold">0</div>
           </div>
           <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
-            <div class="text-xs text-slate-500">Pending Tasks</div>
-            <div class="text-xl font-bold">0</div>
+            <div class="text-xs text-slate-500">Sold Properties</div>
+            <div id="dash-sold-deals" class="text-xl font-bold">0</div>
           </div>
+          <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500">Open Tasks</div>
+            <div id="dash-open-tasks" class="text-xl font-bold">0</div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2"><i data-lucide="calendar" width="16"></i> Upcoming Tasks</h3>
+          <ul id="dash-upcoming-list" class="list-disc pl-6 text-slate-700 text-sm">
+            <li class="text-slate-400 italic">Loading...</li>
+          </ul>
         </div>
       </section>
 
       <section id="view-pipeline" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Deal Pipeline</h2>
-        <div id="pipeline-container" class="text-slate-500">(Pipeline view placeholder)</div>
+        <div id="pipeline-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
       </section>
 
       <section id="view-duediligence" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Due Diligence</h2>
-        <div id="dd-container" class="text-slate-500">(Due Diligence view placeholder)</div>
+        <div id="dd-container" class="text-slate-500">(Due Diligence placeholder)</div>
       </section>
 
       <section id="view-development" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Development</h2>
-        <div id="dev-container" class="text-slate-500">(Development view placeholder)</div>
+        <div id="dev-container" class="text-slate-500">(Development placeholder)</div>
       </section>
 
       <section id="view-franchises" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Franchises</h2>
-        <div id="franchises-grid" class="text-slate-500">(Franchises view placeholder)</div>
+        <div id="franchises-grid" class="text-slate-500">(Franchises placeholder)</div>
       </section>
 
       <section id="view-tasks" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Tasks</h2>
-        <div id="task-list-container" class="text-slate-500">(Tasks view placeholder)</div>
+        <div id="task-list-container" class="text-slate-500">(Tasks placeholder)</div>
       </section>
 
       <section id="view-library" class="view-section hidden">
         <h2 class="text-2xl font-bold mb-2">Library</h2>
-        <div id="library-grid" class="text-slate-500">(Library view placeholder)</div>
+        <div id="library-grid" class="text-slate-500">(Library placeholder)</div>
       </section>
     </main>
   </div>
 
-  <!-- Module 1: Firebase Auth Bootstrap (runs first) -->
+  <!-- Module 1: Firebase Auth + Firestore bootstrap -->
   <script type="module">
-  // BUILD: GC-AUTH-FIRST-CLEAN-FULL-v3
+  // BUILD: GC-AUTH-FIRST-CLEAN-FULL-v4
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAFvNkM8_MZ1n13EbAG3QzvTj50zZDcpqE",
@@ -156,6 +167,11 @@
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // Expose for Module 2
+  window.__auth = auth;
+  window.__db   = db;
 
   const $ = (id) => document.getElementById(id);
   const loginOverlay   = $('login-overlay');
@@ -210,7 +226,6 @@
     btnLogout.addEventListener('click', () => signOut(auth).then(() => location.reload()));
   }
 
-  // Expose tab styling helper for Module 2
   function setActiveTab(viewName) {
     document.querySelectorAll('aside nav button').forEach(el => {
       el.classList.remove('bg-emerald-600','text-white','shadow');
@@ -225,11 +240,115 @@
   window.setActiveTab = setActiveTab;
   </script>
 
-  <!-- Module 2: Simple UI (safe stubs, wired nav) -->
+  <!-- Module 2: Live reads + simple renderers -->
   <script type="module">
-  // SAFE UI Module – no heavy templates; you can replace stubs progressively
-  const views = ['dashboard','pipeline','duediligence','development','franchises','tasks','library'];
+  // SAFE UI Module with Firestore reads and simple UI updates
+  import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+  const db = window.__db;
+  const auth = window.__auth;
+
+  // Helper: support artifacts preview path if needed
+  function getCollectionRef(colName){
+    const appId = window.__app_id; // optional, if you pass it in
+    if (appId) {
+      return collection(db, 'artifacts', appId, 'public', 'data', colName);
+    }
+    return collection(db, colName);
+  }
+
+  // State
+  let deals = [];
+  let tasks = [];
+  let franchises = [];
+
+  // Stages (kept minimal)
+  const STAGES = [
+    { id:'prospect',   label:'Prospecting' },
+    { id:'loi',        label:'LOI / Offer' },
+    { id:'dd',         label:'Due Diligence' },
+    { id:'closing',    label:'Closing' },
+    { id:'development',label:'Development' },
+    { id:'leased',     label:'Active Lease' },
+    { id:'sold',       label:'Sold' }
+  ];
+
+  // Simple renderers
+  function renderDashboard(){
+    const totalDeals  = deals.length;
+    const activeLeases= deals.filter(d => d.stage === 'leased').length;
+    const soldDeals   = deals.filter(d => d.stage === 'sold').length;
+    const openTasks   = tasks.filter(t => !t.completed).length;
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = String(val); };
+    setText('dash-total-deals', totalDeals);
+    setText('dash-active-leases', activeLeases);
+    setText('dash-sold-deals', soldDeals);
+    setText('dash-open-tasks', openTasks);
+
+    const ul = document.getElementById('dash-upcoming-list');
+    if (ul){
+      const upcoming = tasks
+        .filter(t => !t.completed)
+        .sort((a,b) => new Date(a.date) - new Date(b.date))
+        .slice(0,5);
+      if (upcoming.length === 0){
+        ul.innerHTML = '<li class="text-slate-400 italic">No upcoming tasks.</li>';
+      } else {
+        ul.innerHTML = upcoming.map(t => `<li>${t.title} — <span class="text-slate-500">${t.date || ''}</span></li>`).join('');
+      }
+    }
+  }
+
+  function renderPipeline(){
+    const container = document.getElementById('pipeline-container');
+    if (!container) return;
+    // Build simple columns
+    const cols = STAGES.map(stage => {
+      const stageDeals = deals.filter(d => d.stage === stage.id);
+      const items = stageDeals.map(d => `<li class="py-1">${d.name || '(Unnamed Deal)'}<br><span class="text-[11px] text-slate-500">${d.address || ''}</span></li>`).join('');
+      return `
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-3">
+          <div class="font-semibold text-slate-800 mb-2 flex items-center justify-between">
+            <span>${stage.label}</span>
+            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${stageDeals.length}</span>
+          </div>
+          <ul class="text-sm text-slate-700 min-h-[60px]">${items || '<li class="text-slate-400 italic">None</li>'}</ul>
+        </div>`;
+    }).join('');
+    container.innerHTML = cols;
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function renderFranchises(){
+    const grid = document.getElementById('franchises-grid');
+    if (!grid) return;
+    if (franchises.length === 0){
+      grid.textContent = '(No franchises yet)';
+    } else {
+      grid.innerHTML = franchises.map(f => `
+        <div class="bg-white rounded border p-3 shadow-sm">
+          <div class="font-bold text-slate-800">${f.name || 'Unnamed'}</div>
+          <div class="text-xs text-slate-500">${f.category || ''}</div>
+        </div>
+      `).join('');
+    }
+  }
+
+  function renderTasks(){
+    const box = document.getElementById('task-list-container');
+    if (!box) return;
+    if (tasks.length === 0){ box.textContent = '(No tasks)'; return; }
+    const rows = tasks
+      .slice()
+      .sort((a,b) => new Date(a.date) - new Date(b.date))
+      .map(t => `<div class="bg-white rounded border p-2 mb-2"><div class="font-medium">${t.title}</div><div class="text-xs text-slate-500">${t.date || ''}</div></div>`)
+      .join('');
+    box.innerHTML = rows;
+  }
+
+  // View helpers
+  const views = ['dashboard','pipeline','duediligence','development','franchises','tasks','library'];
   function showView(name) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
     const v = document.getElementById(`view-${name}`);
@@ -243,26 +362,11 @@
     showView(viewName);
     if (viewName === 'dashboard')    safe(renderDashboard);
     if (viewName === 'pipeline')     safe(renderPipeline);
-    if (viewName === 'duediligence') safe(renderDueDiligence);
-    if (viewName === 'development')  safe(renderDevelopment);
+    if (viewName === 'duediligence') safe(() => {});
+    if (viewName === 'development')  safe(() => {});
     if (viewName === 'franchises')   safe(renderFranchises);
     if (viewName === 'tasks')        safe(renderTasks);
-    if (viewName === 'library')      safe(renderLibrary);
-  };
-
-  // Minimal renderers – placeholders so nothing throws
-  function renderDashboard()    { /* no-op placeholder */ }
-  function renderPipeline()     { /* no-op placeholder */ }
-  function renderDueDiligence() { /* no-op placeholder */ }
-  function renderDevelopment()  { /* no-op placeholder */ }
-  function renderFranchises()   { /* no-op placeholder */ }
-  function renderTasks()        { /* no-op placeholder */ }
-  function renderLibrary()      { /* no-op placeholder */ }
-
-  // Init hook called by Module 1 when auth is ready
-  window.__initAppSafe = function(user){
-    window.switchView('dashboard');
-    if (window.lucide) lucide.createIcons();
+    if (viewName === 'library')      safe(() => {});
   };
 
   // Wire sidebar nav
@@ -274,7 +378,37 @@
   document.getElementById('nav-tasks')       ?.addEventListener('click', () => window.switchView('tasks'));
   document.getElementById('nav-library')     ?.addEventListener('click', () => window.switchView('library'));
 
-  // Default to Dashboard on first paint (signed-out users will still see overlay)
+  // Live reads
+  // Deals
+  onSnapshot(getCollectionRef('gc_deals'), (snapshot) => {
+    deals = snapshot.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderDashboard();
+    const current = document.querySelector('#view-pipeline:not(.hidden)');
+    if (current) renderPipeline();
+  });
+
+  // Tasks
+  onSnapshot(getCollectionRef('gc_tasks'), (snapshot) => {
+    tasks = snapshot.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderDashboard();
+    const current = document.querySelector('#view-tasks:not(.hidden)');
+    if (current) renderTasks();
+  });
+
+  // Franchises
+  onSnapshot(getCollectionRef('gc_franchises'), (snapshot) => {
+    franchises = snapshot.docs.map(d => ({ id:d.id, ...d.data() }));
+    const current = document.querySelector('#view-franchises:not(.hidden)');
+    if (current) renderFranchises();
+  });
+
+  // Expose init for Auth module
+  window.__initAppSafe = function(user){
+    window.switchView('dashboard');
+    if (window.lucide) lucide.createIcons();
+  };
+
+  // Default paint
   window.switchView('dashboard');
   if (window.lucide) lucide.createIcons();
   </script>
