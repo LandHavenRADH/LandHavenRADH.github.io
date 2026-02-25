@@ -171,7 +171,13 @@
             </button>
         
     <!-- NEW: LIBRARY TAB -->
-    <button onclick="switchView('library'); toggleSidebar()" id="nav-library"
+    <button onclick="switchView('library'); toggleSidebar()" 
+  <!-- NEW: ARCHIVE TAB -->
+  <button onclick="switchView('archive'); toggleSidebar()" id="nav-archive" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
+    <i data-lucide="archive" size="20"></i>
+    <span class="font-medium">Archive</span>
+  </button>
+id="nav-library"
       class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-300 hover:bg-slate-800">
       <i data-lucide="folder" size="20"></i>
       <span class="font-medium">Library</span>
@@ -617,7 +623,30 @@
             </div>
 
         
-    <!-- VIEW: LIBRARY -->
+      <!-- VIEW: ARCHIVE -->
+  <div id="view-archive" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden overflow-y-auto">
+    <div class="flex justify-between items-center mb-6 shrink-0">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">Archive</h2>
+        <p class="text-slate-500 text-sm">Cancelled and sold deals.</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-semibold text-lg mb-3 text-slate-700">Cancelled Deals</h3>
+        <div id="archive-cancelled" class="space-y-4">
+          <div class="text-slate-400 italic">No cancelled deals.</div>
+        </div>
+      </div>
+      <div>
+        <h3 class="font-semibold text-lg mb-3 text-slate-700">Properties Sold</h3>
+        <div id="archive-sold" class="space-y-4">
+          <div class="text-slate-400 italic">No sold properties.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- VIEW: LIBRARY -->
   <div id="view-library" class="view-section absolute inset-0 p-8 flex flex-col h-full hidden">
     <div class="flex justify-between items-center mb-6 shrink-0">
       <div>
@@ -698,13 +727,7 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Price ($) <span class="text-xs text-slate-400 font-normal">(If Sold)</span></label>
-                        <input type="text" inputmode="decimal" id="deal-sale-price" data-type="currency" class="calc-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
-                    </div>
-                    <div></div>
-                </div>
+                
 
                 <div class="grid grid-cols-2 gap-4 border-t pt-4 border-slate-100">
                     <div>
@@ -712,11 +735,7 @@
                         <input type="date" id="deal-commencement-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
                         <span class="text-[10px] text-slate-400">For Active Deals</span>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Date (Optional)</label>
-                        <input type="date" id="deal-sale-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
-                        <span class="text-[10px] text-slate-400">For Sold Properties</span>
-                    </div>
+                    
                 </div>
 
                 <button type="submit" id="deal-submit-btn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 mt-4 transition-colors">Create Deal</button>
@@ -2189,6 +2208,7 @@
             if (viewName === 'duediligence') { try { renderDueDiligence(); } catch(e) {} }
             if (viewName === 'development') { try { renderDevelopment(); } catch(e) {} }
   if (viewName === 'library') { try { renderLibrary(); } catch(e) {} }
+ if (viewName === 'archive') { try { renderArchive(); } catch(e) {} }
         };
 
         window.switchTaskDisplay = (mode) => {
@@ -3306,9 +3326,7 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
             const franSelect = document.getElementById('deal-franchise-id');
             if(franSelect) franSelect.value = deal.franchiseId || '';
 
-            const salePriceEl = document.getElementById('deal-sale-price'); salePriceEl.value = deal.salePrice || ''; formatField(salePriceEl, 'currency'); 
             document.getElementById('deal-commencement-date').value = deal.commencementDate || '';
-            document.getElementById('deal-sale-date').value = deal.saleDate || '';
             document.getElementById('deal-modal-title').textContent = 'Edit Deal';
             document.getElementById('deal-submit-btn').textContent = 'Update Deal';
             document.getElementById('deal-modal').classList.remove('hidden');
@@ -3382,6 +3400,90 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
    const el = document.querySelector('#library-filter [data-active="true"]');
    return el ? el.dataset.category : 'All';
  }
+
+// --- Archive & Sale Logic ---
+function renderArchive() {
+  const cancelledCol = document.getElementById("archive-cancelled");
+  const soldCol = document.getElementById("archive-sold");
+  if (!cancelledCol || !soldCol) return;
+  const safe = Array.isArray(deals) ? deals : [];
+  const cancelledDeals = safe.filter(d => d.stage === "cancelled");
+  const soldDeals = safe.filter(d => d.stage === "sold");
+  const fmt = (n) => { try { const x = parseFloat((n||0).toString().replace(/[^0-9.-]+/g, ""))||0; return x.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}); } catch(e){ return "$0"; } };
+  const card = (deal) => {
+    const saleInfo = deal.stage === "sold" ? `
+      <div class="mt-2 text-xs text-slate-600">
+        <div>Sale Price: <span class="font-mono font-semibold">${fmt(deal.salePrice)}</span></div>
+        ${deal.saleDate ? `<div>Sale Date: <span class="font-medium">${deal.saleDate}</span></div>` : ""}
+      </div>` : "";
+    return `
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition">
+      <div class="flex items-start justify-between">
+        <div class="min-w-0">
+          <h4 class="font-bold text-slate-800 truncate">${deal.name || "Unnamed Deal"}</h4>
+          <p class="text-xs text-slate-500 truncate">${deal.address || ""}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="text-slate-300 hover:text-blue-500" onclick="openDealDetail('${deal.id}')" title="Open"><i data-lucide="external-link" width="16"></i></button>
+        </div>
+      </div>
+      ${saleInfo}
+      <div class="mt-3">
+        <button onclick="restoreDeal('${deal.id}')" class="text-xs text-blue-600 hover:underline">Restore</button>
+      </div>
+    </div>`;
+  };
+  cancelledCol.innerHTML = cancelledDeals.length ? cancelledDeals.map(card).join("") : `<div class="text-slate-400 italic">No cancelled deals.</div>`;
+  soldCol.innerHTML = soldDeals.length ? soldDeals.map(card).join("") : `<div class="text-slate-400 italic">No sold properties.</div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
+window.openSoldModal = (dealId) => {
+  const modal = document.getElementById("sold-modal");
+  if (!modal) return;
+  modal.dataset.dealId = dealId;
+  document.getElementById("sold-price").value = "";
+  document.getElementById("sold-date").value = "";
+  modal.classList.remove("hidden");
+};
+
+window.confirmSold = async () => {
+  const modal = document.getElementById("sold-modal");
+  if (!modal) return;
+  const dealId = modal.dataset.dealId;
+  const priceEl = document.getElementById("sold-price");
+  const dateEl = document.getElementById("sold-date");
+  const priceRaw = (priceEl.value||"").toString().replace(/[^0-9.-]+/g,"");
+  const salePrice = priceRaw ? parseFloat(priceRaw) : 0;
+  const saleDate = dateEl.value;
+  const deal = deals.find(d => d.id === dealId);
+  if (!deal) { alert("Deal not found"); return; }
+  if (!salePrice || !saleDate) { alert("Please enter sale price and date."); return; }
+  try {
+    await updateDoc(getDocRef("gc_deals", dealId), {
+      salePrice, saleDate,
+      previousStage: deal.stage || "prospect",
+      stage: "sold"
+    });
+  } catch(e) { console.error(e); alert("Failed to save sale details"); }
+  modal.classList.add("hidden");
+};
+
+window.archiveDeal = async (id, status) => {
+  const deal = deals.find(d => d.id === id);
+  if (!deal) return;
+  const update = { previousStage: deal.stage || "prospect", stage: status };
+  if (status === "cancelled") { update.salePrice = null; update.saleDate = null; }
+  try { await updateDoc(getDocRef("gc_deals", id), update); } catch(e) { console.error(e); }
+};
+
+window.restoreDeal = async (id) => {
+  const deal = deals.find(d => d.id === id);
+  if (!deal) return;
+  const target = deal.previousStage || "prospect";
+  const update = { stage: target, salePrice: null, saleDate: null };
+  try { await updateDoc(getDocRef("gc_deals", id), update); } catch(e) { console.error(e); }
+};
 
  window.filterLibrary = () => renderLibrary();
 
@@ -3531,11 +3633,7 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
                     name: document.getElementById('deal-name').value,
                     address: document.getElementById('deal-address').value,
                     value: document.getElementById('deal-value').value,
-                    stage: document.getElementById('deal-stage').value,
-                    salePrice: document.getElementById('deal-sale-price').value,
-                    commencementDate: document.getElementById('deal-commencement-date').value,
-                    saleDate: document.getElementById('deal-sale-date').value,
-                    franchiseId: document.getElementById('deal-franchise-id').value || null, // SAVE LINK
+                    stage: document.getElementById('deal-stage').value,commencementDate: document.getElementById('deal-commencement-date').value,franchiseId: document.getElementById('deal-franchise-id').value || null, // SAVE LINK
                     userId: currentUserId,
                     updatedAt: serverTimestamp()
                 };
@@ -3856,5 +3954,34 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         // Start System
         setupAuthListeners();
     </script>
+
+<!-- SOLD CONFIRMATION MODAL -->
+<div id="sold-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex justify-between items-center p-4 border-b bg-slate-50">
+      <h3 class="text-lg font-bold text-slate-800">Confirm Sale
+</h3>
+      <button onclick="document.getElementById('sold-modal').classList.add('hidden')" class="text-slate-400 hover:text-red-500"><i data-lucide="x"></i></button>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Price ($)
+</label>
+        <input type="text" inputmode="decimal" id="sold-price" data-type="currency" class="calc-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Sale Date
+</label>
+        <input type="date" id="sold-date" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600 text-sm">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="document.getElementById('sold-modal').classList.add('hidden')" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm">Cancel
+</button>
+        <button onclick="confirmSold()" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Confirm Sale
+</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
