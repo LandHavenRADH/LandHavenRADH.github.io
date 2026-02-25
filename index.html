@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Ground Control | Ground Lease Group</title>
+  <!-- External Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
@@ -11,22 +12,135 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     #login-overlay { transition: opacity .4s ease, visibility .4s ease; }
     #login-overlay.hidden-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
   </style>
 </head>
-<body>
-  <div id="login-overlay">
-    <form id="login-form">
-      <input id="login-email" type="email">
-      <input id="login-password" type="password">
-      <button id="btn-login" type="submit">Sign In</button>
-    </form>
-    <button id="btn-guest">Guest</button>
+<body class="bg-slate-100 text-slate-900 h-screen flex flex-col overflow-hidden">
+  <!-- LOGIN OVERLAY -->
+  <div id="login-overlay" class="fixed inset-0 z-[100] bg-slate-900/90 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+      <div class="p-8">
+        <div class="flex flex-col items-center mb-6">
+          <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-3">
+            <i data-lucide="building" width="24"></i>
+          </div>
+          <h1 class="text-2xl font-extrabold text-slate-900">Ground Lease Group</h1>
+          <p class="text-slate-500 text-sm mt-1">Retail Lease Management System</p>
+        </div>
+        <form id="login-form" class="space-y-4" autocomplete="on">
+          <div id="login-error" class="hidden bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 flex items-start gap-2">
+            <i data-lucide="alert-circle" width="16" class="mt-0.5 shrink-0"></i>
+            <span id="login-error-text">Error message</span>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+            <input type="email" id="login-email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="name@company.com" required autocomplete="username email">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Password</label>
+            <input type="password" id="login-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" id="btn-login" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">Sign In</button>
+        </form>
+        <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+          <button id="btn-guest" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center justify-center gap-2 mx-auto py-2 px-4 rounded-lg hover:bg-emerald-50 transition-colors">
+            Enter as Guest (Demo) <i data-lucide="arrow-right" width="16"></i>
+          </button>
+        </div>
+      </div>
+      <div class="bg-slate-50 p-3 text-center text-[10px] text-slate-400">Auth-First Clean Build (FULL v3)</div>
+    </div>
   </div>
-  <button id="logout-button">Logout</button>
 
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur z-40 shadow-sm border-b border-slate-200 shrink-0">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="font-extrabold text-lg md:text-2xl text-slate-900 truncate">Ground Lease Group</div>
+      <div class="flex items-center gap-2">
+        <button id="logout-button" class="bg-amber-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-amber-600 transition-colors text-xs md:text-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Layout -->
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-full md:w-64 bg-slate-900 text-white shrink-0">
+      <div class="p-4 border-b border-slate-800">
+        <h2 class="text-lg font-bold flex items-center gap-2"><i data-lucide="building" class="text-emerald-400"></i> Ground<span class="text-emerald-400">Control</span></h2>
+      </div>
+      <nav class="p-4 space-y-2">
+        <button id="nav-dashboard"    class="w-full flex items-center gap-3 px-4 py-2 rounded bg-emerald-600 text-white shadow"><i data-lucide="layout-dashboard" width="18"></i> <span>Dashboard</span></button>
+        <button id="nav-pipeline"     class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="map-pin" width="18"></i> <span>Pipeline</span></button>
+        <button id="nav-duediligence" class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="list-checks" width="18"></i> <span>Due Diligence</span></button>
+        <button id="nav-development"  class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="hard-hat" width="18"></i> <span>Development</span></button>
+        <button id="nav-franchises"   class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="store" width="18"></i> <span>Franchises</span></button>
+        <button id="nav-tasks"        class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="calendar" width="18"></i> <span>Tasks</span></button>
+        <button id="nav-library"      class="w-full flex items-center gap-3 px-4 py-2 rounded bg-white/10 hover:bg-white/5 text-slate-200"><i data-lucide="folder" width="18"></i> <span>Library</span></button>
+      </nav>
+      <div class="p-4 text-xs text-slate-400 border-t border-slate-800">Clean Full v3</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 relative bg-slate-100 overflow-y-auto p-8">
+      <!-- Simple views (placeholders) -->
+      <section id="view-dashboard" class="view-section">
+        <h2 class="text-2xl font-bold mb-2">Dashboard</h2>
+        <p class="text-slate-600">Signed-in users will see data here. This is a clean, safe baseline.</p>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500">Total Properties</div>
+            <div class="text-xl font-bold">0</div>
+          </div>
+          <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500">Active Leases</div>
+            <div class="text-xl font-bold">0</div>
+          </div>
+          <div class="bg-white shadow-sm border border-slate-200 rounded-lg p-4">
+            <div class="text-xs text-slate-500">Pending Tasks</div>
+            <div class="text-xl font-bold">0</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-pipeline" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Deal Pipeline</h2>
+        <div id="pipeline-container" class="text-slate-500">(Pipeline view placeholder)</div>
+      </section>
+
+      <section id="view-duediligence" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Due Diligence</h2>
+        <div id="dd-container" class="text-slate-500">(Due Diligence view placeholder)</div>
+      </section>
+
+      <section id="view-development" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Development</h2>
+        <div id="dev-container" class="text-slate-500">(Development view placeholder)</div>
+      </section>
+
+      <section id="view-franchises" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Franchises</h2>
+        <div id="franchises-grid" class="text-slate-500">(Franchises view placeholder)</div>
+      </section>
+
+      <section id="view-tasks" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Tasks</h2>
+        <div id="task-list-container" class="text-slate-500">(Tasks view placeholder)</div>
+      </section>
+
+      <section id="view-library" class="view-section hidden">
+        <h2 class="text-2xl font-bold mb-2">Library</h2>
+        <div id="library-grid" class="text-slate-500">(Library view placeholder)</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Module 1: Firebase Auth Bootstrap (runs first) -->
   <script type="module">
+  // BUILD: GC-AUTH-FIRST-CLEAN-FULL-v3
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut, signInAnonymously, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -46,8 +160,8 @@
   const $ = (id) => document.getElementById(id);
   const loginOverlay   = $('login-overlay');
   const loginForm      = $('login-form');
-  const loginError     = null;
-  const loginErrorText = null;
+  const loginError     = $('login-error');
+  const loginErrorText = $('login-error-text');
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -55,6 +169,8 @@
         loginOverlay.classList.add('hidden-overlay');
         setTimeout(() => loginOverlay.style.display = 'none', 400);
       }
+      if (window.setActiveTab) window.setActiveTab('dashboard');
+      if (window.__initAppSafe) window.__initAppSafe(user);
     } else {
       if (loginOverlay) {
         loginOverlay.style.display = '';
@@ -66,19 +182,101 @@
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      loginError && loginError.classList.add('hidden');
       const emailInput = document.getElementById('login-email');
-      const email = emailInput ? emailInput.value : '';
       const passInput  = document.getElementById('login-password');
-      const pass  = passInput ? passInput.value : '';
-      try { await signInWithEmailAndPassword(auth, email, pass); }
-      catch (error) { console.error(error); }
+      const email = emailInput && 'value' in emailInput ? emailInput.value : '';
+      const pass  = passInput  && 'value' in passInput  ? passInput.value  : '';
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (error) {
+        const msg = (error && (error.code || error.message)) ? (error.code || error.message) : 'Login failed.';
+        if (loginErrorText) loginErrorText.textContent = msg;
+        loginError && loginError.classList.remove('hidden');
+      }
     });
   }
 
   const btnGuest = $('btn-guest');
-  if (btnGuest) btnGuest.addEventListener('click', async () => { try { await signInAnonymously(auth); } catch(e){} });
+  if (btnGuest) {
+    btnGuest.addEventListener('click', async () => {
+      try { await signInAnonymously(auth); }
+      catch (e) { alert('Guest login failed.'); }
+    });
+  }
+
   const btnLogout = $('logout-button');
-  if (btnLogout) btnLogout.addEventListener('click', () => signOut(auth).then(() => location.reload()));
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => signOut(auth).then(() => location.reload()));
+  }
+
+  // Expose tab styling helper for Module 2
+  function setActiveTab(viewName) {
+    document.querySelectorAll('aside nav button').forEach(el => {
+      el.classList.remove('bg-emerald-600','text-white','shadow');
+      el.classList.add('bg-white/10','text-slate-200');
+    });
+    const activeBtn = document.getElementById(`nav-${viewName}`);
+    if (activeBtn) {
+      activeBtn.classList.remove('bg-white/10','text-slate-200');
+      activeBtn.classList.add('bg-emerald-600','text-white','shadow');
+    }
+  }
+  window.setActiveTab = setActiveTab;
+  </script>
+
+  <!-- Module 2: Simple UI (safe stubs, wired nav) -->
+  <script type="module">
+  // SAFE UI Module – no heavy templates; you can replace stubs progressively
+  const views = ['dashboard','pipeline','duediligence','development','franchises','tasks','library'];
+
+  function showView(name) {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+    const v = document.getElementById(`view-${name}`);
+    if (v) v.classList.remove('hidden');
+    if (window.setActiveTab) window.setActiveTab(name);
+  }
+
+  window.switchView = (viewName) => {
+    if (!views.includes(viewName)) return;
+    const safe = (fn) => { try { fn(); } catch(e) { console.error(e); } };
+    showView(viewName);
+    if (viewName === 'dashboard')    safe(renderDashboard);
+    if (viewName === 'pipeline')     safe(renderPipeline);
+    if (viewName === 'duediligence') safe(renderDueDiligence);
+    if (viewName === 'development')  safe(renderDevelopment);
+    if (viewName === 'franchises')   safe(renderFranchises);
+    if (viewName === 'tasks')        safe(renderTasks);
+    if (viewName === 'library')      safe(renderLibrary);
+  };
+
+  // Minimal renderers – placeholders so nothing throws
+  function renderDashboard()    { /* no-op placeholder */ }
+  function renderPipeline()     { /* no-op placeholder */ }
+  function renderDueDiligence() { /* no-op placeholder */ }
+  function renderDevelopment()  { /* no-op placeholder */ }
+  function renderFranchises()   { /* no-op placeholder */ }
+  function renderTasks()        { /* no-op placeholder */ }
+  function renderLibrary()      { /* no-op placeholder */ }
+
+  // Init hook called by Module 1 when auth is ready
+  window.__initAppSafe = function(user){
+    window.switchView('dashboard');
+    if (window.lucide) lucide.createIcons();
+  };
+
+  // Wire sidebar nav
+  document.getElementById('nav-dashboard')   ?.addEventListener('click', () => window.switchView('dashboard'));
+  document.getElementById('nav-pipeline')    ?.addEventListener('click', () => window.switchView('pipeline'));
+  document.getElementById('nav-duediligence')?.addEventListener('click', () => window.switchView('duediligence'));
+  document.getElementById('nav-development') ?.addEventListener('click', () => window.switchView('development'));
+  document.getElementById('nav-franchises')  ?.addEventListener('click', () => window.switchView('franchises'));
+  document.getElementById('nav-tasks')       ?.addEventListener('click', () => window.switchView('tasks'));
+  document.getElementById('nav-library')     ?.addEventListener('click', () => window.switchView('library'));
+
+  // Default to Dashboard on first paint (signed-out users will still see overlay)
+  window.switchView('dashboard');
+  if (window.lucide) lucide.createIcons();
   </script>
 </body>
 </html>
