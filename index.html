@@ -1362,69 +1362,7 @@
   if (taskSel) {
     const taskOptions = '<option value=>-- Select a Deal --</option>' +
       (Array.isArray(deals) ? deals : []).map(d => `
- <option value="${d.id}">${d.name}</option>`).join('');
-    taskSel.innerHTML = taskOptions;
-  }
-  // Calculator: only active deals (not sold/cancelled)
-  if (calcSel) {
-    const activeDeals = (Array.isArray(deals) ? deals : []).filter(d => d.stage !== 'sold' && d.stage !== 'cancelled');
-    const calcOptions = '<option value=>-- Select a Deal --</option>' +
-      activeDeals.map(d => `
- <option value="${d.id}">${d.name}</option>`).join('');
-    calcSel.innerHTML = calcOptions;
-    if (window.currentlyLoadedDealForCalc && !activeDeals.some(d => d.id === window.currentlyLoadedDealForCalc)) {
-      calcSel.value=''; window.currentlyLoadedDealForCalc = null;
-    }
-  }
-  // Contacts: show all deals with checkboxes
-  if (contactContainer) {
-    contactContainer.innerHTML = (Array.isArray(deals) ? deals : []).map(d => `
-      <div class="flex items-center gap-2">
-        <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-        <label for="contact-deal-${d.id}" class="text-sm text-slate-700">${d.name}</label>
-      </div>
-    `).join('');
-  }
-}
-">${d.name}</option>`).join('');
-    taskSel.innerHTML = taskOptions;
-  }
-  // Calculator: only active deals (not sold/cancelled)
-  if (calcSel) {
-    const activeDeals = (Array.isArray(deals) ? deals : []).filter(d => d.stage !== 'sold' && d.stage !== 'cancelled');
-    const calcOptions = '<option value=>-- Select a Deal --</option>' +
-      activeDeals.map(d => `
- <option value="${d.id}">${d.name}</option>`).join('');
-    calcSel.innerHTML = calcOptions;
-    if (window.currentlyLoadedDealForCalc && !activeDeals.some(d => d.id === window.currentlyLoadedDealForCalc)) {
-      calcSel.value=''; window.currentlyLoadedDealForCalc = null;
-    }
-  }
-  // Contacts: show all deals with checkboxes
-  if (contactContainer) {
-    contactContainer.innerHTML = (Array.isArray(deals) ? deals : []).map(d => `
-      <div class="flex items-center gap-2">
-        <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-        <label for="contact-deal-${d.id}" class="text-sm text-slate-700">${d.name}</label>
-      </div>
-    `).join('');
-  }
-}
-">${d.name}</option>`).join('');
-
-            selects.forEach(sel => { if(sel) sel.innerHTML = optionsHTML; });
-
-            if(contactContainer) {
-                contactContainer.innerHTML = deals.map(d => `
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="contact-deal-${d.id}" value="${d.id}" class="contact-deal-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                        <label for="contact-deal-${d.id}" class="text-sm text-slate-700">${d.name}</label>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function populateFranchiseSelects() {
+ <option value="${d.id}function populateFranchiseSelects() {
             const franSelect = document.getElementById('deal-franchise-id');
             if(!franSelect) return;
             
