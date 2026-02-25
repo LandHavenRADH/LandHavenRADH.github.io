@@ -268,7 +268,7 @@
                         <h2 class="text-2xl font-bold text-slate-800">Deal Pipeline</h2>
                         <p class="text-slate-500 text-sm">Track retail site acquisitions from lead to lease to sale.</p>
                     </div>
-                    <button onclick="openModal('deal-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                    <button onclick="openDealModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> New Deal
                     </button>
                 </div>
@@ -319,7 +319,7 @@
                         <h2 class="text-2xl font-bold text-slate-800">Franchise & Retailer Criteria</h2>
                         <p class="text-slate-500 text-sm">Manage site requirements and link them to deals.</p>
                     </div>
-                    <button onclick="openModal('franchise-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                    <button onclick="openFranchiseModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Franchise
                     </button>
                 </div>
@@ -345,7 +345,7 @@
                                 <i data-lucide="calendar" width="16"></i> Calendar
                             </button>
                         </div>
-                        <button onclick="openModal('task-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                        <button onclick="openTaskModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                             <i data-lucide="plus" size="18"></i> New Task
                         </button>
                     </div>
@@ -390,7 +390,7 @@
                         </div>
                     </div>
 
-                    <button onclick="openModal('contact-modal')" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
+                    <button onclick="openContactModal()" class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
                         <i data-lucide="plus" size="18"></i> Add Contact
                     </button>
                 </div>
@@ -633,7 +633,7 @@
             class="w-56 pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
             oninput="filterLibrary()">
         </div>
-        <button onclick="openModal('library-modal')"
+        <button onclick="openLibraryModal()"
           class="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-700 transition">
           <i data-lucide="plus" size="18"></i> New Item
         </button>
@@ -805,14 +805,14 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <h4 class="font-bold text-slate-700">Linked Tasks</h4>
-                            <button onclick="openModal('task-modal', currentDealId)" class="text-xs text-blue-600 hover:underline">+ Add</button>
+                            <button onclick="openTaskModal(currentDealId)" class="text-xs text-blue-600 hover:underline">+ Add</button>
                         </div>
                         <div id="detail-tasks-list" class="space-y-2"></div>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <h4 class="font-bold text-slate-700">Contacts</h4>
-                            <button onclick="openModal('contact-modal', currentDealId)" class="text-xs text-blue-600 hover:underline">+ Add</button>
+                            <button onclick="openContactModal(currentDealId)" class="text-xs text-blue-600 hover:underline">+ Add</button>
                         </div>
                         <div id="detail-contacts-list" class="space-y-2"></div>
                     </div>
@@ -2217,51 +2217,59 @@
         };
 
         // --- Modal Logic ---
-        window.openModal = (id, dealId = null) => {
-            if (id === 'deal-modal') {
-                document.getElementById('deal-form').reset();
-                document.getElementById('deal-id').value = ''; 
-                document.getElementById('deal-modal-title').textContent = 'Add New Deal';
-                document.getElementById('deal-submit-btn').textContent = 'Create Deal';
-                document.getElementById('deal-franchise-id').value = '';
-                populateFranchiseSelects();
-            } else if (id === 'task-modal') {
-                document.getElementById('task-form').reset();
-                document.getElementById('task-id').value = ''; 
-                document.getElementById('task-modal-title').textContent = 'New Task';
-                document.getElementById('task-submit-btn').textContent = 'Save Task';
-                populateDealSelects();
-                if(dealId) document.getElementById('task-deal-id').value = dealId;
-            } else if (id === 'contact-modal') {
-                document.getElementById('contact-form').reset();
-                document.getElementById('contact-id').value = ''; 
-                document.getElementById('contact-dd-item-id').value = ''; // IMPORTANT: Clear DD state for normal opens
-                document.getElementById('contact-dev-item-id').value = ''; // IMPORTANT: Clear Dev state for normal opens
-                document.getElementById('contact-modal-title').textContent = 'Add Contact';
-                document.getElementById('contact-submit-btn').textContent = 'Save Contact';
-                populateDealSelects();
-                if(dealId) {
-                    const checkbox = document.getElementById(`contact-deal-${dealId}`);
-                    if (checkbox) checkbox.checked = true;
-                }
-            } else if (id === 'franchise-modal') {
-                document.getElementById('franchise-form').reset();
-                document.getElementById('franchise-id').value = '';
-                document.getElementById('franchise-modal-title').textContent = 'Add Franchise';
-                document.getElementById('franchise-submit-btn').textContent = 'Save Franchise Profile';
-            }
-                } else if (id === 'library-modal') {
-      document.getElementById('library-form').reset();
-      document.getElementById('library-id').value = '';
-      document.getElementById('library-modal-title').textContent = 'New Library Item';
-      document.getElementById('library-submit-btn').textContent = 'Save Item';
-      const sel = document.getElementById('lib-category');
-      if (sel) sel.innerHTML = LIBRARY_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-  }
-  document.getElementById(id).classList.remove('hidden');
-        };
+        // --- Modal Logic (separated functions) ---
+window.openDealModal = (dealId = null) => {
+  const form = document.getElementById('deal-form'); if(form) form.reset();
+  document.getElementById('deal-id').value = '';
+  document.getElementById('deal-modal-title').textContent = 'Add New Deal';
+  document.getElementById('deal-submit-btn').textContent = 'Create Deal';
+  const selFran = document.getElementById('deal-franchise-id'); if (selFran) selFran.value = '';
+  if (typeof populateFranchiseSelects === 'function') populateFranchiseSelects();
+  document.getElementById('deal-modal').classList.remove('hidden');
+};
 
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+window.openTaskModal = (dealId = null) => {
+  const form = document.getElementById('task-form'); if(form) form.reset();
+  document.getElementById('task-id').value = '';
+  document.getElementById('task-modal-title').textContent = 'New Task';
+  document.getElementById('task-submit-btn').textContent = 'Save Task';
+  if (typeof populateDealSelects === 'function') populateDealSelects();
+  if (dealId) { const sel = document.getElementById('task-deal-id'); if (sel) sel.value = dealId; }
+  document.getElementById('task-modal').classList.remove('hidden');
+};
+
+window.openContactModal = (dealId = null) => {
+  const form = document.getElementById('contact-form'); if(form) form.reset();
+  document.getElementById('contact-id').value = '';
+  document.getElementById('contact-dd-item-id').value = '';
+  document.getElementById('contact-dev-item-id').value = '';
+  document.getElementById('contact-modal-title').textContent = 'Add Contact';
+  document.getElementById('contact-submit-btn').textContent = 'Save Contact';
+  if (typeof populateDealSelects === 'function') populateDealSelects();
+  if (dealId) { const cb = document.getElementById(`contact-deal-${dealId}`); if (cb) cb.checked = true; }
+  document.getElementById('contact-modal').classList.remove('hidden');
+};
+
+window.openFranchiseModal = () => {
+  const form = document.getElementById('franchise-form'); if(form) form.reset();
+  document.getElementById('franchise-id').value = '';
+  document.getElementById('franchise-modal-title').textContent = 'Add Franchise';
+  document.getElementById('franchise-submit-btn').textContent = 'Save Franchise Profile';
+  document.getElementById('franchise-modal').classList.remove('hidden');
+};
+
+window.openLibraryModal = () => {
+  const form = document.getElementById('library-form'); if(form) form.reset();
+  document.getElementById('library-id').value = '';
+  document.getElementById('library-modal-title').textContent = 'New Library Item';
+  document.getElementById('library-submit-btn').textContent = 'Save Item';
+  const sel = document.getElementById('lib-category');
+  if (sel && Array.isArray(LIBRARY_CATEGORIES)) sel.innerHTML = LIBRARY_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('library-modal').classList.remove('hidden');
+};
+
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
         // --- Core App Logic (Same as before, just path secure) ---
         
@@ -2472,7 +2480,7 @@
         // --- Due Diligence Checklist Logic ---
         
         window.openContactModalForDD = (dealId, itemId) => {
-            window.openModal('contact-modal', dealId); // Opens the modal and selects the deal
+            window.openContactModal(dealId); // Opens the modal and selects the deal
             
             const deal = deals.find(d => d.id === dealId);
             const item = deal?.checklist?.find(i => i.id === itemId);
@@ -2727,7 +2735,7 @@
         // --- Development Checklist Logic ---
         
         window.openContactModalForDev = (dealId, itemId) => {
-            window.openModal('contact-modal', dealId); // Opens the modal and selects the deal
+            window.openContactModal(dealId); // Opens the modal and selects the deal
             
             const deal = deals.find(d => d.id === dealId);
             const item = deal?.devChecklist?.find(i => i.id === itemId);
