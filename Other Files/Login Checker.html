@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Test – Ground Control</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; background:#0f172a; color:#0b1220; }
+    .wrap { max-width: 440px; margin: 8vh auto; background:#fff; border-radius:14px; box-shadow: 0 10px 30px rgba(0,0,0,.15); overflow:hidden }
+    .hd { padding: 18px 20px; background:#0f172a; color:#fff; font-weight: 800; }
+    .bd { padding: 20px; }
+    .row { margin: 12px 0; }
+    label { display:block; font-size:12px; font-weight:700; color:#334155; margin-bottom:6px; }
+    input { width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; outline:none }
+    button { width:100%; padding:11px 14px; border:0; border-radius:10px; color:#fff; background:#0f172a; font-weight:800; cursor:pointer }
+    button.alt { background:#065f46 }
+    .msg { margin-top:10px; font-size: 13px; color:#b91c1c }
+    .ok  { color:#14532d }
+    .log { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:14px; max-height:160px; overflow:auto }
+  </style>
+
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hd">Auth Test – Ground Control</div>
+    <div class="bd">
+      <div class="row">
+        <label>Email</label>
+        <input id="email" type="email" placeholder="name@company.com" />
+      </div>
+      <div class="row">
+        <label>Password</label>
+        <input id="pass" type="password" placeholder="••••••••" />
+      </div>
+      <div class="row">
+        <button id="btnLogin">Login</button>
+      </div>
+      <div class="row">
+        <button id="btnGuest" class="alt">Guest (Anonymous)</button>
+      </div>
+      <div class="row msg" id="msg"></div>
+      <div class="row log" id="log"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    // NOTE: Keys are already embedded in your main app; this page is for local diagnosis only.
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFvNkM8_MZ1n13EbAG3QzvTj50zZDcpqE",
+      authDomain: "restaurant-groundworks-db.firebaseapp.com",
+      projectId: "restaurant-groundworks-db",
+      storageBucket: "restaurant-groundworks-db.firebasestorage.app",
+      messagingSenderId: "391704584139",
+      appId: "1:391704584139:web:bee1a86cde8411acf8a04e",
+      measurementId: "G-J6FR64HDJP"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const $ = (id) => document.getElementById(id);
+    const log = (m, cls) => { const el=$('msg'); el.className='msg ' + (cls||''); el.textContent=m; const lg=$('log'); lg.textContent += `\n${new Date().toLocaleTimeString()}  ${m}`; };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) log(`✅ Authenticated as ${user.email || 'Anonymous'}`, 'ok');
+      else      log('ℹ️ Signed out');
+    });
+
+    $('btnLogin').addEventListener('click', async () => {
+      const email = $('email').value.trim();
+      const pass  = $('pass').value;
+      try {
+        log('Attempting login...');
+        await signInWithEmailAndPassword(auth, email, pass);
+        log('✅ Login success', 'ok');
+      } catch (e) {
+        log('❌ Login failed: ' + (e?.code || e?.message || e), '');
+      }
+    });
+
+    $('btnGuest').addEventListener('click', async () => {
+      try {
+        log('Attempting guest sign-in...');
+        await signInAnonymously(auth);
+        log('✅ Guest sign-in success', 'ok');
+      } catch (e) {
+        log('❌ Guest sign-in failed: ' + (e?.code || e?.message || e));
+      }
+    });
+  </script>
+</body>
+</html>

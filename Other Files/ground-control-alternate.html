@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ground Control | Ground Lease Group</title>
+    
+    <!-- Icons & Fonts -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+
+    <!-- Firebase SDKs (v11.6.1) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuration & Global State ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        let db, auth, currentUser;
+        let calendar; // Global calendar instance
+
+        // --- Initialization ---
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            // Auth Logic
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Auth initialization failed:", error);
+                }
+            };
+            initAuth();
+
+            // Auth Observer
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                if (user) {
+                    showDashboard();
+                    loadContacts();
+                    initCalendar(); // Initialize calendar after login
+                } else {
+                    showLogin();
+                }
+            });
+        } else {
+            console.error("Firebase config not found.");
+            document.body.innerHTML = '<div class="p-10 text-red-500">Error: Firebase Configuration Missing. This app requires the environment variables.</div>';
+        }
+
+        // --- UI State Management ---
+        function showLogin() {
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+        }
+
+        // --- App Logic: Logout ---
+        window.handleLogout = () => {
+            if(auth) signOut(auth);
+        };
+
+        // --- App Logic: Sidebar ---
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                // Close
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        };
+
+        // --- App Logic: Contacts ---
+        window.saveContact = async (event) => {
+            event.preventDefault();
+            if (!currentUser) return;
+
+            const btn = document.getElementById('save-contact-btn');
+            const originalText = btn.innerText;
+            btn.innerText = 'Saving...';
+            btn.disabled = true;
+
+            const name = document.getElementById('contact-name').value;
+            const role = document.getElementById('contact-role').value;
+            const email = document.getElementById('contact-email').value;
+
+            try {
+                // STRICT PATH: /artifacts/{appId}/users/{userId}/contacts
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'contacts'), {
+                    name,
+                    role,
+                    email,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // Reset form
+                document.getElementById('add-contact-form').reset();
+                showToast("Contact saved successfully!");
+            } catch (error) {
+                console.error("Error saving contact:", error);
+                alert("Failed to save contact: " + error.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        function loadContacts() {
+            if (!currentUser) return;
+            
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'contacts'));
+            
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('contacts-list');
+                list.innerHTML = '';
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const el = document.createElement('div');
+                    el.className = "flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 mb-2";
+                    el.innerHTML = `
+                        <div>
+                            <p class="font-medium text-gray-900">${data.name || 'Unknown'}</p>
+                            <p class="text-xs text-gray-500">${data.role || 'No Role'} • ${data.email || 'No Email'}</p>
+                        </div>
+                        <button onclick="deleteContact('${doc.id}')" class="text-red-400 hover:text-red-600 p-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    list.appendChild(el);
+                });
+                lucide.createIcons();
+            }, (error) => {
+                console.error("Error loading contacts:", error);
+            });
+        }
+
+        window.deleteContact = async (id) => {
+            if(!currentUser || !confirm("Delete this contact?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'contacts', id));
+            } catch(e) {
+                console.error("Delete error", e);
+            }
+        };
+
+        // --- App Logic: Calendar ---
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            if(!calendarEl) return;
+            
+            // Prevent re-initialization
+            if (calendarEl.innerHTML !== "") return;
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                height: 'auto',
+                events: [
+                    { title: 'Site Visit: 123 Main St', start: new Date().toISOString().split('T')[0] },
+                    { title: 'Lease Renewal Deadline', start: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0], color: '#ef4444' }
+                ]
+            });
+            calendar.render();
+        }
+
+        // --- Utilities ---
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // --- Global Login Trigger for Demo ---
+        window.demoLogin = async () => {
+             // In this environment, we just trigger the anonymous auth flow or simple state switch
+             // The onAuthStateChanged listener will handle the UI switch
+             if(auth) {
+                 // If already anon, this might not trigger change, so we force check
+                 if(auth.currentUser) {
+                     showDashboard();
+                 } else {
+                     await signInAnonymously(auth);
+                 }
+             }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        
+        /* FullCalendar Customization */
+        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 600; }
+        .fc-button-primary { background-color: #111827 !important; border-color: #111827 !important; }
+        .fc-button-primary:hover { background-color: #374151 !important; border-color: #374151 !important; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 h-screen overflow-hidden">
+
+    <!-- LOGIN VIEW (Simulating index.html) -->
+    <div id="login-view" class="h-full flex flex-col items-center justify-center bg-white p-4">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 bg-blue-600 rounded-xl flex items-center justify-center text-white mb-4">
+                    <i data-lucide="building-2" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-900">Ground Control</h2>
+                <p class="mt-2 text-sm text-gray-600">Please sign in to access your dashboard</p>
+            </div>
+            
+            <div class="mt-8 space-y-6">
+                <button onclick="demoLogin()" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i data-lucide="lock" class="h-5 w-5 text-blue-500 group-hover:text-blue-400"></i>
+                    </span>
+                    Sign in to Dashboard
+                </button>
+                <div class="text-center text-xs text-gray-400">
+                    Protected by secure authentication
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden h-full flex relative">
+        
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-gray-800 bg-opacity-50 z-20 hidden lg:hidden glass"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar-transition absolute lg:relative z-30 w-64 h-full bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 flex flex-col">
+            <!-- Sidebar Header -->
+            <div class="h-16 flex items-center px-6 border-b border-gray-200">
+                <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3">
+                    <i data-lucide="building-2" class="w-5 h-5"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight">GroundWorks</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                <a href="#" class="flex items-center px-3 py-2.5 bg-blue-50 text-blue-700 rounded-lg group">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center px-3 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                    <i data-lucide="calendar" class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"></i>
+                    <span class="font-medium">Calendar</span>
+                </a>
+                <a href="#" class="flex items-center px-3 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                    <i data-lucide="users" class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"></i>
+                    <span class="font-medium">Contacts</span>
+                </a>
+                <a href="#" class="flex items-center px-3 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-lg group transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"></i>
+                    <span class="font-medium">Leases</span>
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center p-2 rounded-lg bg-gray-50 border border-gray-100 mb-3">
+                    <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold">U</div>
+                    <div class="ml-3 overflow-hidden">
+                        <p class="text-sm font-medium text-gray-900 truncate">Current User</p>
+                        <p class="text-xs text-gray-500 truncate">Logged In</p>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
+            
+            <!-- Top Bar -->
+            <header class="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-gray-200 bg-white">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                
+                <h1 class="text-xl font-semibold text-gray-800 ml-2 lg:ml-0">Dashboard</h1>
+                
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 text-gray-400 hover:text-gray-500 relative">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Scroll Area -->
+            <div class="flex-1 overflow-auto p-4 lg:p-8 bg-gray-50">
+                
+                <div class="max-w-7xl mx-auto space-y-6">
+                    
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Total Leases</p>
+                                    <p class="text-2xl font-bold text-gray-900 mt-1">24</p>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
+                                    <i data-lucide="file-check" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm text-green-600">
+                                <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                                <span>+12% from last month</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Pending Actions</p>
+                                    <p class="text-2xl font-bold text-gray-900 mt-1">7</p>
+                                </div>
+                                <div class="p-3 bg-amber-50 rounded-lg text-amber-600">
+                                    <i data-lucide="clock" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm text-amber-600">
+                                <i data-lucide="alert-circle" class="w-4 h-4 mr-1"></i>
+                                <span>3 urgent items</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-500">Revenue (YTD)</p>
+                                    <p class="text-2xl font-bold text-gray-900 mt-1">$1.2M</p>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-lg text-green-600">
+                                    <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center text-sm text-gray-500">
+                                <span>Updated just now</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Split -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Left Column: Calendar -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Schedule</h2>
+                            <div id="calendar" class="min-h-[400px]"></div>
+                        </div>
+
+                        <!-- Right Column: Quick Contacts -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Contacts</h2>
+                            
+                            <!-- Add Contact Form -->
+                            <form id="add-contact-form" onsubmit="saveContact(event)" class="space-y-3 mb-6">
+                                <div>
+                                    <input type="text" id="contact-name" placeholder="Name" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <input type="text" id="contact-role" placeholder="Role (e.g. Property Manager)" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                                <div>
+                                    <input type="email" id="contact-email" placeholder="Email" required class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                                <button type="submit" id="save-contact-btn" class="w-full bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium py-2 rounded-md transition-colors">
+                                    Add Contact
+                                </button>
+                            </form>
+
+                            <!-- Contacts List -->
+                            <div id="contacts-list" class="space-y-2 max-h-[300px] overflow-y-auto">
+                                <!-- Loaded dynamically via Firestore -->
+                                <p class="text-center text-gray-400 text-sm py-4">Loading contacts...</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
