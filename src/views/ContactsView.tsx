@@ -19,7 +19,7 @@ export default function ContactsView({ contacts, deals, openModal }: { contacts:
     (c.role && c.role.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const groups: { [key: string]: Contact[] } = { 'Brokers': [], 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Due Diligence': [], 'Development': [], 'Other': [] };
+  const groups: { [key: string]: Contact[] } = { 'Broker': [], 'Seller': [], 'Franchisor': [], 'Franchisee': [], 'Lender': [], 'Due Diligence': [], 'Development': [], 'Other': [] };
   
   filteredContacts.forEach(c => {
     const category = c.category || 'Other';

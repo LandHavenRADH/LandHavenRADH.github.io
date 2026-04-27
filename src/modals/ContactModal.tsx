@@ -108,7 +108,7 @@ export default function ContactModal({ closeModal, contactId, dealId, ddItemId, 
               <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
               <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
                 <option value="Seller">Seller</option>
-                <option value="Brokers">Brokers</option>
+                <option value="Broker">Broker</option>
                 <option value="Franchisor">Franchisor</option>
                 <option value="Franchisee">Franchisee</option>
                 <option value="Lender">Lender</option>
