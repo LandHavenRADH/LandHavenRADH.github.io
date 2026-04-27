@@ -136,7 +136,7 @@ export default function DashboardView({ deals, tasks, setCurrentView }: { deals:
           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Properties Sold</div>
           <div className="text-2xl font-bold text-slate-800">{soldProps}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div onClick={() => setCurrentView('tasks')} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
           <div className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Pending Actions</div>
           <div className="text-2xl font-bold text-blue-700">{pendingTasks}</div>
         </div>
